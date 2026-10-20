@@ -28,9 +28,9 @@ Welcome to **SuriOS**. Before performing any coding or modifications in this pro
 
 6. **DO NOT PUSH AUTOMATICALLY:**
    - The user pushes code manually.
-   - Always output a single-line copy-pastable push command at the end of your response:
+   - Always output a single-line copy-pastable push command (no `cd` command) at the end of your response:
      ```bash
-     cd /home/andy/Projects/surios-ai && git push -u origin <branch-name>
+     git push -u origin <branch-name>
      ```
 
 7. **Security & API Keys:**
