@@ -94,9 +94,9 @@ All agents and contributors must strictly adhere to these operational boundaries
 5. **Pushing Policy (STRICT):**
    - **DO NOT PUSH AUTOMATICALLY.** The agent must NEVER run `git push`.
    - The user will review and push manually.
-   - When finishing a task or commit, the agent must provide a single-line, copy-pastable terminal command in this exact format:
+   - When finishing a task or commit, the agent must provide a single-line, copy-pastable terminal command with **NO `cd` prefix**, strictly in this format:
      ```bash
-     cd /home/andy/Projects/surios-ai && git push -u origin <branch-name>
+     git push -u origin <branch-name>
      ```
 
 ---

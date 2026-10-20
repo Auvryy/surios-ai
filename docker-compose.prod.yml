@@ -1,0 +1,43 @@
+# Production Docker Compose for SuriOS (Ubuntu Azure VM)
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: surios_web_prod
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-surios_secure_pw}@db:5432/surios
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - surios_uploads:/app/uploads
+
+  db:
+    image: postgres:16-alpine
+    container_name: surios_db_prod
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-surios_secure_pw}
+      POSTGRES_DB: surios
+    volumes:
+      - surios_prod_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d surios"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  surios_prod_pgdata:
+    name: surios_prod_pgdata
+  surios_uploads:
+    name: surios_prod_uploads
