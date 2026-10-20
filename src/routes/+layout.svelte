@@ -9,8 +9,9 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
+	import LogOutIcon from '@lucide/svelte/icons/log-out';
 
-	let { children }: LayoutProps = $props();
+	let { data, children }: LayoutProps = $props();
 
 	const navItems = [
 		{ name: 'Live Triage', href: '/' },
@@ -60,7 +61,7 @@
 			<!-- Right-Side Controls -->
 			<div class="flex items-center gap-2">
 				<!-- Search Trigger (shadcn style) -->
-				<div class="hidden sm:flex items-center gap-2 h-8 px-2.5 rounded-lg border border-border bg-secondary/30 text-xs text-muted-foreground w-44 lg:w-56 cursor-pointer hover:border-muted-foreground/30 transition-colors">
+				<div class="hidden sm:flex items-center gap-2 h-8 px-2.5 rounded-lg border border-border bg-secondary/30 text-xs text-muted-foreground w-36 lg:w-48 cursor-pointer hover:border-muted-foreground/30 transition-colors">
 					<SearchIcon class="h-3.5 w-3.5 shrink-0" />
 					<span class="truncate">Search distress...</span>
 					<kbd class="ml-auto pointer-events-none inline-flex h-4 select-none items-center gap-0.5 rounded border border-border bg-muted px-1 font-mono text-[9px] font-medium text-muted-foreground">
@@ -85,6 +86,50 @@
 
 				<!-- Theme Mode Toggle (Dark / Light) -->
 				<ThemeToggle />
+
+				<!-- User Auth State or Sign In / Register -->
+				{#if data?.user}
+					<div class="flex items-center gap-2 pl-2 border-l border-border">
+						<div class="hidden lg:flex flex-col items-end leading-none">
+							<span class="text-xs font-medium text-foreground truncate max-w-[110px]">{data.user.name}</span>
+							<span class="text-[9px] text-muted-foreground uppercase tracking-wider">{data.user.role}</span>
+						</div>
+						<Badge variant="outline" class="text-[10px] font-mono px-1.5 py-0 border-border">
+							{data.user.role === 'ENGINEER' ? 'Admin' : data.user.role === 'OFFICER' ? 'Officer' : 'Citizen'}
+						</Badge>
+						<form method="POST" action="/logout">
+							<Button
+								type="submit"
+								variant="ghost"
+								size="icon"
+								class="h-8 w-8 text-muted-foreground hover:text-foreground"
+								title="Sign Out"
+								aria-label="Sign Out"
+							>
+								<LogOutIcon class="h-3.5 w-3.5" />
+							</Button>
+						</form>
+					</div>
+				{:else}
+					<div class="flex items-center gap-1.5 pl-2 border-l border-border">
+						<Button
+							href="/login"
+							variant="ghost"
+							size="sm"
+							class="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+						>
+							Sign In
+						</Button>
+						<Button
+							href="/register"
+							variant="outline"
+							size="sm"
+							class="hidden sm:inline-flex h-8 px-2.5 text-xs border-border"
+						>
+							Register
+						</Button>
+					</div>
+				{/if}
 
 				<!-- New Report CTA Button -->
 				<Button
