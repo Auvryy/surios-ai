@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { PageProps } from './$types.js';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
 	import BikeIcon from '@lucide/svelte/icons/bike';
@@ -12,6 +13,8 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
+
+	let { data }: PageProps = $props();
 
 	// Mock Real-Time Incident Data for Laguna Municipal Corridor
 	const incidents = [
@@ -92,6 +95,19 @@
 			<p class="text-xs text-muted-foreground">
 				Real-time geolocated distress triage across the Santa Cruz, Laguna provincial transport network.
 			</p>
+			{#if data?.user}
+				<div class="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
+					<Badge variant="secondary" class="text-[10px] font-mono px-1.5 py-0 border-border">
+						{data.user.role === 'ENGINEER' ? 'Chief Engineer' : data.user.role === 'OFFICER' ? 'Field Officer' : 'Citizen Reporter'}
+					</Badge>
+					<span>
+						Authenticated as <strong class="text-foreground font-medium">{data.user.name}</strong>
+						{#if data.user.department}
+							&bull; {data.user.department}
+						{/if}
+					</span>
+				</div>
+			{/if}
 		</div>
 
 		<div class="flex items-center gap-2">
