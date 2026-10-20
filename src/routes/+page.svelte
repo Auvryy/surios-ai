@@ -9,6 +9,15 @@
 	import BikeIcon from '@lucide/svelte/icons/bike';
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
+	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
+
+	// Official shadcn-svelte components
+	import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '$lib/components/ui/card/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Alert, AlertTitle, AlertDescription } from '$lib/components/ui/alert/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+
 	import type { TriageApiResponse, TriageAnalysis } from '$lib/types/triage.js';
 
 	// Svelte 5 Runes Reactive State
@@ -110,32 +119,32 @@
 	}
 </script>
 
-<main class="min-h-screen bg-slate-950 text-slate-100 antialiased">
+<main class="min-h-screen bg-background text-foreground antialiased">
 	<!-- Top Navigation Bar -->
-	<header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-20">
+	<header class="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-20">
 		<div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
 			<div class="flex items-center gap-3">
-				<div class="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-lg">
+				<div class="w-9 h-9 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center text-primary font-bold text-lg">
 					S
 				</div>
 				<div>
 					<div class="flex items-center gap-2">
-						<span class="font-bold text-lg tracking-tight text-white">SuriOS</span>
-						<span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium">
+						<span class="font-bold text-lg tracking-tight text-foreground">SuriOS</span>
+						<Badge variant="outline" class="border-primary/40 text-primary bg-primary/5 text-[10px]">
 							SDG 9 Platform
-						</span>
+						</Badge>
 					</div>
-					<p class="text-[11px] text-slate-400">Autonomous Civil Infrastructure Triage & Dispatch</p>
+					<p class="text-[11px] text-muted-foreground">Autonomous Civil Infrastructure Triage & Dispatch</p>
 				</div>
 			</div>
 
-			<div class="hidden sm:flex items-center gap-4 text-xs text-slate-400">
+			<div class="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
 				<span class="flex items-center gap-1.5">
-					<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+					<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
 					Gemini 3.5 Flash Active
 				</span>
-				<span class="text-slate-600">|</span>
-				<span>LSPU Santa Cruz Anchor</span>
+				<Separator orientation="vertical" class="h-4" />
+				<span class="font-mono text-[11px]">LSPU Santa Cruz Anchor</span>
 			</div>
 		</div>
 	</header>
@@ -143,11 +152,11 @@
 	<div class="max-w-5xl mx-auto px-4 py-8">
 		<!-- Hero Section -->
 		<div class="mb-8 text-center sm:text-left">
-			<h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">
+			<h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 text-foreground">
 				Automated Road Defect Triage
 			</h1>
-			<p class="text-sm sm:text-base text-slate-400 max-w-2xl">
-				Upload or photograph road hazards (potholes, cracks, drainage failures). Our multimodal vision engine classifies the distress (ASTM D6433), estimates Two-Wheeler Lethality, and generates municipal repair tickets.
+			<p class="text-sm sm:text-base text-muted-foreground max-w-2xl">
+				Upload or photograph road hazards (potholes, cracks, rutting). Our multimodal vision engine classifies the distress (ASTM D6433), estimates Two-Wheeler Lethality, and generates municipal repair tickets.
 			</p>
 		</div>
 
@@ -155,84 +164,99 @@
 		<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 			<!-- Left Column: Input & Capture -->
 			<div class="lg:col-span-5 space-y-5">
-				<!-- Photo Upload Card -->
-				<div class="rounded-xl border border-slate-800 bg-slate-900/40 p-5 shadow-sm">
-					<div class="flex items-center justify-between mb-3">
-						<h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
-							<CameraIcon class="w-4 h-4 text-emerald-400" />
-							1. Capture or Select Image
-						</h2>
+				<Card class="border-border bg-card shadow-sm">
+					<CardHeader class="pb-3 flex flex-row items-center justify-between">
+						<div>
+							<CardTitle class="text-sm font-semibold flex items-center gap-2">
+								<CameraIcon class="w-4 h-4 text-primary" />
+								1. Capture or Select Image
+							</CardTitle>
+							<CardDescription class="text-xs mt-0.5">
+								Provide real-time road surface evidence
+							</CardDescription>
+						</div>
 						{#if previewUrl}
-							<button
-								type="button"
+							<Button
+								variant="ghost"
+								size="sm"
 								onclick={resetForm}
-								class="text-xs text-slate-400 hover:text-rose-400 transition"
+								class="text-xs text-muted-foreground hover:text-destructive h-7 px-2"
 							>
 								Clear
-							</button>
+							</Button>
 						{/if}
-					</div>
+					</CardHeader>
 
-					{#if previewUrl}
-						<div class="relative rounded-lg overflow-hidden border border-slate-800 bg-slate-950 aspect-video mb-3 flex items-center justify-center">
-							<img src={previewUrl} alt="Road hazard preview" class="w-full h-full object-cover" />
-						</div>
-					{:else}
-						<label
-							class="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-800 hover:border-slate-700 bg-slate-950/50 p-8 cursor-pointer transition group aspect-video"
-						>
-							<div class="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center text-slate-400 group-hover:text-emerald-400 transition mb-3">
-								<UploadIcon class="w-6 h-6" />
+					<CardContent class="space-y-4">
+						{#if previewUrl}
+							<div class="relative rounded-lg overflow-hidden border border-border bg-background aspect-video flex items-center justify-center">
+								<img src={previewUrl} alt="Road hazard preview" class="w-full h-full object-cover" />
 							</div>
-							<p class="text-xs font-medium text-slate-300">Click to upload or take a photo</p>
-							<p class="text-[11px] text-slate-500 mt-1">JPEG, PNG, WebP up to 10MB</p>
-							<input
-								type="file"
-								accept="image/*"
-								capture="environment"
-								onchange={handleFileChange}
-								class="hidden"
-							/>
-						</label>
-					{/if}
-
-					<!-- GPS Coordinates -->
-					<div class="mt-4 pt-4 border-t border-slate-800/80">
-						<div class="flex items-center justify-between mb-2">
-							<label class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-								<MapPinIcon class="w-3.5 h-3.5 text-sky-400" />
-								2. Geolocation Coordinates
-							</label>
-							<button
-								type="button"
-								onclick={detectLocation}
-								disabled={isLocating}
-								class="text-[11px] font-medium text-sky-400 hover:text-sky-300 disabled:opacity-50 transition"
+						{:else}
+							<label
+								class="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border hover:border-primary/50 bg-background/50 p-8 cursor-pointer transition group aspect-video"
 							>
-								{isLocating ? 'Locating...' : 'Detect GPS'}
-							</button>
-						</div>
+								<div class="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-muted-foreground group-hover:text-primary transition mb-3">
+									<UploadIcon class="w-6 h-6" />
+								</div>
+								<p class="text-xs font-medium text-foreground">Click to upload or take a photo</p>
+								<p class="text-[11px] text-muted-foreground mt-1">JPEG, PNG, WebP up to 10MB</p>
+								<input
+									type="file"
+									accept="image/*"
+									capture="environment"
+									onchange={handleFileChange}
+									class="hidden"
+								/>
+							</label>
+						{/if}
 
-						<div class="grid grid-cols-2 gap-2 text-xs">
-							<div class="bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5">
-								<span class="text-slate-500 text-[10px] block">LATITUDE</span>
-								<span class="font-mono text-slate-200">{latitude}° N</span>
-							</div>
-							<div class="bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5">
-								<span class="text-slate-500 text-[10px] block">LONGITUDE</span>
-								<span class="font-mono text-slate-200">{longitude}° E</span>
-							</div>
-						</div>
-						<p class="text-[11px] text-slate-500 mt-1.5 truncate">{locationStatus}</p>
-					</div>
+						<Separator class="my-3" />
 
-					<!-- Analyze Button -->
-					<div class="mt-5">
-						<button
+						<!-- GPS Coordinates -->
+						<div>
+							<div class="flex items-center justify-between mb-2">
+								<label class="text-xs font-semibold text-foreground flex items-center gap-1.5">
+									<MapPinIcon class="w-3.5 h-3.5 text-sky-400" />
+									2. Geolocation Coordinates
+								</label>
+								<Button
+									variant="ghost"
+									size="sm"
+									onclick={detectLocation}
+									disabled={isLocating}
+									class="text-[11px] font-medium text-sky-400 hover:text-sky-300 h-6 px-2"
+								>
+									{#if isLocating}
+										<Loader2Icon class="w-3 h-3 animate-spin mr-1" />
+										Locating...
+									{:else}
+										<RefreshCwIcon class="w-3 h-3 mr-1" />
+										Detect GPS
+									{/if}
+								</Button>
+							</div>
+
+							<div class="grid grid-cols-2 gap-2 text-xs">
+								<div class="bg-background border border-border rounded-lg px-2.5 py-1.5">
+									<span class="text-muted-foreground text-[10px] block font-medium">LATITUDE</span>
+									<span class="font-mono text-foreground font-semibold">{latitude}° N</span>
+								</div>
+								<div class="bg-background border border-border rounded-lg px-2.5 py-1.5">
+									<span class="text-muted-foreground text-[10px] block font-medium">LONGITUDE</span>
+									<span class="font-mono text-foreground font-semibold">{longitude}° E</span>
+								</div>
+							</div>
+							<p class="text-[11px] text-muted-foreground mt-1.5 truncate font-mono">{locationStatus}</p>
+						</div>
+					</CardContent>
+
+					<CardFooter class="pt-0">
+						<Button
 							type="button"
 							onclick={analyzeImage}
 							disabled={!selectedFile || isAnalyzing}
-							class="w-full h-10 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs tracking-wide uppercase flex items-center justify-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/10"
+							class="w-full font-semibold text-xs tracking-wider uppercase h-10 gap-2 shadow-md"
 						>
 							{#if isAnalyzing}
 								<Loader2Icon class="w-4 h-4 animate-spin" />
@@ -241,80 +265,78 @@
 								<SparklesIcon class="w-4 h-4" />
 								<span>Run AI Civil Triage</span>
 							{/if}
-						</button>
-					</div>
-				</div>
+						</Button>
+					</CardFooter>
+				</Card>
 			</div>
 
 			<!-- Right Column: Results & Triage Payload -->
 			<div class="lg:col-span-7">
 				{#if isAnalyzing}
-					<div class="rounded-xl border border-slate-800 bg-slate-900/30 p-10 text-center flex flex-col items-center justify-center min-h-[360px]">
-						<div class="w-12 h-12 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin mb-4"></div>
-						<h3 class="text-sm font-semibold text-white mb-1">Processing Road Multimodal Vision</h3>
-						<p class="text-xs text-slate-400 max-w-sm">
+					<Card class="border-border bg-card/60 p-10 text-center flex flex-col items-center justify-center min-h-[380px]">
+						<div class="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin mb-4"></div>
+						<h3 class="text-sm font-semibold text-foreground mb-1">Processing Road Multimodal Vision</h3>
+						<p class="text-xs text-muted-foreground max-w-sm">
 							Extracting ASTM D6433 defect distress types, calculating Two-Wheeler Lethality Index, and formulating crew materials...
 						</p>
-					</div>
+					</Card>
 				{:else if errorMessage}
-					<div class="rounded-xl border border-rose-900/40 bg-rose-950/20 p-6 text-slate-200 min-h-[360px]">
-						<div class="flex items-start gap-3">
-							<AlertTriangleIcon class="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-							<div>
-								<h3 class="text-sm font-bold text-rose-300">Triage Rejection / Error</h3>
-								<p class="text-xs text-rose-200/80 mt-1">{errorMessage}</p>
-								{#if rejectionAnalysis}
-									<div class="mt-4 p-3 rounded-lg bg-rose-950/40 border border-rose-900/30 text-xs space-y-1">
-										<p class="font-semibold text-rose-300">Spam / Non-Infrastructure Filter Activated:</p>
-										<p class="text-rose-200/90">{rejectionAnalysis.rejectionReason}</p>
-									</div>
-								{/if}
-							</div>
-						</div>
-					</div>
+					<Alert variant="destructive" class="min-h-[380px] flex flex-col justify-center p-6">
+						<AlertTriangleIcon class="w-5 h-5" />
+						<AlertTitle class="text-sm font-bold">Triage Rejection / Validation Warning</AlertTitle>
+						<AlertDescription class="text-xs mt-2 space-y-3">
+							<p>{errorMessage}</p>
+							{#if rejectionAnalysis}
+								<div class="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-xs">
+									<p class="font-semibold">Spam / Non-Infrastructure Filter Activated:</p>
+									<p class="mt-1 opacity-90">{rejectionAnalysis.rejectionReason}</p>
+								</div>
+							{/if}
+						</AlertDescription>
+					</Alert>
 				{:else if result}
-					<div class="rounded-xl border border-slate-800 bg-slate-900/40 p-6 space-y-5 shadow-sm">
+					<Card class="border-border bg-card shadow-sm space-y-4 p-6">
 						<!-- Top Status Bar -->
-						<div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-800">
+						<div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-border">
 							<div class="flex items-center gap-2">
-								<CheckCircleIcon class="w-4 h-4 text-emerald-400" />
-								<span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+								<CheckCircleIcon class="w-4 h-4 text-primary" />
+								<span class="text-xs font-semibold uppercase tracking-wider text-primary">
 									Ticket Created & Saved
 								</span>
 								{#if result.reportId}
-									<span class="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+									<Badge variant="secondary" class="font-mono text-[10px]">
 										#{result.reportId.slice(0, 8)}
-									</span>
+									</Badge>
 								{/if}
 							</div>
 
 							<div class="flex items-center gap-2 text-xs">
-								<span class="text-slate-400">Urgency:</span>
-								<span class="font-semibold text-white px-2 py-0.5 rounded bg-slate-800 text-[11px]">
+								<span class="text-muted-foreground">Urgency:</span>
+								<Badge variant="outline" class="font-semibold font-mono">
 									{result.analysis.urgency}
-								</span>
+								</Badge>
 							</div>
 						</div>
 
 						<!-- Two-Wheeler Lethality Alert (The Differentiator) -->
-						<div class="rounded-lg border p-3.5 flex items-start gap-3 {
+						<div class="rounded-lg border p-4 flex items-start gap-3.5 {
 							result.analysis.vruLethality === 'CRITICAL' || result.analysis.vruLethality === 'HIGH'
-								? 'bg-rose-950/30 border-rose-800/60 text-rose-200'
+								? 'bg-destructive/15 border-destructive/40 text-destructive-foreground'
 								: result.analysis.vruLethality === 'MODERATE'
-									? 'bg-amber-950/30 border-amber-800/60 text-amber-200'
-									: 'bg-emerald-950/30 border-emerald-800/60 text-emerald-200'
+									? 'bg-amber-500/15 border-amber-500/40 text-amber-200'
+									: 'bg-primary/15 border-primary/40 text-primary-foreground'
 						}">
-							<BikeIcon class="w-5 h-5 shrink-0 mt-0.5" />
-							<div>
+							<BikeIcon class="w-5 h-5 shrink-0 mt-0.5 text-current" />
+							<div class="space-y-1">
 								<div class="flex items-center gap-2">
-									<h4 class="text-xs font-bold uppercase tracking-wide">
+									<h4 class="text-xs font-bold uppercase tracking-wider">
 										Two-Wheeler Lethality: {result.analysis.vruLethality} RISK
 									</h4>
-									<span class="text-[10px] px-1.5 py-0.2 rounded bg-black/40 font-mono">
-										VRU Safety Profile
-									</span>
+									<Badge variant="outline" class="text-[9px] uppercase border-current/30 font-mono">
+										VRU Profile
+									</Badge>
 								</div>
-								<p class="text-xs mt-1 opacity-90 leading-relaxed">
+								<p class="text-xs opacity-90 leading-relaxed">
 									{result.analysis.vruDetails}
 								</p>
 							</div>
@@ -323,79 +345,77 @@
 						<!-- Key Metrics Grid -->
 						<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
 							<!-- Severity Index -->
-							<div class="rounded-lg bg-slate-950 border border-slate-800 p-3">
-								<span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+							<div class="rounded-lg bg-background border border-border p-3">
+								<span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
 									Hazard Severity
 								</span>
 								<div class="flex items-baseline gap-1.5">
-									<span class="text-2xl font-black text-white">{result.analysis.hazardSeverity}</span>
-									<span class="text-xs text-slate-500">/ 10</span>
+									<span class="text-2xl font-black text-foreground">{result.analysis.hazardSeverity}</span>
+									<span class="text-xs text-muted-foreground">/ 10</span>
 								</div>
-								<span class="text-[10px] font-medium {
-									result.analysis.riskLevel === 'CRITICAL'
-										? 'text-rose-400'
-										: result.analysis.riskLevel === 'MODERATE'
-											? 'text-amber-400'
-											: 'text-emerald-400'
-								}">
+								<Badge
+									variant={result.analysis.riskLevel === 'CRITICAL' ? 'destructive' : 'secondary'}
+									class="mt-1 text-[10px]"
+								>
 									{result.analysis.riskLevel} TIER
-								</span>
+								</Badge>
 							</div>
 
 							<!-- Distress Type -->
-							<div class="rounded-lg bg-slate-950 border border-slate-800 p-3">
-								<span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
-									Classification
+							<div class="rounded-lg bg-background border border-border p-3">
+								<span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
+									Distress Type
 								</span>
-								<span class="text-sm font-bold text-white capitalize block truncate">
+								<span class="text-sm font-bold text-foreground capitalize block truncate">
 									{result.analysis.distressType.replace(/_/g, ' ')}
 								</span>
-								<span class="text-[10px] text-slate-500">ASTM D6433 Standard</span>
+								<span class="text-[10px] text-muted-foreground block font-mono mt-1">ASTM D6433</span>
 							</div>
 
 							<!-- Dimensions -->
-							<div class="rounded-lg bg-slate-950 border border-slate-800 p-3 col-span-2 sm:col-span-1">
-								<span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+							<div class="rounded-lg bg-background border border-border p-3 col-span-2 sm:col-span-1">
+								<span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
 									Est. Dimensions
 								</span>
-								<span class="text-xs font-mono text-slate-200 block truncate">
-									Depth: {result.analysis.estimatedDimensions.depthEstimate}
+								<span class="text-xs font-mono text-foreground block truncate">
+									D: {result.analysis.estimatedDimensions.depthEstimate}
 								</span>
-								<span class="text-[10px] text-slate-400 block truncate">
-									Area: {result.analysis.estimatedDimensions.surfaceAreaEstimate}
+								<span class="text-[10px] text-muted-foreground block truncate font-mono mt-1">
+									A: {result.analysis.estimatedDimensions.surfaceAreaEstimate}
 								</span>
 							</div>
 						</div>
 
 						<!-- Engineering Summary -->
-						<div class="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800">
-							<span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+						<div class="p-3.5 rounded-lg bg-background border border-border">
+							<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
 								Engineering Assessment Summary
 							</span>
-							<p class="text-xs text-slate-300 leading-relaxed">
+							<p class="text-xs text-foreground/90 leading-relaxed">
 								{result.analysis.summary}
 							</p>
 						</div>
 
 						<!-- Recommended Action & Materials -->
-						<div class="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800 space-y-2">
-							<div class="flex items-center gap-1.5 text-emerald-400 text-xs font-bold">
+						<div class="p-3.5 rounded-lg bg-background border border-border space-y-2">
+							<div class="flex items-center gap-1.5 text-primary text-xs font-bold">
 								<WrenchIcon class="w-3.5 h-3.5" />
 								<span>Public Works Dispatch Specification:</span>
 							</div>
-							<p class="text-xs text-slate-200 font-medium">
+							<p class="text-xs text-foreground font-medium">
 								{result.analysis.recommendedAction}
 							</p>
 
 							{#if result.analysis.materialsChecklist && result.analysis.materialsChecklist.length > 0}
 								<div class="pt-2">
-									<span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+									<Separator class="my-2" />
+									<span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
 										Crew Equipment & Materials Checklist:
 									</span>
-									<ul class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-slate-300">
+									<ul class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-foreground/80">
 										{#each result.analysis.materialsChecklist as item}
-											<li class="flex items-center gap-1.5">
-												<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+											<li class="flex items-center gap-2">
+												<span class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
 												<span>{item}</span>
 											</li>
 										{/each}
@@ -403,16 +423,16 @@
 								</div>
 							{/if}
 						</div>
-					</div>
+					</Card>
 				{:else}
 					<!-- Empty State Placeholder -->
-					<div class="rounded-xl border border-dashed border-slate-800 bg-slate-900/20 p-10 text-center flex flex-col items-center justify-center min-h-[360px]">
-						<ShieldAlertIcon class="w-10 h-10 text-slate-700 mb-3" />
-						<h3 class="text-sm font-semibold text-slate-300 mb-1">AI Triage Results Standby</h3>
-						<p class="text-xs text-slate-500 max-w-sm">
+					<Card class="border-border border-dashed bg-card/30 p-10 text-center flex flex-col items-center justify-center min-h-[380px]">
+						<ShieldAlertIcon class="w-10 h-10 text-muted-foreground/40 mb-3" />
+						<h3 class="text-sm font-semibold text-foreground mb-1">AI Triage Results Standby</h3>
+						<p class="text-xs text-muted-foreground max-w-sm">
 							Select or capture an image on the left and click "Run AI Civil Triage" to execute multimodal road distress classification.
 						</p>
-					</div>
+					</Card>
 				{/if}
 			</div>
 		</div>
