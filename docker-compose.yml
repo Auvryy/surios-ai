@@ -1,0 +1,25 @@
+# Local Development Docker Compose for SuriOS
+# Runs PostgreSQL on port 5433 to avoid collision with port 5432
+
+services:
+  surios-db:
+    image: postgres:16-alpine
+    container_name: surios_local_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: surios
+    ports:
+      - "5433:5432"
+    volumes:
+      - surios_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d surios"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  surios_pgdata:
+    name: surios_local_pgdata
