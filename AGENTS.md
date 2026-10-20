@@ -6,6 +6,10 @@ Welcome to **SuriOS**. Before performing any coding or modifications in this pro
 
 ## ⚡ The 7 Golden Rules for Every Agent
 
+> [!CAUTION]
+> ### 🛑 RULE #0: NEVER, EVER CODE OR COMMIT ON `main`!
+> **`main` is strictly protected.** Every single task, bugfix, refactor, or feature MUST be done on a dedicated branch created via `git checkout -b <branch-name>` before any files are modified. Working on `main` is strictly forbidden.
+
 1. **Strict Workspace Isolation:**
    - Stay strictly inside `/home/andy/Projects/surios-ai`.
    - Never inspect, search, modify, or create files in parent directories or other projects unless explicitly asked by the user.

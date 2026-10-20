@@ -75,8 +75,11 @@ All agents and contributors must strictly adhere to these operational boundaries
    - Always verify `.gitignore` before creating or committing new file patterns.
    - If an environment template is needed, document the variable in `.env.example` with empty dummy values.
 
-3. **Branching Strategy:**
-   - **Never code directly on `main`** unless initializing a fresh, empty repository.
+3. **Branching Strategy (ZERO TOLERANCE ON MAIN):**
+   > [!CAUTION]
+   > **NEVER EVER WORK ON `main` DIRECTLY.**
+   > The `main` branch is strictly protected for verified production releases. Every single task, refactor, bugfix, or feature MUST be developed on a dedicated branch created via `git checkout -b <branch-name>` before any files are created or modified.
+
    - Always create a dedicated branch before working on a task or feature:
      - Feature branches: `feat/<feature-name>` (e.g., `feat/triage-api-route`)
      - Fix branches: `fix/<bug-name>` (e.g., `fix/mobile-gps-permissions`)

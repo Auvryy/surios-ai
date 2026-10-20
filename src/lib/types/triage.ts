@@ -26,35 +26,36 @@ export const UrgencySchema = z.enum(['ROUTINE', 'PRIORITY', 'EMERGENCY']);
 export const TriageAnalysisSchema = z.object({
 	isValidInfrastructure: z
 		.boolean()
-		.describe('True if the image depicts a public civil road, highway, pavement, or culvert defect. False if it is a selfie, animal, indoor room, vehicle dashboard, or non-road spam.'),
+		.describe('True if image depicts public road/civil infrastructure; false if non-road spam or indoor photo.'),
 	rejectionReason: z
 		.string()
 		.nullable()
-		.describe('Explanation if isValidInfrastructure is false. Null if valid.'),
-	distressType: DistressTypeSchema.describe('Civil distress category according to ASTM D6433 standards.'),
+		.optional()
+		.describe('Explanation if isValidInfrastructure is false.'),
+	distressType: DistressTypeSchema.default('other'),
 	hazardSeverity: z
 		.number()
 		.int()
 		.min(1)
 		.max(10)
-		.describe('Hazard severity index from 1 (minor surface cosmetic issue) to 10 (catastrophic structural/safety failure).'),
-	riskLevel: RiskLevelSchema.describe('General vehicular risk tier.'),
-	vruLethality: VruLethalitySchema.describe('Specific threat rating for Vulnerable Road Users (motorcycles, tricycles, bicycles, and e-scooters).'),
+		.default(1),
+	riskLevel: z.preprocess((val) => typeof val === 'string' ? val.toUpperCase() : val, RiskLevelSchema).default('LOW'),
+	vruLethality: z.preprocess((val) => typeof val === 'string' ? val.toUpperCase() : val, VruLethalitySchema).default('NONE'),
 	vruDetails: z
 		.string()
-		.describe('Specific explanation of why this defect threatens two-wheeler and tricycle stability or causes vehicle loss-of-control.'),
+		.default('No rider threat detected.'),
 	estimatedDimensions: z.object({
-		depthEstimate: z.string().describe('Visual depth estimate (e.g., "< 25mm", "25-50mm", "> 75mm deep").'),
-		surfaceAreaEstimate: z.string().describe('Visual surface area (e.g., "0.5 sq m", "2.1 sq m").')
-	}),
+		depthEstimate: z.string().default('N/A'),
+		surfaceAreaEstimate: z.string().default('N/A')
+	}).default({ depthEstimate: 'N/A', surfaceAreaEstimate: 'N/A' }),
 	recommendedAction: z
 		.string()
-		.describe('Civil engineering recommended repair action (e.g., "Cold-mix asphalt patch with tack coat", "Crack sealing", "Full-depth asphalt reclamation").'),
+		.default('No municipal repair required.'),
 	materialsChecklist: z
 		.array(z.string())
-		.describe('Bullet list of materials and equipment required for public works road crews.'),
-	urgency: UrgencySchema.describe('Municipal response priority category.'),
-	summary: z.string().describe('Concise 1-2 sentence engineering summary of the hazard.')
+		.default([]),
+	urgency: z.preprocess((val) => typeof val === 'string' ? val.toUpperCase() : val, UrgencySchema).default('ROUTINE'),
+	summary: z.string().default('Analysis complete.')
 });
 
 export type DistressType = z.infer<typeof DistressTypeSchema>;
@@ -67,11 +68,11 @@ export interface TriageApiResponse {
 	success: boolean;
 	data?: {
 		reportId?: string;
-		imageUrl: string;
+		imagePath: string;
 		latitude: number;
 		longitude: number;
 		analysis: TriageAnalysis;
-		createdAt: string;
 	};
 	error?: string;
+	analysis?: TriageAnalysis;
 }

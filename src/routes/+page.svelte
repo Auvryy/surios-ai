@@ -8,20 +8,37 @@
 	import Loader2Icon from '@lucide/svelte/icons/loader';
 	import BikeIcon from '@lucide/svelte/icons/bike';
 	import UploadIcon from '@lucide/svelte/icons/upload';
-	import SparklesIcon from '@lucide/svelte/icons/sparkles';
+	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
+
+	import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '$lib/components/ui/card/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Alert, AlertTitle, AlertDescription } from '$lib/components/ui/alert/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs/index.js';
+	import {
+		Sheet,
+		SheetTrigger,
+		SheetContent,
+		SheetHeader,
+		SheetTitle,
+		SheetDescription,
+		SheetFooter
+	} from '$lib/components/ui/sheet/index.js';
+
 	import type { TriageApiResponse, TriageAnalysis } from '$lib/types/triage.js';
 
-	// Svelte 5 Runes Reactive State
 	let selectedFile = $state<File | null>(null);
 	let previewUrl = $state<string | null>(null);
 	let latitude = $state<number>(14.2813);
 	let longitude = $state<number>(121.4173);
-	let locationStatus = $state<string>('Default: Santa Cruz, Laguna');
+	let locationStatus = $state<string>('Santa Cruz, Laguna');
 	let isLocating = $state<boolean>(false);
 	let isAnalyzing = $state<boolean>(false);
 	let result = $state<TriageApiResponse['data'] | null>(null);
 	let errorMessage = $state<string | null>(null);
 	let rejectionAnalysis = $state<TriageAnalysis | null>(null);
+	let isSheetOpen = $state<boolean>(false);
 
 	function handleFileChange(event: Event) {
 		const target = event.target as HTMLInputElement;
@@ -36,24 +53,16 @@
 	}
 
 	function detectLocation() {
-		if (!('geolocation' in navigator)) {
-			locationStatus = 'Geolocation is not supported by your browser.';
-			return;
-		}
-
+		if (!('geolocation' in navigator)) return;
 		isLocating = true;
-		locationStatus = 'Acquiring GPS coordinates...';
-
 		navigator.geolocation.getCurrentPosition(
-			(position) => {
-				latitude = Number(position.coords.latitude.toFixed(6));
-				longitude = Number(position.coords.longitude.toFixed(6));
-				locationStatus = `GPS Locked: ${latitude}° N, ${longitude}° E (±${Math.round(position.coords.accuracy)}m)`;
+			(pos) => {
+				latitude = Number(pos.coords.latitude.toFixed(6));
+				longitude = Number(pos.coords.longitude.toFixed(6));
+				locationStatus = `${latitude}° N, ${longitude}° E`;
 				isLocating = false;
 			},
-			(error) => {
-				console.warn('Geolocation warning:', error.message);
-				locationStatus = `Using fallback anchor (Santa Cruz, Laguna): ${latitude}° N, ${longitude}° E`;
+			() => {
 				isLocating = false;
 			},
 			{ enableHighAccuracy: true, timeout: 8000 }
@@ -62,7 +71,7 @@
 
 	async function analyzeImage() {
 		if (!selectedFile) {
-			errorMessage = 'Please select or capture a road photo first.';
+			errorMessage = 'Select a photo first.';
 			return;
 		}
 
@@ -85,7 +94,7 @@
 			const jsonResponse: TriageApiResponse = await response.json();
 
 			if (!response.ok || !jsonResponse.success) {
-				errorMessage = jsonResponse.error || 'Failed to inspect image.';
+				errorMessage = jsonResponse.error || 'Inspection failed.';
 				if (response.status === 422 && (jsonResponse as any).analysis) {
 					rejectionAnalysis = (jsonResponse as any).analysis;
 				}
@@ -94,7 +103,7 @@
 
 			result = jsonResponse.data;
 		} catch (err: any) {
-			errorMessage = err?.message || 'Network error occurred while calling the triage engine.';
+			errorMessage = err?.message || 'Network error.';
 		} finally {
 			isAnalyzing = false;
 		}
@@ -110,82 +119,61 @@
 	}
 </script>
 
-<main class="min-h-screen bg-slate-950 text-slate-100 antialiased">
-	<!-- Top Navigation Bar -->
-	<header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-20">
-		<div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-			<div class="flex items-center gap-3">
-				<div class="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-lg">
-					S
-				</div>
-				<div>
-					<div class="flex items-center gap-2">
-						<span class="font-bold text-lg tracking-tight text-white">SuriOS</span>
-						<span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium">
-							SDG 9 Platform
-						</span>
-					</div>
-					<p class="text-[11px] text-slate-400">Autonomous Civil Infrastructure Triage & Dispatch</p>
-				</div>
-			</div>
-
-			<div class="hidden sm:flex items-center gap-4 text-xs text-slate-400">
-				<span class="flex items-center gap-1.5">
-					<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-					Gemini 3.5 Flash Active
-				</span>
-				<span class="text-slate-600">|</span>
-				<span>LSPU Santa Cruz Anchor</span>
-			</div>
-		</div>
-	</header>
-
-	<div class="max-w-5xl mx-auto px-4 py-8">
-		<!-- Hero Section -->
-		<div class="mb-8 text-center sm:text-left">
-			<h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">
-				Automated Road Defect Triage
+<div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+	<!-- Minimal Header -->
+	<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+		<div>
+			<h1 class="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+				Road Defect Triage
 			</h1>
-			<p class="text-sm sm:text-base text-slate-400 max-w-2xl">
-				Upload or photograph road hazards (potholes, cracks, drainage failures). Our multimodal vision engine classifies the distress (ASTM D6433), estimates Two-Wheeler Lethality, and generates municipal repair tickets.
+			<p class="text-xs text-muted-foreground mt-0.5">
+				ASTM D6433 civil distress classification and rider hazard index.
 			</p>
 		</div>
 
-		<!-- Interactive Diagnostic Grid -->
-		<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-			<!-- Left Column: Input & Capture -->
-			<div class="lg:col-span-5 space-y-5">
-				<!-- Photo Upload Card -->
-				<div class="rounded-xl border border-slate-800 bg-slate-900/40 p-5 shadow-sm">
-					<div class="flex items-center justify-between mb-3">
-						<h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
-							<CameraIcon class="w-4 h-4 text-emerald-400" />
-							1. Capture or Select Image
-						</h2>
-						{#if previewUrl}
-							<button
-								type="button"
-								onclick={resetForm}
-								class="text-xs text-slate-400 hover:text-rose-400 transition"
-							>
-								Clear
-							</button>
-						{/if}
-					</div>
+		<div class="flex items-center gap-2 text-xs">
+			<Badge variant="outline" class="font-normal text-muted-foreground border-border">
+				Santa Cruz Anchor
+			</Badge>
+			<Badge variant="secondary" class="font-normal">
+				ASTM D6433
+			</Badge>
+		</div>
+	</div>
 
+	<!-- Triage Canvas -->
+	<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" id="capture">
+		<!-- Left: Input & Image -->
+		<div class="lg:col-span-5 space-y-4">
+			<Card class="border border-border bg-card shadow-xs">
+				<CardHeader class="pb-3 flex flex-row items-center justify-between">
+					<CardTitle class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+						Evidence
+					</CardTitle>
 					{#if previewUrl}
-						<div class="relative rounded-lg overflow-hidden border border-slate-800 bg-slate-950 aspect-video mb-3 flex items-center justify-center">
-							<img src={previewUrl} alt="Road hazard preview" class="w-full h-full object-cover" />
+						<Button
+							variant="ghost"
+							size="sm"
+							onclick={resetForm}
+							class="text-xs text-muted-foreground hover:text-destructive h-6 px-1.5"
+						>
+							Clear
+						</Button>
+					{/if}
+				</CardHeader>
+
+				<CardContent class="space-y-4">
+					{#if previewUrl}
+						<div class="relative rounded-xl overflow-hidden border border-border bg-secondary/30 aspect-video flex items-center justify-center">
+							<img src={previewUrl} alt="Preview" class="w-full h-full object-cover" />
 						</div>
 					{:else}
 						<label
-							class="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-800 hover:border-slate-700 bg-slate-950/50 p-8 cursor-pointer transition group aspect-video"
+							class="flex flex-col items-center justify-center rounded-xl border border-dashed border-border hover:border-foreground/30 bg-secondary/15 hover:bg-secondary/30 p-8 cursor-pointer transition-colors aspect-video group"
 						>
-							<div class="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center text-slate-400 group-hover:text-emerald-400 transition mb-3">
-								<UploadIcon class="w-6 h-6" />
-							</div>
-							<p class="text-xs font-medium text-slate-300">Click to upload or take a photo</p>
-							<p class="text-[11px] text-slate-500 mt-1">JPEG, PNG, WebP up to 10MB</p>
+							<UploadIcon class="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors mb-2" />
+							<p class="text-xs font-medium text-foreground">Select road photo</p>
+							<p class="text-[11px] text-muted-foreground mt-0.5">JPEG, PNG, WebP</p>
 							<input
 								type="file"
 								accept="image/*"
@@ -196,225 +184,257 @@
 						</label>
 					{/if}
 
-					<!-- GPS Coordinates -->
-					<div class="mt-4 pt-4 border-t border-slate-800/80">
-						<div class="flex items-center justify-between mb-2">
-							<label class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-								<MapPinIcon class="w-3.5 h-3.5 text-sky-400" />
-								2. Geolocation Coordinates
-							</label>
+					<Separator class="my-1" />
+
+					<!-- Coordinates -->
+					<div class="space-y-1.5 text-xs">
+						<div class="flex items-center justify-between text-muted-foreground">
+							<span class="text-[11px] font-medium uppercase tracking-wider">Coordinates</span>
 							<button
 								type="button"
 								onclick={detectLocation}
 								disabled={isLocating}
-								class="text-[11px] font-medium text-sky-400 hover:text-sky-300 disabled:opacity-50 transition"
+								class="text-[11px] text-foreground hover:underline disabled:opacity-50"
 							>
-								{isLocating ? 'Locating...' : 'Detect GPS'}
+								{isLocating ? 'Locking...' : 'Detect GPS'}
 							</button>
 						</div>
 
-						<div class="grid grid-cols-2 gap-2 text-xs">
-							<div class="bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5">
-								<span class="text-slate-500 text-[10px] block">LATITUDE</span>
-								<span class="font-mono text-slate-200">{latitude}° N</span>
+						<div class="grid grid-cols-2 gap-2">
+							<div class="bg-secondary/30 border border-border rounded-lg p-2">
+								<span class="text-muted-foreground text-[10px] block">LAT</span>
+								<span class="font-mono text-foreground font-medium text-xs">{latitude}° N</span>
 							</div>
-							<div class="bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5">
-								<span class="text-slate-500 text-[10px] block">LONGITUDE</span>
-								<span class="font-mono text-slate-200">{longitude}° E</span>
+							<div class="bg-secondary/30 border border-border rounded-lg p-2">
+								<span class="text-muted-foreground text-[10px] block">LNG</span>
+								<span class="font-mono text-foreground font-medium text-xs">{longitude}° E</span>
 							</div>
 						</div>
-						<p class="text-[11px] text-slate-500 mt-1.5 truncate">{locationStatus}</p>
 					</div>
+				</CardContent>
 
-					<!-- Analyze Button -->
-					<div class="mt-5">
-						<button
-							type="button"
-							onclick={analyzeImage}
-							disabled={!selectedFile || isAnalyzing}
-							class="w-full h-10 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs tracking-wide uppercase flex items-center justify-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/10"
-						>
-							{#if isAnalyzing}
-								<Loader2Icon class="w-4 h-4 animate-spin" />
-								<span>Inspecting via Gemini...</span>
-							{:else}
-								<SparklesIcon class="w-4 h-4" />
-								<span>Run AI Civil Triage</span>
+				<CardFooter class="pt-0">
+					<Button
+						type="button"
+						onclick={analyzeImage}
+						disabled={!selectedFile || isAnalyzing}
+						class="w-full h-9 font-medium text-xs rounded-lg"
+					>
+						{#if isAnalyzing}
+							<Loader2Icon class="h-3.5 w-3.5 animate-spin mr-1.5" />
+							<span>Analyzing...</span>
+						{:else}
+							<span>Run Triage</span>
+						{/if}
+					</Button>
+				</CardFooter>
+			</Card>
+		</div>
+
+		<!-- Right: Results -->
+		<div class="lg:col-span-7">
+			{#if isAnalyzing}
+				<Card class="border border-border bg-card p-10 text-center flex flex-col items-center justify-center min-h-[380px] shadow-xs">
+					<Loader2Icon class="h-6 w-6 animate-spin text-muted-foreground mb-3" />
+					<h3 class="text-xs font-semibold text-foreground uppercase tracking-wider">Classifying Distress</h3>
+					<p class="text-xs text-muted-foreground max-w-xs mt-1">
+						Extracting ASTM D6433 metrics and calculating lethality index...
+					</p>
+				</Card>
+			{:else if errorMessage}
+				<Alert variant="destructive" class="min-h-[380px] flex flex-col justify-center p-6 bg-card border-destructive/40">
+					<AlertTriangleIcon class="h-4 w-4 text-destructive" />
+					<AlertTitle class="text-xs font-semibold uppercase tracking-wider mt-1">Notice</AlertTitle>
+					<AlertDescription class="text-xs mt-1.5 space-y-2">
+						<p class="text-foreground">{errorMessage}</p>
+						{#if rejectionAnalysis}
+							<p class="text-muted-foreground text-[11px]">{rejectionAnalysis.rejectionReason}</p>
+						{/if}
+					</AlertDescription>
+				</Alert>
+			{:else if result}
+				<Card class="border border-border bg-card shadow-xs space-y-4 p-5">
+					<!-- Top Meta -->
+					<div class="flex items-center justify-between pb-3 border-b border-border text-xs">
+						<div class="flex items-center gap-2">
+							<span class="font-semibold text-foreground">Defect Cataloged</span>
+							{#if result.reportId}
+								<span class="font-mono text-muted-foreground text-[10px]">
+									#{result.reportId.slice(0, 8)}
+								</span>
 							{/if}
-						</button>
+						</div>
+						<Badge variant="outline" class="text-[11px] font-normal border-border">
+							Urgency: {result.analysis.urgency}
+						</Badge>
 					</div>
-				</div>
-			</div>
 
-			<!-- Right Column: Results & Triage Payload -->
-			<div class="lg:col-span-7">
-				{#if isAnalyzing}
-					<div class="rounded-xl border border-slate-800 bg-slate-900/30 p-10 text-center flex flex-col items-center justify-center min-h-[360px]">
-						<div class="w-12 h-12 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin mb-4"></div>
-						<h3 class="text-sm font-semibold text-white mb-1">Processing Road Multimodal Vision</h3>
-						<p class="text-xs text-slate-400 max-w-sm">
-							Extracting ASTM D6433 defect distress types, calculating Two-Wheeler Lethality Index, and formulating crew materials...
-						</p>
+					<!-- Two-Wheeler Hazard Banner -->
+					<div class="rounded-xl border p-3.5 flex items-start gap-3 {
+						result.analysis.vruLethality === 'CRITICAL' || result.analysis.vruLethality === 'HIGH'
+							? 'bg-destructive/10 border-destructive/30 text-destructive'
+							: result.analysis.vruLethality === 'MODERATE'
+								? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
+								: 'bg-secondary/40 border-border text-foreground'
+					}">
+						<BikeIcon class="h-4 w-4 shrink-0 mt-0.5 text-current" />
+						<div class="space-y-0.5 text-xs">
+							<p class="font-semibold uppercase tracking-wide">
+								Two-Wheeler Hazard: {result.analysis.vruLethality}
+							</p>
+							<p class="text-foreground opacity-90 text-[11px] leading-relaxed">
+								{result.analysis.vruDetails}
+							</p>
+						</div>
 					</div>
-				{:else if errorMessage}
-					<div class="rounded-xl border border-rose-900/40 bg-rose-950/20 p-6 text-slate-200 min-h-[360px]">
-						<div class="flex items-start gap-3">
-							<AlertTriangleIcon class="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-							<div>
-								<h3 class="text-sm font-bold text-rose-300">Triage Rejection / Error</h3>
-								<p class="text-xs text-rose-200/80 mt-1">{errorMessage}</p>
-								{#if rejectionAnalysis}
-									<div class="mt-4 p-3 rounded-lg bg-rose-950/40 border border-rose-900/30 text-xs space-y-1">
-										<p class="font-semibold text-rose-300">Spam / Non-Infrastructure Filter Activated:</p>
-										<p class="text-rose-200/90">{rejectionAnalysis.rejectionReason}</p>
+
+					<!-- Segmented Tabs -->
+					<Tabs value="overview" class="w-full">
+						<TabsList class="grid w-full grid-cols-3 h-8 bg-secondary/40 p-0.5 rounded-lg">
+							<TabsTrigger value="overview" class="text-xs">Overview</TabsTrigger>
+							<TabsTrigger value="astm" class="text-xs">ASTM Specs</TabsTrigger>
+							<TabsTrigger value="dispatch" class="text-xs">Materials</TabsTrigger>
+						</TabsList>
+
+						<!-- Tab 1: Overview -->
+						<TabsContent value="overview" class="space-y-3 pt-3">
+							<div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+								<div class="rounded-lg bg-secondary/30 border border-border p-3 space-y-0.5">
+									<span class="text-[10px] text-muted-foreground uppercase tracking-wider block">Severity</span>
+									<div class="flex items-baseline gap-1">
+										<span class="text-xl font-bold text-foreground">{result.analysis.hazardSeverity}</span>
+										<span class="text-xs text-muted-foreground">/ 10</span>
 									</div>
-								{/if}
-							</div>
-						</div>
-					</div>
-				{:else if result}
-					<div class="rounded-xl border border-slate-800 bg-slate-900/40 p-6 space-y-5 shadow-sm">
-						<!-- Top Status Bar -->
-						<div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-800">
-							<div class="flex items-center gap-2">
-								<CheckCircleIcon class="w-4 h-4 text-emerald-400" />
-								<span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-									Ticket Created & Saved
-								</span>
-								{#if result.reportId}
-									<span class="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-										#{result.reportId.slice(0, 8)}
+									<Badge
+										variant={result.analysis.riskLevel === 'CRITICAL' ? 'destructive' : 'secondary'}
+										class="text-[9px] h-4 px-1"
+									>
+										{result.analysis.riskLevel}
+									</Badge>
+								</div>
+
+								<div class="rounded-lg bg-secondary/30 border border-border p-3 space-y-0.5">
+									<span class="text-[10px] text-muted-foreground uppercase tracking-wider block">Distress</span>
+									<span class="text-xs font-semibold text-foreground capitalize block truncate">
+										{result.analysis.distressType.replace(/_/g, ' ')}
 									</span>
-								{/if}
-							</div>
+									<span class="text-[10px] text-muted-foreground block font-mono">D6433</span>
+								</div>
 
-							<div class="flex items-center gap-2 text-xs">
-								<span class="text-slate-400">Urgency:</span>
-								<span class="font-semibold text-white px-2 py-0.5 rounded bg-slate-800 text-[11px]">
-									{result.analysis.urgency}
-								</span>
-							</div>
-						</div>
-
-						<!-- Two-Wheeler Lethality Alert (The Differentiator) -->
-						<div class="rounded-lg border p-3.5 flex items-start gap-3 {
-							result.analysis.vruLethality === 'CRITICAL' || result.analysis.vruLethality === 'HIGH'
-								? 'bg-rose-950/30 border-rose-800/60 text-rose-200'
-								: result.analysis.vruLethality === 'MODERATE'
-									? 'bg-amber-950/30 border-amber-800/60 text-amber-200'
-									: 'bg-emerald-950/30 border-emerald-800/60 text-emerald-200'
-						}">
-							<BikeIcon class="w-5 h-5 shrink-0 mt-0.5" />
-							<div>
-								<div class="flex items-center gap-2">
-									<h4 class="text-xs font-bold uppercase tracking-wide">
-										Two-Wheeler Lethality: {result.analysis.vruLethality} RISK
-									</h4>
-									<span class="text-[10px] px-1.5 py-0.2 rounded bg-black/40 font-mono">
-										VRU Safety Profile
+								<div class="rounded-lg bg-secondary/30 border border-border p-3 space-y-0.5 col-span-2 sm:col-span-1">
+									<span class="text-[10px] text-muted-foreground uppercase tracking-wider block">Dimensions</span>
+									<span class="text-xs font-mono text-foreground block truncate">
+										{result.analysis.estimatedDimensions.depthEstimate} deep
+									</span>
+									<span class="text-[10px] text-muted-foreground block truncate font-mono">
+										{result.analysis.estimatedDimensions.surfaceAreaEstimate}
 									</span>
 								</div>
-								<p class="text-xs mt-1 opacity-90 leading-relaxed">
-									{result.analysis.vruDetails}
+							</div>
+
+							<div class="p-3 rounded-lg bg-secondary/20 border border-border space-y-1">
+								<span class="text-[10px] text-muted-foreground uppercase tracking-wider block">Assessment</span>
+								<p class="text-xs text-foreground leading-relaxed">
+									{result.analysis.summary}
 								</p>
 							</div>
-						</div>
+						</TabsContent>
 
-						<!-- Key Metrics Grid -->
-						<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-							<!-- Severity Index -->
-							<div class="rounded-lg bg-slate-950 border border-slate-800 p-3">
-								<span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
-									Hazard Severity
-								</span>
-								<div class="flex items-baseline gap-1.5">
-									<span class="text-2xl font-black text-white">{result.analysis.hazardSeverity}</span>
-									<span class="text-xs text-slate-500">/ 10</span>
+						<!-- Tab 2: ASTM Specs -->
+						<TabsContent value="astm" class="space-y-2 pt-3 text-xs">
+							<div class="rounded-lg bg-secondary/20 border border-border p-3 divide-y divide-border">
+								<div class="flex items-center justify-between py-1.5">
+									<span class="text-muted-foreground">Standard</span>
+									<span class="font-mono text-foreground">ASTM D6433</span>
 								</div>
-								<span class="text-[10px] font-medium {
-									result.analysis.riskLevel === 'CRITICAL'
-										? 'text-rose-400'
-										: result.analysis.riskLevel === 'MODERATE'
-											? 'text-amber-400'
-											: 'text-emerald-400'
-								}">
-									{result.analysis.riskLevel} TIER
-								</span>
+								<div class="flex items-center justify-between py-1.5">
+									<span class="text-muted-foreground">Severity Level</span>
+									<span class="font-mono text-foreground">{result.analysis.riskLevel}</span>
+								</div>
+								<div class="flex items-center justify-between py-1.5">
+									<span class="text-muted-foreground">Location</span>
+									<span class="font-mono text-foreground">{latitude}° N, {longitude}° E</span>
+								</div>
 							</div>
+						</TabsContent>
 
-							<!-- Distress Type -->
-							<div class="rounded-lg bg-slate-950 border border-slate-800 p-3">
-								<span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
-									Classification
-								</span>
-								<span class="text-sm font-bold text-white capitalize block truncate">
-									{result.analysis.distressType.replace(/_/g, ' ')}
-								</span>
-								<span class="text-[10px] text-slate-500">ASTM D6433 Standard</span>
-							</div>
+						<!-- Tab 3: Materials -->
+						<TabsContent value="dispatch" class="space-y-3 pt-3 text-xs">
+							<div class="rounded-lg bg-secondary/20 border border-border p-3 space-y-2">
+								<p class="font-medium text-foreground">
+									{result.analysis.recommendedAction}
+								</p>
 
-							<!-- Dimensions -->
-							<div class="rounded-lg bg-slate-950 border border-slate-800 p-3 col-span-2 sm:col-span-1">
-								<span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
-									Est. Dimensions
-								</span>
-								<span class="text-xs font-mono text-slate-200 block truncate">
-									Depth: {result.analysis.estimatedDimensions.depthEstimate}
-								</span>
-								<span class="text-[10px] text-slate-400 block truncate">
-									Area: {result.analysis.estimatedDimensions.surfaceAreaEstimate}
-								</span>
-							</div>
-						</div>
-
-						<!-- Engineering Summary -->
-						<div class="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800">
-							<span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-								Engineering Assessment Summary
-							</span>
-							<p class="text-xs text-slate-300 leading-relaxed">
-								{result.analysis.summary}
-							</p>
-						</div>
-
-						<!-- Recommended Action & Materials -->
-						<div class="p-3.5 rounded-lg bg-slate-950/70 border border-slate-800 space-y-2">
-							<div class="flex items-center gap-1.5 text-emerald-400 text-xs font-bold">
-								<WrenchIcon class="w-3.5 h-3.5" />
-								<span>Public Works Dispatch Specification:</span>
-							</div>
-							<p class="text-xs text-slate-200 font-medium">
-								{result.analysis.recommendedAction}
-							</p>
-
-							{#if result.analysis.materialsChecklist && result.analysis.materialsChecklist.length > 0}
-								<div class="pt-2">
-									<span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
-										Crew Equipment & Materials Checklist:
-									</span>
-									<ul class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-slate-300">
+								{#if result.analysis.materialsChecklist && result.analysis.materialsChecklist.length > 0}
+									<Separator class="my-1.5" />
+									<ul class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-muted-foreground">
 										{#each result.analysis.materialsChecklist as item}
-											<li class="flex items-center gap-1.5">
-												<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-												<span>{item}</span>
+											<li class="p-1.5 rounded bg-card border border-border text-foreground">
+												{item}
 											</li>
 										{/each}
 									</ul>
+								{/if}
+							</div>
+						</TabsContent>
+					</Tabs>
+
+					<!-- Bottom Action -->
+					<div class="pt-2 flex items-center justify-end border-t border-border">
+						<Sheet bind:open={isSheetOpen}>
+							<SheetTrigger>
+								<Button size="sm" class="h-8 text-xs font-medium gap-1">
+									<span>Dispatch Work Order</span>
+									<ArrowRightIcon class="h-3 w-3" />
+								</Button>
+							</SheetTrigger>
+							<SheetContent side="right" class="w-full sm:max-w-md bg-card border-border p-6 space-y-4">
+								<SheetHeader>
+									<SheetTitle class="text-sm font-bold text-foreground">
+										Municipal Dispatch Order
+									</SheetTitle>
+									<SheetDescription class="text-xs text-muted-foreground">
+										Civil maintenance work order generated by SuriOS.
+									</SheetDescription>
+								</SheetHeader>
+
+								<Separator />
+
+								<div class="space-y-3 text-xs">
+									<div class="p-2.5 rounded bg-secondary/40 border border-border">
+										<span class="text-[10px] text-muted-foreground block">TICKET</span>
+										<span class="font-mono font-semibold text-foreground">
+											#{result.reportId || 'AUTO-GEN'}
+										</span>
+									</div>
+									<div>
+										<span class="text-[10px] text-muted-foreground block">LOCATION</span>
+										<p class="font-mono text-foreground">{latitude}° N, {longitude}° E</p>
+									</div>
+									<div>
+										<span class="text-[10px] text-muted-foreground block">ACTION</span>
+										<p class="text-foreground mt-0.5">{result.analysis.recommendedAction}</p>
+									</div>
 								</div>
-							{/if}
-						</div>
+
+								<SheetFooter class="pt-2">
+									<Button class="w-full text-xs h-8" onclick={() => isSheetOpen = false}>
+										Confirm Dispatch
+									</Button>
+								</SheetFooter>
+							</SheetContent>
+						</Sheet>
 					</div>
-				{:else}
-					<!-- Empty State Placeholder -->
-					<div class="rounded-xl border border-dashed border-slate-800 bg-slate-900/20 p-10 text-center flex flex-col items-center justify-center min-h-[360px]">
-						<ShieldAlertIcon class="w-10 h-10 text-slate-700 mb-3" />
-						<h3 class="text-sm font-semibold text-slate-300 mb-1">AI Triage Results Standby</h3>
-						<p class="text-xs text-slate-500 max-w-sm">
-							Select or capture an image on the left and click "Run AI Civil Triage" to execute multimodal road distress classification.
-						</p>
-					</div>
-				{/if}
-			</div>
+				</Card>
+			{:else}
+				<Card class="border border-dashed border-border bg-card/30 p-10 text-center flex flex-col items-center justify-center min-h-[380px] shadow-xs">
+					<ShieldAlertIcon class="h-5 w-5 text-muted-foreground/60 mb-2" />
+					<h3 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Triage Standby</h3>
+					<p class="text-xs text-muted-foreground mt-1 max-w-xs">
+						Capture a pavement defect to classify distress.
+					</p>
+				</Card>
+			{/if}
 		</div>
 	</div>
-</main>
+</div>
