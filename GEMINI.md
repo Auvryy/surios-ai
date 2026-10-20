@@ -62,11 +62,20 @@ You must strictly preserve this technology stack. Do **not** suggest, introduce,
 
 ---
 
-## 4. Git & Workflow Protocols (CRITICAL)
+## 4. Git, Workspace & Workflow Protocols (CRITICAL)
 
-All agents and contributors must strictly adhere to these git rules:
+All agents and contributors must strictly adhere to these operational boundaries:
 
-1. **Branching Strategy:**
+1. **Strict Workspace Isolation:**
+   - **Stay inside the project:** The agent must operate strictly within `/home/andy/Projects/surios-ai`.
+   - **Never explore external directories:** Do NOT read, search, modify, or create files in parent directories (such as `/home/andy`, other projects in `/home/andy/Projects/`, or system folders) unless explicitly instructed by the user.
+
+2. **Sensitive File Protection & Gitignore Hygiene:**
+   - **Zero Secrets Policy:** Never commit, stage, or push credentials, tokens, or environment files (`.env`, `.env.local`, `.env.*`, private certificates, SSH keys).
+   - Always verify `.gitignore` before creating or committing new file patterns.
+   - If an environment template is needed, document the variable in `.env.example` with empty dummy values.
+
+3. **Branching Strategy:**
    - **Never code directly on `main`** unless initializing a fresh, empty repository.
    - Always create a dedicated branch before working on a task or feature:
      - Feature branches: `feat/<feature-name>` (e.g., `feat/triage-api-route`)
@@ -74,7 +83,7 @@ All agents and contributors must strictly adhere to these git rules:
      - Chore / Docs branches: `chore/<task-name>` or `docs/<doc-name>`
    - Only touch and add files relevant to the active task.
 
-2. **Commit Hygiene:**
+4. **Commit Hygiene:**
    - Break changes down into **small, logical, atomic commits**.
    - Commit messages must be concise, natural, and human-worded:
      - ✅ `feat: add zod schema for civil triage analysis`
@@ -82,7 +91,7 @@ All agents and contributors must strictly adhere to these git rules:
      - ❌ `WIP stuff`
      - ❌ `update code`
 
-3. **Pushing Policy (STRICT):**
+5. **Pushing Policy (STRICT):**
    - **DO NOT PUSH AUTOMATICALLY.** The agent must NEVER run `git push`.
    - The user will review and push manually.
    - When finishing a task or commit, the agent must provide a single-line, copy-pastable terminal command in this exact format:

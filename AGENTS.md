@@ -4,27 +4,35 @@ Welcome to **SuriOS**. Before performing any coding or modifications in this pro
 
 ---
 
-## ⚡ The 5 Golden Rules for Every Agent
+## ⚡ The 7 Golden Rules for Every Agent
 
-1. **Svelte 5 Runes Only:**
+1. **Strict Workspace Isolation:**
+   - Stay strictly inside `/home/andy/Projects/surios-ai`.
+   - Never inspect, search, modify, or create files in parent directories or other projects unless explicitly asked by the user.
+
+2. **Sensitive File & Secret Shielding:**
+   - Never commit, stage, or push credentials, keys, or environment files (`.env`, `.env.*`).
+   - Always confirm `.gitignore` coverage before adding files.
+
+3. **Svelte 5 Runes Only:**
    - Use `$state`, `$derived`, `$effect`, `$props`, `$bindable`.
-   - Never use Svelte 3/4 stores (`writable`) or `export let`.
+   - Never use legacy Svelte 3/4 stores (`writable`) or `export let`.
 
-2. **Branch Before You Code:**
+4. **Branch Before You Code:**
    - Check out a new branch (`feat/<name>`, `fix/<name>`, `chore/<name>`) before writing any code.
    - Do not commit directly to `main`.
 
-3. **Break Down Commits:**
+5. **Break Down Commits:**
    - Keep commits small, atomic, and focused.
    - Use concise, human commit messages (`feat: ...`, `fix: ...`, `chore: ...`).
 
-4. **DO NOT PUSH AUTOMATICALLY:**
+6. **DO NOT PUSH AUTOMATICALLY:**
    - The user pushes code manually.
-   - Output a single-line copy-pastable push command at the end of your response:
+   - Always output a single-line copy-pastable push command at the end of your response:
      ```bash
      cd /home/andy/Projects/surios-ai && git push -u origin <branch-name>
      ```
 
-5. **Security & API Keys:**
+7. **Security & API Keys:**
    - Keep `GEMINI_API_KEY` strictly on the server (`+server.ts` or `$env/static/private`).
-   - Never commit `.env`.
+   - Never expose API keys in client-side code.
