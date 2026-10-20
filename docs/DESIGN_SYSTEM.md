@@ -20,6 +20,12 @@ SuriOS rejects all forms of generic, over-stylized "AI slop" in favor of the aut
 4. **🌓 Dual-Mode Equality (Light & Dark Parity):**
    * Both Dark Mode and Light Mode are first-class citizens.
    * Every component is mapped to semantic OKLCH CSS variables, ensuring 100% visual contrast and aesthetic beauty in bright Philippine daylight as well as night road operations.
+5. **🚫 NO Status / Green Dots:**
+   * **Rule:** Do not use decorative green status dots, pulsing circles, or colored indicator dots (`rounded-full bg-emerald-500`).
+   * **Affordance:** Status is communicated through clean, quiet badges (`Badge variant="secondary"` or `Badge variant="outline"`) and legible typography, not gimmicky dots.
+6. **✂️ Extreme Minimalism & Zero Unnecessary Words:**
+   * **Rule:** Strictly eliminate marketing fluff, repetitive sentences, and wordy explanations.
+   * **Copy Standard:** Keep all labels, headers, and descriptions terse, functional, and minimal. If a label can be expressed in 2 words instead of a paragraph, use 2 words.
 
 ---
 

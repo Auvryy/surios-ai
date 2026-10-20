@@ -104,8 +104,8 @@
 
 	{#if submitted}
 		<Card class="border border-border bg-card p-8 text-center space-y-4">
-			<div class="h-12 w-12 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto">
-				<CheckCircleIcon class="h-6 w-6" />
+			<div class="h-10 w-10 rounded-full bg-secondary text-foreground flex items-center justify-center mx-auto">
+				<CheckCircleIcon class="h-5 w-5" />
 			</div>
 			<div class="space-y-1">
 				<h2 class="text-base font-bold text-foreground">Report Dispatched Successfully</h2>

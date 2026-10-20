@@ -134,11 +134,11 @@
 		</Card>
 
 		<Card class="border border-border bg-card p-4 space-y-1 shadow-xs">
-			<div class="flex items-center justify-between text-emerald-500 text-xs font-medium">
+			<div class="flex items-center justify-between text-muted-foreground text-xs font-medium">
 				<span>Proof of Patch Audited</span>
 				<CheckCircleIcon class="h-3.5 w-3.5" />
 			</div>
-			<div class="text-2xl font-bold text-emerald-500">8</div>
+			<div class="text-2xl font-bold text-foreground">8</div>
 			<p class="text-[11px] text-muted-foreground">Gemini vision verified closure</p>
 		</Card>
 	</div>
@@ -177,7 +177,7 @@
 			<Button
 				variant={filter === 'RESOLVED' ? 'secondary' : 'ghost'}
 				size="sm"
-				class="h-7 text-xs px-2.5 rounded-md text-emerald-500"
+				class="h-7 text-xs px-2.5 rounded-md"
 				onclick={() => filter = 'RESOLVED'}
 			>
 				Resolved

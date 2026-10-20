@@ -1,12 +1,30 @@
 import { GoogleGenAI } from '@google/genai';
+import fs from 'node:fs';
+import path from 'node:path';
 import { TriageAnalysisSchema, type TriageAnalysis } from '$lib/types/triage.js';
 
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-	console.warn('[Gemini Service] Warning: GEMINI_API_KEY environment variable is not set.');
-}
+function getApiKey(): string {
+	if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '') {
+		return process.env.GEMINI_API_KEY.trim();
+	}
 
-const ai = new GoogleGenAI({ apiKey: apiKey || '' });
+	try {
+		const envPath = path.resolve('.env');
+		if (fs.existsSync(envPath)) {
+			const content = fs.readFileSync(envPath, 'utf8');
+			const match = content.match(/GEMINI_API_KEY=["']?([^"'\r\n]+)/);
+			if (match && match[1]) {
+				const key = match[1].trim();
+				process.env.GEMINI_API_KEY = key;
+				return key;
+			}
+		}
+	} catch (e) {
+		console.warn('[Gemini Service] Could not read .env:', e);
+	}
+
+	return '';
+}
 
 const SYSTEM_PROMPT = `
 You are the Chief Civil Infrastructure & Road Distress Inspector for SuriOS (aligned with UN SDG 9: Industry, Innovation, and Infrastructure).
@@ -41,12 +59,14 @@ export async function analyzeRoadDistress(
 	imageBuffer: Buffer,
 	mimeType: string
 ): Promise<TriageAnalysis> {
+	const apiKey = getApiKey();
 	if (!apiKey) {
-		throw new Error('GEMINI_API_KEY is not configured on the server.');
+		throw new Error('GEMINI_API_KEY is not configured on the server. Please verify your .env file contains a valid GEMINI_API_KEY.');
 	}
 
+	const ai = new GoogleGenAI({ apiKey });
 	const base64Data = imageBuffer.toString('base64');
-	const modelsToTry = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-pro'];
+	const modelsToTry = ['gemini-flash-lite-latest', 'gemini-flash-latest', 'gemini-3.8-flash'];
 
 	let lastError: Error | null = null;
 
@@ -70,26 +90,26 @@ export async function analyzeRoadDistress(
 				}
 			});
 
-			const rawText = response.text?.trim();
-			if (!rawText) {
-				throw new Error('Received empty response from Gemini Vision API.');
+			const responseText = response.text;
+			if (!responseText) {
+				throw new Error(`Empty response from Gemini vision model ${modelName}`);
 			}
 
-			const parsedJson = JSON.parse(rawText);
-			const validated = TriageAnalysisSchema.parse(parsedJson);
+			// Clean possible markdown code fences if model wrapped response
+			const cleanedJson = responseText
+				.replace(/^```json\s*/i, '')
+				.replace(/^```\s*/i, '')
+				.replace(/```\s*$/i, '')
+				.trim();
 
-			// Deterministic clamping on hazard severity (1-10)
-			validated.hazardSeverity = Math.min(Math.max(Math.round(validated.hazardSeverity), 1), 10);
-
-			return validated;
+			const parsedData = JSON.parse(cleanedJson);
+			const validatedAnalysis = TriageAnalysisSchema.parse(parsedData);
+			return validatedAnalysis;
 		} catch (err: any) {
 			console.warn(`[Gemini Service] Model ${modelName} failed:`, err?.message || err);
 			lastError = err;
-			// Continue to next fallback model
 		}
 	}
 
-	throw new Error(
-		`Failed to analyze image with Gemini vision models: ${lastError?.message || 'Unknown error'}`
-	);
+	throw new Error(`All vision models failed. Last error: ${lastError?.message || 'Unknown Gemini error'}`);
 }

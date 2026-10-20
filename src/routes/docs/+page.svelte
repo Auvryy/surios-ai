@@ -57,6 +57,14 @@
 					<p class="font-semibold text-foreground">🌓 Dual-Mode Equality</p>
 					<p>100% feature and visual parity between light and dark modes via semantic OKLCH tokens.</p>
 				</div>
+				<div class="p-3.5 rounded-xl bg-secondary/30 border border-border space-y-1">
+					<p class="font-semibold text-foreground">🚫 No Status Dots</p>
+					<p>Zero pulsing green or colored dots. State is expressed purely through clean text and subtle badges.</p>
+				</div>
+				<div class="p-3.5 rounded-xl bg-secondary/30 border border-border space-y-1 sm:col-span-2">
+					<p class="font-semibold text-foreground">✂️ Minimalist Copy</p>
+					<p>Zero marketing fluff or unnecessary words. Terse, functional, high-density civic communication.</p>
+				</div>
 			</div>
 		</CardContent>
 	</Card>
