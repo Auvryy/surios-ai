@@ -3,27 +3,43 @@
 
 ---
 
-## 1. Design Philosophy & Civic-Tech Vision
+## 1. Zero AI-Slop Design Charter
 
-**SuriOS** bridges the gap between field citizen reporting and municipal maintenance operations (LGUs / DPWH). The design system must serve two distinct user environments:
-1. **The Field Environment (Riders & Citizen Inspectors):** High-glare tropical sunlight, vibration, and one-handed operation on mobile devices while wearing motorcycle gloves or standing roadside.
-2. **The Operations Center (Municipal Dispatchers & Civil Engineers):** Dense, multi-screen GIS mapping environments requiring instant visual triage, zero cognitive clutter, and high-contrast alert hierarchies.
+SuriOS rejects all forms of generic, over-stylized "AI slop" in favor of the authentic, austere, institutional craft of **shadcn-ui**.
 
-### Core Visual Principles
-* **Institutional Authority without Bureaucracy:** Clean, austere, data-dense layouts reminiscent of high-precision aerospace and civil telemetry software, rather than generic SaaS.
-* **Vulnerable Road User (VRU) Priority Hierarchy:** Fatal road hazards (potholes, rutting, alligator cracks) for two-wheelers (motorcycles, scooters, tricycles) are instantly flagged with unmissable crimson/amber visual affordances.
-* **Radical Clarity in Evidence:** Civil work orders require incontrovertible proof. Every defect displays ASTM D6433 distress codes, geodetic coordinates, and Gemini AI confidence telemetry.
+### The Non-Negotiable Directives:
+1. **🚫 Strictly NO Gradients:**
+   * **Rule:** No background radial gradients, no linear gradient cards, no gradient borders, and no gradient text fills (`bg-gradient-to-...` is strictly forbidden).
+   * **Justification:** Real municipal civil engineering telemetry and institutional dispatch software use flat, clean, solid surfaces. Gradients look like uncurated marketing templates and decrease contrast under outdoor tropical sunlight.
+2. **🚫 Strictly NO Excessive / Glowing Shadows:**
+   * **Rule:** No neon-colored drop shadows (`shadow-emerald-500/20`), no blurry elevation, and no glowing borders.
+   * **Affordance:** Surfaces are articulated cleanly and crisply using subtle 1px border strokes (`border border-border`) and matte surface elevation (`bg-card`, `bg-secondary`).
+3. **✨ Soft Typography (Anti-"Nerd Font" Policy):**
+   * **Rule:** The primary interface font is a soft, human, highly legible modern sans-serif stack (**Inter / system-ui**).
+   * **Monospace Usage:** Monospace typography (`font-mono`) is strictly quarantined to technical data values where fixed-width alignment is functionally necessary: geodetic coordinates (`14.2813° N, 121.4173° E`), ASTM standard codes (`ASTM-D6433-20`), and municipal ticket IDs (`#TKT-7821`). The rest of the UI uses clean, gentle, soft typography.
+4. **🌓 Dual-Mode Equality (Light & Dark Parity):**
+   * Both Dark Mode and Light Mode are first-class citizens.
+   * Every component is mapped to semantic OKLCH CSS variables, ensuring 100% visual contrast and aesthetic beauty in bright Philippine daylight as well as night road operations.
 
 ---
 
-## 2. Component Architecture: shadcn-svelte & Bits UI
+## 2. Visual Reference & Gold Standard
+
+SuriOS visual design is directly modeled after the official shadcn-ui gold standard:
+* **Dark Mode Foundation:** Deep matte black foundation (`#09090b` / `oklch(0.1 0 0)`), elevated card surfaces (`#18181b` / `oklch(0.135 0 0)`), crisp micro-borders (`#27272a` / `oklch(0.23 0 0)`), and soft white text (`#fafafa`).
+* **Light Mode Foundation:** Pure white canvas (`#ffffff`), soft zinc elevated cards (`#ffffff` / `#fcfcfc`), soft borders (`#e4e4e7`), and deep charcoal text (`#09090b`).
+* **Micro-Affordances:** Rounded corners (`rounded-xl` and `rounded-2xl`), pill badges, segmented tab switchers, and subtle status dots (`● Connected`).
+
+---
+
+## 3. Component Architecture: shadcn-svelte & Bits UI
 
 SuriOS standardizes on **shadcn-svelte** built on top of **Bits UI** primitives and **Tailwind CSS v4**'s CSS-first `@theme` engine.
 
 ```
 ┌────────────────────────────────────────────────────────┐
 │               SuriOS Domain Views                      │
-│   (/report, /dashboard, /api/triage visualizer)        │
+│   (/ [Triage], /report [Field], /dashboard [GIS Map])  │
 └───────────────────────────┬────────────────────────────┘
                             │
 ┌───────────────────────────▼────────────────────────────┐
@@ -43,72 +59,36 @@ SuriOS standardizes on **shadcn-svelte** built on top of **Bits UI** primitives 
 └────────────────────────────────────────────────────────┘
 ```
 
-### Installed UI Component Catalog (`$lib/components/ui/`)
+### Component Catalog (`$lib/components/ui/`)
 
-| Component | Path | SuriOS Use Case |
+| Component | Path | Purpose |
 | :--- | :--- | :--- |
-| **`Card`** | `$lib/components/ui/card` | Triage results container, defect telemetry widgets, photo preview frames. |
-| **`Button`** | `$lib/components/ui/button` | "Run AI Civil Triage", "Acquire GPS", "Dispatch Crew", camera triggers. |
-| **`Badge`** | `$lib/components/ui/badge` | ASTM D6433 distress pills, Severity gauges (1–10), Status flags (`REPORTED`, `DISPATCHED`, `RESOLVED`). |
-| **`Input`** | `$lib/components/ui/input` | Coordinate overrides, search bars, dispatcher notes. |
-| **`Alert`** | `$lib/components/ui/alert` | Urgent Two-Wheeler Lethality & Rider Safety warnings. |
-| **`Sheet`** | `$lib/components/ui/sheet` | Slide-over Municipal Maintenance Dispatch Drawer on the GIS map. |
-| **`Dialog`** | `$lib/components/ui/dialog` | Gemini "Proof of Patch" verification modal and high-res image inspector. |
-| **`Tabs`** | `$lib/components/ui/tabs` | Switching between Triage Overview, Materials Checklist, and Raw Telemetry. |
-| **`Separator`** | `$lib/components/ui/separator` | Clean horizontal/vertical dividing lines between civic data sections. |
+| **`Card`** | `$lib/components/ui/card` | Flat matte surfaces for evidence capture, KPI statistics, and triage telemetry. |
+| **`Button`** | `$lib/components/ui/button` | Flat action triggers (`default`, `secondary`, `outline`, `ghost`, `destructive`). |
+| **`Badge`** | `$lib/components/ui/badge` | ASTM distress codes, severity tiers, and status pills. |
+| **`Tabs`** | `$lib/components/ui/tabs` | Segmented tab views (`Overview`, `ASTM Telemetry`, `Materials & Dispatch`). |
+| **`Sheet`** | `$lib/components/ui/sheet` | Slide-over drawer for municipal maintenance work orders. |
+| **`Dialog`** | `$lib/components/ui/dialog` | Gemini "Proof of Patch" inspection modals. |
+| **`Alert`** | `$lib/components/ui/alert` | High-contrast Two-Wheeler Lethality warnings. |
+| **`Separator`** | `$lib/components/ui/separator` | 1px horizontal and vertical dividing rules. |
 
 ---
 
-## 3. Color Tokens & Theme Architecture
+## 4. Color Tokens (OKLCH Semantic Palette)
 
-SuriOS uses an **OKLCH-based Dark-First Civic Theme** configured via Tailwind CSS v4 `@theme inline` in `src/routes/layout.css`.
-
-### Semantic Color Palette
-
-| Token Name | OKLCH Value / Hex | Usage in SuriOS |
-| :--- | :--- | :--- |
-| **Background** | `oklch(0.13 0.012 250)` | Deep midnight slate foundation for maximum contrast and low OLED battery draw. |
-| **Card Surface** | `oklch(0.16 0.015 250)` | Elevated surfaces for triage panels and telemetry cards. |
-| **Border / Stroke**| `oklch(0.25 0.015 250)` | Subtle, crisp separation lines (`border-border`). |
-| **Primary (SDG 9)**| `oklch(0.65 0.18 160)` | **Emerald Transit Green:** Primary CTAs, approved dispatch actions, verified patches. |
-| **Destructive / Lethal** | `oklch(0.55 0.22 25)` | **Crimson Alert:** High/Critical Two-Wheeler Lethality, potholes $>50$mm deep. |
-| **Warning / Moderate** | `oklch(0.75 0.16 65)` | **Civil Amber:** Moderate distress (alligator cracking, block cracking, ravelling). |
-| **Corridor Anchor** | `oklch(0.78 0.12 220)` | **Laguna Provincial Sky:** LSPU Santa Cruz Anchor, telemetry indicators, GPS locks. |
-| **Muted Text** | `oklch(0.65 0.015 250)` | Secondary labels, timestamp metadata, ASTM reference notes. |
+| Token Name | Light Value | Dark Value | SuriOS Meaning |
+| :--- | :--- | :--- | :--- |
+| **`--background`** | `oklch(1 0 0)` (#fff) | `oklch(0.1 0 0)` (#09090b) | Primary canvas background. |
+| **`--card`** | `oklch(1 0 0)` (#fff) | `oklch(0.135 0 0)` (#18181b) | Elevated card surface. |
+| **`--border`** | `oklch(0.91 0 0)` (#e4e4e7) | `oklch(0.23 0 0)` (#27272a) | 1px structural micro-border. |
+| **`--primary`** | `oklch(0.145 0 0)` (#09090b)| `oklch(0.985 0 0)` (#fafafa) | Solid primary buttons & brand accent. |
+| **`--destructive`** | `oklch(0.577 0.245 27.3)` | `oklch(0.55 0.22 25)` | Two-Wheeler Lethality & Critical Road Hazards. |
+| **`--muted`** | `oklch(0.965 0 0)` | `oklch(0.18 0 0)` | Subdued pill badges, secondary surfaces. |
 
 ---
 
-## 4. Typography & Numerical Data Display
+## 5. Field Usability & Accessibility Standards
 
-SuriOS adopts a strict dual-font typographic hierarchy:
-
-1. **System Interface Sans-Serif (`font-sans`):** 
-   * Used for page titles, instructions, action buttons, and descriptive explanations.
-   * High x-height, optimized for micro-legibility at 12px–16px on mobile viewports.
-2. **Tabular Monospace (`font-mono`):**
-   * **Mandatory** for all telemetry, coordinates, and classification identifiers:
-     * Geodetic Coordinates: `14.281300° N, 121.417300° E`
-     * ASTM Distress Codes: `ASTM-D6433: POTHOLE (SEV-HIGH)`
-     * Two-Wheeler Lethality Scores: `VRU-INDEX: 9.4/10.0 [CRITICAL]`
-     * Municipal Ticket UUIDs: `TKT-8f2a-71b0`
-
----
-
-## 5. Mobile & Field Usability Standards
-
-* **Touch Target Size:** Every interactive trigger (camera shutter, upload area, GPS lock, dispatch button) has a minimum touch bounding box of **$48\text{px} \times 48\text{px}$** to allow effortless interaction while wearing gloves or holding a phone with one hand.
-* **Contrast Compliance:** All text and critical UI elements adhere to **WCAG 2.1 AA** standards ($\ge 4.5:1$ contrast ratio against background surfaces).
-* **Responsive Breakpoints:**
-  * **Mobile (< 768px):** Single-column stacked workflow. Camera capture $\rightarrow$ GPS verification $\rightarrow$ Inline triage report.
-  * **Desktop / Operations Center ($\ge$ 1024px):** Split-view GIS canvas on left with slide-over or persistent triage & dispatch drawer on right.
-
----
-
-## 6. Svelte 5 Rune Design Standards
-
-All UI components and route pages in SuriOS must adhere to Svelte 5 Runes:
-* State must use `$state()` or `$state.raw()` for complex immutable objects.
-* Derived computed values (severity color classes, formatted coordinates) must use `$derived()`.
-* Component properties must use `$props()` destructuring with explicit TypeScript types.
-* Two-way bindings (like inputs or sheets) must use `$bindable()`.
-* **Zero tolerance** for deprecated Svelte 3/4 paradigms (`writable()`, `export let`, or reactive assignments `$: `).
+* **Minimum 48px Touch Targets:** Buttons and triggers maintain a $\ge 48\text{px} \times 48\text{px}$ touch boundary for one-handed operation by motorcycle riders or DPWH inspectors wearing gloves.
+* **WCAG 2.1 AA Contrast Compliance:** All text has $\ge 4.5:1$ contrast against card backgrounds in both light and dark modes.
+* **Zero Layout Shift:** Rigid aspect-ratio containers (`aspect-video`) prevent screen jitter when camera images are loaded.
