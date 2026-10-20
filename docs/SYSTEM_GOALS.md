@@ -20,18 +20,20 @@ SuriOS directly advances **UN SDG 9: Industry, Innovation, and Infrastructure**,
   * By detecting road distress at the earliest stages (micro-cracks, surface ravelling, small depressions), SuriOS prevents road structural collapse caused by subsurface water ingress.
 * **Target 9.4: Upgrade infrastructure and retrofit industries to make them sustainable:**
   * Preventative maintenance reduces the volume of asphalt, heavy equipment runtime, and carbon emissions required compared to full-depth road reconstruction.
-* **Civic Inclusivity & Safe Mobility:**
-  * SuriOS prioritizes risks to Vulnerable Road Users (VRUs)—such as motorcycle riders, tricycle drivers, cyclists, and pedestrians—ensuring public infrastructure serves all demographics equitably.
+* **Civic Inclusivity & Vulnerable Road User (VRU) Protection:**
+  * Traditional government infrastructure agencies (like DPWH) focus almost exclusively on four-wheeled vehicular flow. 
+  * SuriOS introduces the **Two-Wheeler Lethality & Rider Safety Index**, prioritizing defects (edge drop-offs, longitudinal trench cuts, deep lip potholes) that present fatal crash hazards for motorcycles, tricycles, bicycles, and e-scooters—who represent over **60% of Philippine road commuters**.
 
 ---
 
-## 3. The Core Municipal Challenge
+## 3. The Competitive Edge: How SuriOS Outperforms Traditional Civic Apps
 
-Local Government Units (LGUs) and municipal engineering departments face three systemic bottlenecks:
-
-1. **The Inspection Blind Spot:** Municipalities rely on periodic, manual road survey drives by limited engineering staff. Minor roads, suburban corridors, and barangay streets remain uninspected for months or years.
-2. **The Social Media Noise Dilemma:** Citizens frequently report potholes by posting photos on Facebook, Twitter, or community groups. These complaints lack GPS metadata, standardized damage measurements, and severity classifications, making automated queuing impossible.
-3. **The Triage Bottleneck:** City engineers spend hundreds of hours manually sorting through complaints, dispatching crews without knowing the exact tools, materials, or asphalt quantities required before arriving on site.
+| Failure Mode in Traditional Apps (e.g. DPWH 8888, Naga e-Gov) | SuriOS Autonomous AI Solution |
+| :--- | :--- |
+| **Passive "Black Hole" Ticketing:** Citizens submit a form and never receive updates or civil insights. | **Instant Dual-Sided Safety Feedback:** Citizens get immediate AI triage and a "Rider Danger Warning" upon capture. |
+| **Car-Biased Hazard Scoring:** A 50mm pothole is treated as a minor cosmetic issue. | **Two-Wheeler Lethality Profiling:** Flags the exact same 50mm hole as a Critical Level 9 Threat for motorcycles and tricycles. |
+| **Ticket Flood / Duplication:** 100 people reporting the same pothole crashes the municipal inbox. | **Proximity Geo-Clustering (~25m):** Merges proximate reports into a single high-urgency ticket with a "Community Confirmation" multiplier. |
+| **Ghost / Fake Repairs:** Contractors mark tickets "Resolved" without actually filling the pothole properly. | **Gemini "Proof of Patch" Verification:** Crews must submit an after-repair photo; Gemini audits the asphalt patch before closing the ticket. |
 
 ---
 
