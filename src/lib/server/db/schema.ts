@@ -1,5 +1,26 @@
 import { pgTable, text, integer, numeric, timestamp, jsonb, uuid } from 'drizzle-orm/pg-core';
 
+export const users = pgTable('users', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	email: text('email').notNull().unique(),
+	name: text('name').notNull(),
+	passwordHash: text('password_hash').notNull(),
+	role: text('role').notNull().default('CITIZEN'), // 'CITIZEN' | 'OFFICER' | 'ENGINEER' | 'ADMIN'
+	department: text('department'),
+	badgeNumber: text('badge_number'),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+	updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
+});
+
+export const sessions = pgTable('sessions', {
+	id: text('id').primaryKey(),
+	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+	ipAddress: text('ip_address'),
+	userAgent: text('user_agent'),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+});
+
 export const reports = pgTable('reports', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	imagePath: text('image_path').notNull(),
@@ -35,5 +56,9 @@ export const reports = pgTable('reports', {
 	updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 });
 
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;
 export type Report = typeof reports.$inferSelect;
 export type NewReport = typeof reports.$inferInsert;
