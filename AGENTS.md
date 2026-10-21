@@ -22,9 +22,11 @@ Welcome to **SuriOS**. Before performing any coding or modifications in this pro
    - Use `$state`, `$derived`, `$effect`, `$props`, `$bindable`.
    - Never use legacy Svelte 3/4 stores (`writable`) or `export let`.
 
-4. **Branch Before You Code:**
-   - Check out a new branch (`feat/<name>`, `fix/<name>`, `chore/<name>`) before writing any code.
-   - Do not commit directly to `main`.
+4. **Straightforward Branch Naming (Branch Before You Code):**
+   - Check out a new branch before writing any code. Never commit to `main`.
+   - **Keep branch names simple, literal, and functional**:
+     - Format: `<type>/<functional-feature>` (e.g., `feat/report-demo`, `feat/road-triage`, `feat/map-view`, `fix/gps-lock`).
+     - ❌ **NO weird, abstract, or poetic names** (e.g., avoid `matte-telemetry-map`, `shutter-pitch-canvas`, etc.). Keep names grounded strictly in the exact component or function being built.
 
 5. **Break Down Commits:**
    - Keep commits small, atomic, and focused.

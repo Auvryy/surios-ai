@@ -80,9 +80,22 @@ All agents and contributors must strictly adhere to these operational boundaries
    > **NEVER EVER WORK ON `main` DIRECTLY.**
    > The `main` branch is strictly protected for verified production releases. Every single task, refactor, bugfix, or feature MUST be developed on a dedicated branch created via `git checkout -b <branch-name>` before any files are created or modified.
 
-   - Always create a dedicated branch before working on a task or feature:
-     - Feature branches: `feat/<feature-name>` (e.g., `feat/triage-api-route`)
-     - Fix branches: `fix/<bug-name>` (e.g., `fix/mobile-gps-permissions`)
+   - Always create a dedicated branch before working on a task or feature.
+   - **Straightforward & Functional Branch Naming Rule:**
+     - Branch names MUST be simple, literal, and directly state the functional feature or component (keep it 2–3 words max).
+     - ✅ **Good / Functional Examples:**
+       - `feat/report-demo`
+       - `feat/camera-capture`
+       - `feat/map-navigation`
+       - `fix/gps-accuracy`
+       - `chore/update-dependencies`
+     - ❌ **Weird, Poetic, or Conceptual Names (NEVER USE):**
+       - `feat/matte-telemetry-map` (too abstract / stylistic)
+       - `feat/shutter-canvas-flow` (poetic)
+       - `feat/ai-wizardry` (non-functional)
+   - Standard Prefixes:
+     - Feature branches: `feat/<feature-name>` (e.g., `feat/triage-api`)
+     - Fix branches: `fix/<bug-name>` (e.g., `fix/gps-permissions`)
      - Chore / Docs branches: `chore/<task-name>` or `docs/<doc-name>`
    - Only touch and add files relevant to the active task.
 
