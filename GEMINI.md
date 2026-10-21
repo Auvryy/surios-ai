@@ -108,27 +108,49 @@ All agents and contributors must strictly adhere to these operational boundaries
 
 ```
 surios-ai/
-├── GEMINI.md                  # This constitution and project guidelines
-├── AGENTS.md                  # Agent quick reference
-├── .env.example               # Template for environment variables (safe to commit)
-├── .env                       # Local secrets (NEVER commit - strictly in .gitignore)
-├── components.json            # shadcn-svelte registry & path alias configuration
-├── package.json               # Dependencies and scripts
-├── tsconfig.json              # TypeScript configuration with $lib aliases
-├── vite.config.ts             # Vite configuration with SvelteKit & Tailwind plugins
+├── GEMINI.md                        # This constitution and project guidelines
+├── AGENTS.md                        # Agent quick reference & 7 Golden Rules
+├── README.md                        # Project overview, quickstart & documentation index
+├── docs/
+│   ├── FUNCTIONAL_SPECIFICATIONS.md # Master orchestrator blueprint (every route, API & formula)
+│   ├── FEATURES_ROADMAP.md          # 3-Phase execution plan & orchestrator suggestions
+│   ├── ARCHITECTURE.md              # System topology, RBAC security & ER diagrams
+│   ├── DESIGN_SYSTEM.md             # Zero AI-Slop Charter & shadcn-svelte specifications
+│   ├── SYSTEM_GOALS.md              # SDG 9/11/16 alignment, ROI curve & Q&A defense matrix
+│   ├── TECH_STACK.md                # Definitive dependency matrix & trade-offs
+│   └── DOCKER_RUNBOOK.md            # Local & Azure VM Docker operations
 └── src/
-    ├── app.html               # Base HTML document
+    ├── app.html                     # Base HTML document with zero-flicker theme init
+    ├── app.d.ts                     # SvelteKit App.Locals & PageData typings
+    ├── hooks.server.ts              # Session validation, seed init & RBAC route guards
     ├── routes/
-    │   ├── +layout.svelte     # Root application shell & global styles
-    │   ├── layout.css         # Global Tailwind CSS imports and theme variables
-    │   ├── +page.svelte       # Landing / entrypoint
-    │   ├── report/            # Citizen photo capture & GPS triage flow
-    │   ├── dashboard/         # Municipal LGU map & maintenance dispatch center
+    │   ├── +layout.svelte           # Authentic shadcn collapsible sidebar shell
+    │   ├── +layout.server.ts        # Safe user session serialization
+    │   ├── layout.css               # Tailwind v4 + OKLCH theme tokens + Leaflet CSS
+    │   ├── +page.svelte             # 1. Map Feed (Split-screen GIS + live defect stream)
+    │   ├── dashboard/               # 2. Dispatch Canvas (Municipal work order command board)
+    │   ├── report/                  # 3. Field Report (Mobile camera shutter & GPS triage)
+    │   ├── verification/            # 4. Proof of Patch (AI repair sign-off archive)
+    │   ├── analytics/               # 5. Road Analytics (PCI decay & budget savings)
+    │   ├── crews/                   # 6. Contractors & Crews (Equipment & SLA directory)
+    │   ├── community/               # 7. Community Hub (Consensus & safety leaderboard)
+    │   ├── docs/                    # 8. Civil Standards (In-app ASTM D6433 & design manual)
+    │   ├── profile/                 # 9. Personnel Profile (Municipal ID, stats & password)
+    │   ├── settings/                # 10. System Settings (Alerts, ASTM sliders & diagnostics)
+    │   ├── login/                   # Municipal & citizen authentication
+    │   ├── register/                # Account onboarding with role selector
+    │   ├── logout/                  # Session invalidation endpoint
     │   └── api/
-    │       └── triage/        # Server-side Gemini multimodal analysis endpoint
+    │       └── triage/              # POST /api/triage (Gemini multimodal vision endpoint)
     └── lib/
-        ├── utils.ts           # Helper functions (cn, styling helpers)
-        ├── server/            # Server-only utilities (Gemini client, DB client)
+        ├── types/triage.ts          # Zod schemas & TypeScript contracts for civil triage
+        ├── server/
+        │   ├── auth.ts              # Native scrypt hashing, timing-safe verify & sessions
+        │   ├── gemini.ts            # Google GenAI multi-model vision client
+        │   └── db/
+        │       ├── index.ts         # Drizzle PostgreSQL connection pool
+        │       └── schema.ts        # users, sessions, and reports table definitions
         └── components/
-            └── ui/            # shadcn-svelte UI components (button, card, dialog, etc.)
+            ├── theme-toggle.svelte  # Dark / Light mode switcher
+            └── ui/                  # shadcn-svelte components (Card, Sheet, Tabs, EmptyState, etc.)
 ```
