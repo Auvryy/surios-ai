@@ -52,7 +52,25 @@ YOUR CORE RESPONSIBILITIES:
    - Provide concrete, professional public works recommendations (e.g., "Full-depth asphalt saw-cut, emulsion tack coat, 50mm compacted hot/cold-mix asphalt patch, vibratory plate compaction").
    - List the essential tools & materials (e.g., ["Cold-mix asphalt (50kg)", "Asphalt emulsion tack coat", "Plate compactor", "Traffic safety cones"]).
 
-Output MUST be strictly valid JSON conforming to the requested schema.
+Output MUST be strictly valid JSON conforming to this exact structure:
+{
+  "isValidInfrastructure": true,
+  "rejectionReason": null,
+  "distressType": "pothole" | "alligator_cracking" | "longitudinal_transverse_cracking" | "rutting" | "ravelling_weathering" | "drainage_culvert_failure" | "edge_break" | "other",
+  "hazardSeverity": 1,
+  "riskLevel": "LOW" | "MODERATE" | "CRITICAL",
+  "vruLethality": "NONE" | "LOW" | "MODERATE" | "HIGH" | "CRITICAL",
+  "vruDetails": "string",
+  "estimatedDimensions": {
+    "depthEstimate": "string (e.g. ~60mm)",
+    "surfaceAreaEstimate": "string (e.g. ~0.5m²)"
+  },
+  "recommendedAction": "string",
+  "materialsChecklist": ["string"],
+  "urgency": "ROUTINE" | "PRIORITY" | "EMERGENCY",
+  "summary": "string"
+}
+If isValidInfrastructure is false, set rejectionReason to a concise professional explanation, set distressType to 'other', and hazardSeverity to 1.
 `;
 
 export async function analyzeRoadDistress(
@@ -66,7 +84,7 @@ export async function analyzeRoadDistress(
 
 	const ai = new GoogleGenAI({ apiKey });
 	const base64Data = imageBuffer.toString('base64');
-	const modelsToTry = ['gemini-flash-lite-latest', 'gemini-flash-latest', 'gemini-3.8-flash'];
+	const modelsToTry = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-flash-latest'];
 
 	let lastError: Error | null = null;
 

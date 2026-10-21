@@ -5,6 +5,7 @@ import { desc } from 'drizzle-orm';
 
 export interface FeedIncident {
 	id: string;
+	rawId?: string;
 	title: string;
 	distressType: string;
 	astmCode: string;
@@ -132,6 +133,7 @@ export const load: PageServerLoad = async () => {
 		if (dbItems.length > 0) {
 			const formatted: FeedIncident[] = dbItems.map((r) => ({
 				id: `TKT-${r.id.slice(0, 6).toUpperCase()}`,
+				rawId: r.id,
 				title: `${r.distressType} at Santa Cruz`,
 				distressType: r.distressType,
 				astmCode: `ASTM D6433 (${r.distressType})`,
