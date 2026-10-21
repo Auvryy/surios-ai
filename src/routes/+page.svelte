@@ -12,6 +12,11 @@
 	import LayersIcon from '@lucide/svelte/icons/layers';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
+	import RouteIcon from '@lucide/svelte/icons/route';
+	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
+	import XIcon from '@lucide/svelte/icons/x';
+	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
+	import ActivityIcon from '@lucide/svelte/icons/activity';
 
 	import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -26,12 +31,139 @@
 		SheetFooter
 	} from '$lib/components/ui/sheet/index.js';
 
+	interface RoadCorridor {
+		id: string;
+		name: string;
+		classification: string;
+		coordinates: [number, number][];
+		pci: number; // 0 - 100
+		status: 'CRITICAL' | 'MODERATE' | 'GOOD';
+		color: string;
+		weight: number;
+		dashArray?: string;
+		distressCount: number;
+		surfaceType: string;
+		vruNote: string;
+		lengthKm: string;
+	}
+
+	const SANTA_CRUZ_CORRIDORS: RoadCorridor[] = [
+		{
+			id: 'CORR-01',
+			name: 'Manila East Rd / National Highway',
+			classification: 'Primary National Arterial',
+			coordinates: [
+				[14.2850, 121.4120],
+				[14.2825, 121.4150],
+				[14.2813, 121.4173],
+				[14.2785, 121.4250],
+				[14.2765, 121.4312],
+				[14.2740, 121.4420]
+			],
+			pci: 38,
+			status: 'CRITICAL',
+			color: '#ef4444',
+			weight: 5,
+			distressCount: 2,
+			surfaceType: 'Asphalt Concrete over Jointed PCCP',
+			vruNote: 'High risk of rim strike & loss-of-control for tricycles/motorcycles during monsoon pooling.',
+			lengthKm: '3.4 km'
+		},
+		{
+			id: 'CORR-02',
+			name: 'Pedro Guevara Avenue (Poblacion)',
+			classification: 'Downtown Commercial Corridor',
+			coordinates: [
+				[14.2840, 121.4190],
+				[14.2810, 121.4195],
+				[14.2770, 121.4200],
+				[14.2730, 121.4205]
+			],
+			pci: 62,
+			status: 'MODERATE',
+			color: '#f59e0b',
+			weight: 5,
+			distressCount: 1,
+			surfaceType: 'Dense Bituminous Surface Course',
+			vruNote: 'Transverse cracking across pedestrian crossings and passenger drop-off zones.',
+			lengthKm: '1.2 km'
+		},
+		{
+			id: 'CORR-03',
+			name: 'LSPU – Bubukal Student Access Corridor',
+			classification: 'University Access / High-VRU Belt',
+			coordinates: [
+				[14.2813, 121.4173],
+				[14.2780, 121.4140],
+				[14.2750, 121.4100],
+				[14.2690, 121.4021]
+			],
+			pci: 48,
+			status: 'CRITICAL',
+			color: '#e11d48',
+			weight: 5,
+			dashArray: '8, 6',
+			distressCount: 2,
+			surfaceType: 'Subgraded Asphalt with Unpaved Shoulders',
+			vruNote: 'Unprotected shoulder erosion creating sudden 75mm grade step-offs for student scooters.',
+			lengthKm: '2.1 km'
+		},
+		{
+			id: 'CORR-04',
+			name: 'Gatid – Bagumbayan Bypass Road',
+			classification: 'Municipal Bypass Arterial',
+			coordinates: [
+				[14.2930, 121.4280],
+				[14.2905, 121.4240],
+				[14.2860, 121.4200],
+				[14.2850, 121.4120]
+			],
+			pci: 84,
+			status: 'GOOD',
+			color: '#10b981',
+			weight: 4,
+			distressCount: 0,
+			surfaceType: 'Reinforced Concrete Pavement (Rigid)',
+			vruNote: 'Uniform grade with minimal longitudinal cracking; safe multi-modal throughput.',
+			lengthKm: '2.6 km'
+		},
+		{
+			id: 'CORR-05',
+			name: 'Public Market Feeder Lane',
+			classification: 'Commercial Feeder / High Axle Load',
+			coordinates: [
+				[14.2770, 121.4200],
+				[14.2745, 121.4175],
+				[14.2721, 121.4150],
+				[14.2700, 121.4110]
+			],
+			pci: 42,
+			status: 'CRITICAL',
+			color: '#ef4444',
+			weight: 5,
+			distressCount: 1,
+			surfaceType: 'Asphalt Wearing Course with Base Failure',
+			vruNote: 'Deep pothole clusters obscured by market wash runoff; extreme rollover hazard.',
+			lengthKm: '1.1 km'
+		}
+	];
+
 	let { data }: PageProps = $props();
 
 	let filter = $state<'ALL' | 'CRITICAL' | 'REPORTED' | 'DISPATCHED' | 'RESOLVED'>('ALL');
 	let selectedIncident = $state<FeedIncident | null>(null);
+	let selectedCorridor = $state<RoadCorridor | null>(null);
+	let showCorridors = $state(true);
 	let isSheetOpen = $state(false);
 	let mapContainer = $state<HTMLDivElement | null>(null);
+
+	// Leaflet instance pointers for dynamic updates
+	let mapInstance: any = null;
+	let leafletLib: any = null;
+	let tileLayerInstance: any = null;
+	let markersGroup: any = null;
+	let corridorsGroup: any = null;
+	let markerMap = new Map<string, any>();
 
 	const incidents = $derived(data.incidents || []);
 
@@ -43,19 +175,173 @@
 				: incidents.filter((i) => i.status === filter)
 	);
 
-	function openInspect(incident: FeedIncident) {
+	function openInspect(incident: FeedIncident, e?: Event) {
+		if (e) e.stopPropagation();
 		selectedIncident = incident;
 		isSheetOpen = true;
 	}
 
-	// Dynamic Leaflet Map Integration
+	function selectIncidentFromFeed(item: FeedIncident) {
+		selectedIncident = item;
+		selectedCorridor = null;
+		if (mapInstance) {
+			mapInstance.flyTo([item.latitude, item.longitude], 16, { duration: 0.75 });
+		}
+		const marker = markerMap.get(item.id);
+		if (marker) {
+			marker.openTooltip();
+		}
+	}
+
+	function selectCorridor(corridor: RoadCorridor) {
+		selectedCorridor = corridor;
+		selectedIncident = null;
+		if (mapInstance && leafletLib && corridor.coordinates.length > 0) {
+			const bounds = leafletLib.latLngBounds(corridor.coordinates);
+			mapInstance.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, duration: 0.75 });
+		}
+	}
+
+	function resetMapView() {
+		if (mapInstance) {
+			mapInstance.flyTo([14.2813, 121.4173], 14, { duration: 0.75 });
+		}
+		selectedIncident = null;
+		selectedCorridor = null;
+	}
+
+	function updateTileTheme(isDark: boolean) {
+		if (!mapInstance || !leafletLib) return;
+		if (tileLayerInstance) {
+			mapInstance.removeLayer(tileLayerInstance);
+		}
+		const tileUrl = isDark
+			? 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png'
+			: 'https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png';
+
+		tileLayerInstance = leafletLib.tileLayer(tileUrl, {
+			attribution: '&copy; OpenStreetMap &copy; CARTO',
+			maxZoom: 19
+		}).addTo(mapInstance);
+
+		tileLayerInstance.bringToBack();
+	}
+
+	function renderMarkers(items: FeedIncident[]) {
+		if (!mapInstance || !leafletLib || !markersGroup) return;
+		markersGroup.clearLayers();
+		markerMap.clear();
+
+		items.forEach((item) => {
+			const isCritical = item.hazardSeverity >= 8;
+			const isModerate = item.hazardSeverity >= 5 && item.hazardSeverity < 8;
+
+			let badgeClass = 'badge-low';
+			let ringsHtml = '';
+
+			if (isCritical) {
+				badgeClass = 'badge-critical';
+				ringsHtml = `
+					<span class="surios-pulse-ring ring-1"></span>
+					<span class="surios-pulse-ring ring-2"></span>
+				`;
+			} else if (isModerate) {
+				badgeClass = 'badge-moderate';
+				ringsHtml = `<span class="surios-pulse-ring ring-moderate"></span>`;
+			}
+
+			const isSelected = selectedIncident?.id === item.id;
+			const customIcon = leafletLib.divIcon({
+				className: 'surios-dot-bomb-container',
+				html: `
+					<div class="surios-dot-bomb-wrapper ${isSelected ? 'is-selected' : ''}" data-id="${item.id}" title="${item.title}">
+						${ringsHtml}
+						<div class="surios-badge ${badgeClass}">
+							<span>${item.hazardSeverity}</span>
+						</div>
+					</div>
+				`,
+				iconSize: [36, 36],
+				iconAnchor: [18, 18]
+			});
+
+			const marker = leafletLib.marker([item.latitude, item.longitude], { icon: customIcon });
+
+			marker.bindTooltip(`
+				<div class="p-1 space-y-0.5 text-xs">
+					<div class="font-bold flex items-center gap-1.5">
+						<span class="px-1 py-0.2 rounded font-mono text-[9px] ${isCritical ? 'bg-red-500 text-white' : isModerate ? 'bg-amber-500 text-white' : 'bg-slate-500 text-white'}">${item.hazardSeverity}/10</span>
+						<span>${item.id}</span>
+					</div>
+					<div class="font-medium text-foreground">${item.title}</div>
+					<div class="text-[10px] text-muted-foreground">${item.astmCode}</div>
+				</div>
+			`, { direction: 'top', offset: [0, -14], className: 'surios-tooltip' });
+
+			marker.on('click', () => {
+				selectedIncident = item;
+				selectedCorridor = null;
+				openInspect(item);
+			});
+
+			marker.addTo(markersGroup);
+			markerMap.set(item.id, marker);
+		});
+	}
+
+	function renderCorridors() {
+		if (!mapInstance || !leafletLib || !corridorsGroup) return;
+		corridorsGroup.clearLayers();
+
+		SANTA_CRUZ_CORRIDORS.forEach((corridor) => {
+			const isSelected = selectedCorridor?.id === corridor.id;
+			const polyline = leafletLib.polyline(corridor.coordinates, {
+				color: corridor.color,
+				weight: isSelected ? corridor.weight + 3 : corridor.weight,
+				opacity: isSelected ? 1.0 : 0.85,
+				dashArray: corridor.dashArray,
+				lineCap: 'round',
+				lineJoin: 'round'
+			});
+
+			polyline.bindTooltip(`
+				<div class="p-1 space-y-0.5 text-xs">
+					<div class="font-bold" style="color: ${corridor.color}">
+						${corridor.name}
+					</div>
+					<div class="text-[10px] text-muted-foreground">
+						PCI ${corridor.pci}/100 &bull; ${corridor.status}
+					</div>
+				</div>
+			`, { sticky: true, className: 'surios-tooltip' });
+
+			polyline.on('mouseover', () => {
+				polyline.setStyle({ weight: corridor.weight + 3, opacity: 1 });
+			});
+
+			polyline.on('mouseout', () => {
+				if (selectedCorridor?.id !== corridor.id) {
+					polyline.setStyle({ weight: corridor.weight, opacity: 0.85 });
+				}
+			});
+
+			polyline.on('click', () => {
+				selectCorridor(corridor);
+			});
+
+			polyline.addTo(corridorsGroup);
+		});
+	}
+
+	// Dynamic Leaflet Map Lifecycle & Theme Synchronization
 	$effect(() => {
 		if (typeof window === 'undefined' || !mapContainer) return;
 
-		let mapInstance: any = null;
+		let observer: MutationObserver | null = null;
 
 		import('leaflet').then((L) => {
 			if (!mapContainer) return;
+			leafletLib = L;
 
 			mapInstance = L.map(mapContainer, {
 				center: [14.2813, 121.4173],
@@ -65,57 +351,66 @@
 
 			L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 
-			// Carto Voyager Minimalist Vector Tiles
-			L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-				attribution: '&copy; OpenStreetMap &copy; CARTO',
-				maxZoom: 19
-			}).addTo(mapInstance);
+			// Initialize Tile Layer according to theme
+			const isDarkInitial = document.documentElement.classList.contains('dark');
+			updateTileTheme(isDarkInitial);
 
-			// Plot Incident Markers
-			filteredIncidents.forEach((item) => {
-				const isCrit = item.hazardSeverity >= 8;
-				const isMod = item.hazardSeverity >= 5 && item.hazardSeverity < 8;
+			// Setup Layer Groups
+			corridorsGroup = L.featureGroup().addTo(mapInstance);
+			markersGroup = L.featureGroup().addTo(mapInstance);
 
-				const markerColor = isCrit ? '#ef4444' : isMod ? '#f59e0b' : '#64748b';
+			// Initial Render
+			renderCorridors();
+			renderMarkers(filteredIncidents);
 
-				const customIcon = L.divIcon({
-					className: 'surios-marker',
-					html: `
-						<div style="
-							width: 24px;
-							height: 24px;
-							background: ${markerColor};
-							border: 2px solid #ffffff;
-							border-radius: 50%;
-							display: flex;
-							align-items: center;
-							justify-content: center;
-							color: #ffffff;
-							font-weight: 700;
-							font-size: 10px;
-							box-shadow: 0 2px 4px rgba(0,0,0,0.25);
-							cursor: pointer;
-						">
-							${item.hazardSeverity}
-						</div>
-					`,
-					iconSize: [24, 24],
-					iconAnchor: [12, 12]
-				});
+			// Watch for theme changes on root document
+			observer = new MutationObserver(() => {
+				const isDark = document.documentElement.classList.contains('dark');
+				updateTileTheme(isDark);
+			});
 
-				const marker = L.marker([item.latitude, item.longitude], { icon: customIcon }).addTo(mapInstance);
-
-				marker.on('click', () => {
-					openInspect(item);
-				});
+			observer.observe(document.documentElement, {
+				attributes: true,
+				attributeFilter: ['class']
 			});
 		});
 
 		return () => {
+			if (observer) observer.disconnect();
 			if (mapInstance) {
 				mapInstance.remove();
+				mapInstance = null;
 			}
 		};
+	});
+
+	// Reactive update for markers when filter changes
+	$effect(() => {
+		if (mapInstance && filteredIncidents) {
+			renderMarkers(filteredIncidents);
+		}
+	});
+
+	// Reactive update for corridor visibility
+	$effect(() => {
+		if (mapInstance && corridorsGroup) {
+			if (showCorridors) {
+				if (!mapInstance.hasLayer(corridorsGroup)) {
+					mapInstance.addLayer(corridorsGroup);
+				}
+			} else {
+				if (mapInstance.hasLayer(corridorsGroup)) {
+					mapInstance.removeLayer(corridorsGroup);
+				}
+			}
+		}
+	});
+
+	// Reactive highlight for selected corridor polyline
+	$effect(() => {
+		if (mapInstance && corridorsGroup) {
+			renderCorridors();
+		}
 	});
 </script>
 
@@ -128,10 +423,10 @@
 	<div class="px-4 py-3 border-b border-border bg-card/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
 		<div class="flex items-center gap-2">
 			<Badge variant="outline" class="text-[10px] font-mono border-border">
-				Laguna Corridor
+				Laguna Corridor GIS
 			</Badge>
 			<span class="text-xs text-muted-foreground">
-				Santa Cruz &bull; 14.2813° N, 121.4173° E
+				Santa Cruz Centroid &bull; 14.2813° N, 121.4173° E
 			</span>
 		</div>
 
@@ -157,27 +452,142 @@
 		</div>
 	</div>
 
-	<!-- Main Map Feed Grid: Split Screen -->
+	<!-- Main Map Feed Grid: Matte Split Screen -->
 	<div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden min-h-[calc(100vh-8.5rem)]">
-		<!-- Left: Interactive GIS Map Canvas -->
-		<div class="lg:col-span-7 xl:col-span-8 relative border-b lg:border-b-0 lg:border-r border-border h-80 lg:h-full min-h-[300px]">
+		<!-- Left: Interactive GIS Map Canvas with Floating Matte HUD -->
+		<div class="lg:col-span-7 xl:col-span-8 relative border-b lg:border-b-0 lg:border-r border-border h-96 lg:h-full min-h-[360px]">
 			<div bind:this={mapContainer} class="w-full h-full bg-muted/20"></div>
 
-			<!-- Floating Map Overlay Legend -->
-			<div class="absolute top-3 left-3 z-[1000] p-2 rounded-lg border border-border bg-background/90 backdrop-blur shadow-xs text-[11px] space-y-1">
-				<div class="font-semibold text-foreground text-[10px] uppercase tracking-wider">Severity Legend</div>
-				<div class="flex items-center gap-2">
-					<span class="h-2.5 w-2.5 rounded-full bg-destructive shrink-0"></span>
-					<span class="text-muted-foreground">Critical (8–10)</span>
+			<!-- Floating Top-Left Matte HUD Bar -->
+			<div class="absolute top-3 left-3 z-[1000] flex flex-wrap items-center gap-2 max-w-[calc(100%-1.5rem)] pointer-events-auto">
+				<!-- District PCI Badge -->
+				<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-card/90 backdrop-blur-md shadow-md text-xs">
+					<span class="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+					<div class="flex items-center gap-1.5">
+						<span class="font-semibold text-foreground">Santa Cruz Corridor</span>
+						<span class="text-muted-foreground">&bull;</span>
+						<span class="font-mono text-muted-foreground">Network PCI: <strong class="text-destructive font-bold">49</strong></span>
+					</div>
 				</div>
-				<div class="flex items-center gap-2">
-					<span class="h-2.5 w-2.5 rounded-full bg-amber-500 shrink-0"></span>
-					<span class="text-muted-foreground">Moderate (5–7)</span>
+
+				<!-- Layer Controls Pill -->
+				<div class="flex items-center gap-1 p-1 rounded-lg border border-border bg-card/90 backdrop-blur-md shadow-md">
+					<button
+						type="button"
+						onclick={() => (showCorridors = !showCorridors)}
+						class="px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer {showCorridors ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+						title="Toggle Road Corridor Telemetry Lines"
+					>
+						<RouteIcon class="h-3.5 w-3.5" />
+						<span>Corridors ({SANTA_CRUZ_CORRIDORS.length})</span>
+					</button>
+					<button
+						type="button"
+						onclick={resetMapView}
+						class="px-2 py-1 rounded text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors flex items-center gap-1 cursor-pointer"
+						title="Recenter Map to Santa Cruz Center"
+					>
+						<RotateCcwIcon class="h-3.5 w-3.5" />
+						<span>Reset</span>
+					</button>
 				</div>
-				<div class="flex items-center gap-2">
-					<span class="h-2.5 w-2.5 rounded-full bg-slate-500 shrink-0"></span>
-					<span class="text-muted-foreground">Low (1–4)</span>
-				</div>
+			</div>
+
+			<!-- Floating Bottom-Left Matte Corridor Telemetry Card / HUD Legend -->
+			<div class="absolute bottom-3 left-3 z-[1000] max-w-sm w-full sm:w-auto pointer-events-auto">
+				{#if selectedCorridor}
+					<!-- Active Corridor Telemetry Card -->
+					<div class="p-3.5 rounded-lg border border-border bg-card/95 backdrop-blur-md shadow-lg space-y-2 text-xs">
+						<div class="flex items-start justify-between gap-3">
+							<div>
+								<div class="flex items-center gap-1.5">
+									<Badge
+										variant={selectedCorridor.status === 'CRITICAL' ? 'destructive' : selectedCorridor.status === 'MODERATE' ? 'secondary' : 'outline'}
+										class="text-[9px] font-mono px-1.5 py-0"
+									>
+										{selectedCorridor.id}
+									</Badge>
+									<span class="font-bold text-foreground text-xs">{selectedCorridor.name}</span>
+								</div>
+								<div class="text-[11px] text-muted-foreground mt-0.5">
+									{selectedCorridor.classification} &bull; {selectedCorridor.lengthKm}
+								</div>
+							</div>
+							<button
+								type="button"
+								onclick={() => (selectedCorridor = null)}
+								class="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-muted cursor-pointer"
+								title="Close Corridor Card"
+							>
+								<XIcon class="h-3.5 w-3.5" />
+							</button>
+						</div>
+
+						<div class="grid grid-cols-2 gap-2 pt-1 border-t border-border">
+							<div class="p-2 rounded bg-muted/40 border border-border">
+								<div class="text-[10px] text-muted-foreground uppercase font-mono">Pavement Condition</div>
+								<div class="text-sm font-bold font-mono mt-0.5 flex items-center gap-1.5">
+									<span class="inline-block w-2.5 h-2.5 rounded-full" style="background-color: {selectedCorridor.color}"></span>
+									<span>PCI {selectedCorridor.pci} / 100</span>
+								</div>
+							</div>
+							<div class="p-2 rounded bg-muted/40 border border-border">
+								<div class="text-[10px] text-muted-foreground uppercase font-mono">Active Road Distress</div>
+								<div class="text-sm font-bold font-mono mt-0.5 text-foreground">
+									{selectedCorridor.distressCount} Severe Hotspots
+								</div>
+							</div>
+						</div>
+
+						<div class="p-2 rounded bg-destructive/5 border border-destructive/20 text-[11px] text-destructive leading-relaxed">
+							<div class="font-semibold flex items-center gap-1 mb-0.5">
+								<BikeIcon class="h-3 w-3" />
+								<span>VRU Telemetry Analysis</span>
+							</div>
+							<p class="text-foreground/90">{selectedCorridor.vruNote}</p>
+						</div>
+					</div>
+				{:else}
+					<!-- Compact Collapsible HUD Legend -->
+					<div class="p-3 rounded-lg border border-border bg-card/90 backdrop-blur-md shadow-md text-xs space-y-2">
+						<div class="flex items-center justify-between gap-4">
+							<span class="font-semibold text-foreground text-[11px] uppercase tracking-wider">Laguna Telemetry HUD</span>
+							<span class="text-[10px] text-muted-foreground font-mono">ASTM D6433</span>
+						</div>
+						<div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+							<!-- Critical Marker -->
+							<div class="flex items-center gap-2">
+								<span class="h-4 w-4 rounded-full bg-red-600 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">9</span>
+								<span class="text-muted-foreground">Critical Dot Bomb (8–10)</span>
+							</div>
+							<!-- Critical Road Line -->
+							<div class="flex items-center gap-2">
+								<span class="h-1.5 w-5 rounded bg-red-500 shrink-0"></span>
+								<span class="text-muted-foreground">Critical Line (PCI &lt; 50)</span>
+							</div>
+							<!-- Moderate Marker -->
+							<div class="flex items-center gap-2">
+								<span class="h-4 w-4 rounded-full bg-amber-500 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">6</span>
+								<span class="text-muted-foreground">Moderate Hazard (5–7)</span>
+							</div>
+							<!-- Moderate Road Line -->
+							<div class="flex items-center gap-2">
+								<span class="h-1.5 w-5 rounded bg-amber-500 shrink-0"></span>
+								<span class="text-muted-foreground">Warning Line (50–70)</span>
+							</div>
+							<!-- Low Marker -->
+							<div class="flex items-center gap-2">
+								<span class="h-4 w-4 rounded-full bg-slate-500 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">2</span>
+								<span class="text-muted-foreground">Minor Distress (1–4)</span>
+							</div>
+							<!-- Good Road Line -->
+							<div class="flex items-center gap-2">
+								<span class="h-1.5 w-5 rounded bg-emerald-500 shrink-0"></span>
+								<span class="text-muted-foreground">Stable Line (PCI &gt; 70)</span>
+							</div>
+						</div>
+					</div>
+				{/if}
 			</div>
 		</div>
 
@@ -187,7 +597,7 @@
 			<div class="p-3.5 border-b border-border flex items-center justify-between bg-card/60">
 				<div class="flex items-center gap-2">
 					<LayersIcon class="h-4 w-4 text-primary" />
-					<span class="text-xs font-semibold text-foreground">Active Civil Incidents</span>
+					<span class="text-xs font-semibold text-foreground">Live Road Telemetry Stream</span>
 					<Badge variant="secondary" class="text-[10px] px-1.5 h-4 font-mono">
 						{filteredIncidents.length}
 					</Badge>
@@ -207,13 +617,15 @@
 				{:else}
 					{#each filteredIncidents as item}
 						{@const isSelected = selectedIncident?.id === item.id}
+						{@const isCritical = item.hazardSeverity >= 8}
+						{@const isModerate = item.hazardSeverity >= 5 && item.hazardSeverity < 8}
 						<div
 							role="button"
 							tabindex="0"
-							onclick={() => openInspect(item)}
-							onkeydown={(e) => e.key === 'Enter' && openInspect(item)}
+							onclick={() => selectIncidentFromFeed(item)}
+							onkeydown={(e) => e.key === 'Enter' && selectIncidentFromFeed(item)}
 							class="p-3 rounded-lg border text-left transition-all cursor-pointer bg-card hover:border-foreground/30 {isSelected
-								? 'border-primary ring-1 ring-primary/20'
+								? 'border-primary ring-1 ring-primary/20 bg-secondary/30'
 								: 'border-border'}"
 						>
 							<!-- Top Metadata -->
@@ -235,9 +647,9 @@
 									</h4>
 								</div>
 
-								<!-- Severity Pill -->
+								<!-- Severity Dot Bomb Pill -->
 								<div class="flex flex-col items-end">
-									<div class="text-xs font-bold font-mono px-1.5 py-0.5 rounded border border-border bg-secondary text-foreground">
+									<div class="text-xs font-bold font-mono px-1.5 py-0.5 rounded border border-border {isCritical ? 'bg-destructive/15 text-destructive border-destructive/30' : isModerate ? 'bg-amber-500/15 text-amber-500 border-amber-500/30' : 'bg-secondary text-foreground'}">
 										{item.hazardSeverity}/10
 									</div>
 									<span class="text-[9px] text-muted-foreground mt-0.5">{item.createdAt}</span>
@@ -254,10 +666,14 @@
 								<span class="text-muted-foreground font-mono text-[10px]">
 									{item.status} &bull; {item.communityConfirmations} confirmed
 								</span>
-								<div class="flex items-center gap-1 text-primary hover:underline font-medium text-[11px]">
-									<span>Inspect</span>
+								<button
+									type="button"
+									onclick={(e) => openInspect(item, e)}
+									class="flex items-center gap-1 text-primary hover:underline font-medium text-[11px] cursor-pointer"
+								>
+									<span>Inspect Specs</span>
 									<ArrowUpRightIcon class="h-3 w-3" />
-								</div>
+								</button>
 							</div>
 						</div>
 					{/each}
@@ -367,3 +783,141 @@
 		{/if}
 	</SheetContent>
 </Sheet>
+
+<style>
+	:global(.surios-dot-bomb-container) {
+		background: transparent !important;
+		border: none !important;
+	}
+
+	:global(.surios-dot-bomb-wrapper) {
+		position: relative;
+		width: 36px;
+		height: 36px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+	}
+
+	:global(.surios-pulse-ring) {
+		position: absolute;
+		inset: 0;
+		border-radius: 9999px;
+		pointer-events: none;
+	}
+
+	:global(.surios-pulse-ring.ring-1) {
+		background: rgba(239, 68, 68, 0.4);
+		border: 1.5px solid rgba(239, 68, 68, 0.9);
+		animation: surios-radar-pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+	}
+
+	:global(.surios-pulse-ring.ring-2) {
+		background: rgba(239, 68, 68, 0.2);
+		border: 1px solid rgba(239, 68, 68, 0.6);
+		animation: surios-radar-pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite 0.7s;
+	}
+
+	:global(.surios-pulse-ring.ring-moderate) {
+		background: rgba(245, 158, 11, 0.25);
+		border: 1px solid rgba(245, 158, 11, 0.7);
+		animation: surios-radar-pulse 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+	}
+
+	@keyframes surios-radar-pulse {
+		0% {
+			transform: scale(0.65);
+			opacity: 0.95;
+		}
+		65% {
+			transform: scale(2.1);
+			opacity: 0.2;
+		}
+		100% {
+			transform: scale(2.6);
+			opacity: 0;
+		}
+	}
+
+	:global(.surios-badge) {
+		position: relative;
+		z-index: 2;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 9999px;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+		font-weight: 700;
+		box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+		transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+	}
+
+	:global(.surios-badge.badge-critical) {
+		width: 26px;
+		height: 26px;
+		background: #ef4444;
+		color: #ffffff;
+		border: 2px solid #ffffff;
+		font-size: 11px;
+	}
+
+	:global(.surios-badge.badge-moderate) {
+		width: 23px;
+		height: 23px;
+		background: #f59e0b;
+		color: #ffffff;
+		border: 2px solid #ffffff;
+		font-size: 10px;
+	}
+
+	:global(.surios-badge.badge-low) {
+		width: 20px;
+		height: 20px;
+		background: #64748b;
+		color: #ffffff;
+		border: 1.5px solid #ffffff;
+		font-size: 9px;
+	}
+
+	:global(.surios-dot-bomb-wrapper:hover .surios-badge) {
+		transform: scale(1.25);
+		box-shadow: 0 6px 14px rgba(0, 0, 0, 0.5);
+	}
+
+	:global(.surios-dot-bomb-wrapper.is-selected .surios-badge) {
+		outline: 3px solid #38bdf8;
+		outline-offset: 2px;
+		transform: scale(1.2);
+	}
+
+	:global(.surios-tooltip) {
+		background: var(--card) !important;
+		color: var(--card-foreground) !important;
+		border: 1px solid var(--border) !important;
+		border-radius: 6px !important;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+		padding: 4px 8px !important;
+	}
+
+	:global(.leaflet-tooltip-top:before) {
+		border-top-color: var(--border) !important;
+	}
+
+	:global(.leaflet-control-zoom) {
+		border: 1px solid var(--border) !important;
+		border-radius: 8px !important;
+		overflow: hidden;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+	}
+
+	:global(.leaflet-control-zoom a) {
+		background-color: var(--card) !important;
+		color: var(--foreground) !important;
+		border-bottom: 1px solid var(--border) !important;
+	}
+
+	:global(.leaflet-control-zoom a:hover) {
+		background-color: var(--secondary) !important;
+	}
+</style>
