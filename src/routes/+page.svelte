@@ -17,6 +17,7 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
+	import ClockIcon from '@lucide/svelte/icons/clock';
 
 	import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -36,7 +37,7 @@
 		name: string;
 		classification: string;
 		coordinates: [number, number][];
-		pci: number; // 0 - 100
+		pci: number;
 		status: 'CRITICAL' | 'MODERATE' | 'GOOD';
 		color: string;
 		weight: number;
@@ -189,7 +190,7 @@
 		}
 		const marker = markerMap.get(item.id);
 		if (marker) {
-			marker.openTooltip();
+			marker.openPopup();
 		}
 	}
 
@@ -205,26 +206,10 @@
 	function resetMapView() {
 		if (mapInstance) {
 			mapInstance.flyTo([14.2813, 121.4173], 14, { duration: 0.75 });
+			mapInstance.closePopup();
 		}
 		selectedIncident = null;
 		selectedCorridor = null;
-	}
-
-	function updateTileTheme(isDark: boolean) {
-		if (!mapInstance || !leafletLib) return;
-		if (tileLayerInstance) {
-			mapInstance.removeLayer(tileLayerInstance);
-		}
-		const tileUrl = isDark
-			? 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png'
-			: 'https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png';
-
-		tileLayerInstance = leafletLib.tileLayer(tileUrl, {
-			attribution: '&copy; OpenStreetMap &copy; CARTO',
-			maxZoom: 19
-		}).addTo(mapInstance);
-
-		tileLayerInstance.bringToBack();
 	}
 
 	function renderMarkers(items: FeedIncident[]) {
@@ -235,6 +220,7 @@
 		items.forEach((item) => {
 			const isCritical = item.hazardSeverity >= 8;
 			const isModerate = item.hazardSeverity >= 5 && item.hazardSeverity < 8;
+			const severityColor = isCritical ? '#ef4444' : isModerate ? '#f59e0b' : '#64748b';
 
 			let badgeClass = 'badge-low';
 			let ringsHtml = '';
@@ -267,21 +253,47 @@
 
 			const marker = leafletLib.marker([item.latitude, item.longitude], { icon: customIcon });
 
-			marker.bindTooltip(`
-				<div class="p-1 space-y-0.5 text-xs">
-					<div class="font-bold flex items-center gap-1.5">
-						<span class="px-1 py-0.2 rounded font-mono text-[9px] ${isCritical ? 'bg-red-500 text-white' : isModerate ? 'bg-amber-500 text-white' : 'bg-slate-500 text-white'}">${item.hazardSeverity}/10</span>
-						<span>${item.id}</span>
+			// High-fidelity Floating Defect Inspection Card (Matching Mockup Choice 1)
+			const popupHtml = `
+				<div class="surios-card-popup">
+					${item.imageUrl ? `
+						<div class="surios-card-img-wrap">
+							<img src="${item.imageUrl}" alt="${item.title}" class="surios-card-img" />
+							<div class="surios-card-badge" style="background-color: ${severityColor}">
+								Severity: ${item.hazardSeverity}/10
+							</div>
+						</div>
+					` : `
+						<div class="surios-card-header-bar">
+							<span class="surios-card-code">${item.id}</span>
+							<span class="surios-card-badge" style="background-color: ${severityColor}">
+								Severity: ${item.hazardSeverity}/10
+							</span>
+						</div>
+					`}
+					<div class="surios-card-content">
+						<h4 class="surios-card-title">${item.title}</h4>
+						<div class="surios-card-astm">${item.astmCode}</div>
+						<div class="surios-card-gps">GPS: +${item.latitude.toFixed(5)}, ${item.longitude.toFixed(5)}</div>
+						<div class="surios-card-actions">
+							<button class="surios-card-inspect-btn surios-inspect-btn" data-id="${item.id}">
+								Inspect Specs &rarr;
+							</button>
+						</div>
 					</div>
-					<div class="font-medium text-foreground">${item.title}</div>
-					<div class="text-[10px] text-muted-foreground">${item.astmCode}</div>
 				</div>
-			`, { direction: 'top', offset: [0, -14], className: 'surios-tooltip' });
+			`;
+
+			marker.bindPopup(popupHtml, {
+				className: 'surios-custom-popup',
+				maxWidth: 260,
+				offset: [0, -16],
+				closeButton: false
+			});
 
 			marker.on('click', () => {
 				selectedIncident = item;
 				selectedCorridor = null;
-				openInspect(item);
 			});
 
 			marker.addTo(markersGroup);
@@ -333,11 +345,9 @@
 		});
 	}
 
-	// Dynamic Leaflet Map Lifecycle & Theme Synchronization
+	// Dynamic Leaflet Map Lifecycle
 	$effect(() => {
 		if (typeof window === 'undefined' || !mapContainer) return;
-
-		let observer: MutationObserver | null = null;
 
 		import('leaflet').then((L) => {
 			if (!mapContainer) return;
@@ -346,14 +356,19 @@
 			mapInstance = L.map(mapContainer, {
 				center: [14.2813, 121.4173],
 				zoom: 14,
+				minZoom: 12,
+				maxZoom: 19,
 				zoomControl: false
 			});
 
 			L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 
-			// Initialize Tile Layer according to theme
-			const isDarkInitial = document.documentElement.classList.contains('dark');
-			updateTileTheme(isDarkInitial);
+			// Fast, high-density detailed street tiles (OpenStreetMap global CDN)
+			tileLayerInstance = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+				maxZoom: 19,
+				subdomains: ['a', 'b', 'c']
+			}).addTo(mapInstance);
 
 			// Setup Layer Groups
 			corridorsGroup = L.featureGroup().addTo(mapInstance);
@@ -363,20 +378,25 @@
 			renderCorridors();
 			renderMarkers(filteredIncidents);
 
-			// Watch for theme changes on root document
-			observer = new MutationObserver(() => {
-				const isDark = document.documentElement.classList.contains('dark');
-				updateTileTheme(isDark);
-			});
-
-			observer.observe(document.documentElement, {
-				attributes: true,
-				attributeFilter: ['class']
+			// Delegate clicks from inside Leaflet custom popups to Svelte
+			mapInstance.on('popupopen', (e: any) => {
+				const popupEl = e.popup.getElement();
+				if (!popupEl) return;
+				const btn = popupEl.querySelector('.surios-inspect-btn');
+				if (btn) {
+					btn.addEventListener('click', () => {
+						const incidentId = btn.getAttribute('data-id');
+						const found = incidents.find((i) => i.id === incidentId);
+						if (found) {
+							selectedIncident = found;
+							isSheetOpen = true;
+						}
+					});
+				}
 			});
 		});
 
 		return () => {
-			if (observer) observer.disconnect();
 			if (mapInstance) {
 				mapInstance.remove();
 				mapInstance = null;
@@ -456,7 +476,7 @@
 	<div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden min-h-[calc(100vh-8.5rem)]">
 		<!-- Left: Interactive GIS Map Canvas with Floating Matte HUD -->
 		<div class="lg:col-span-7 xl:col-span-8 relative border-b lg:border-b-0 lg:border-r border-border h-96 lg:h-full min-h-[360px]">
-			<div bind:this={mapContainer} class="w-full h-full bg-muted/20"></div>
+			<div bind:this={mapContainer} class="w-full h-full bg-background"></div>
 
 			<!-- Floating Top-Left Matte HUD Bar -->
 			<div class="absolute top-3 left-3 z-[1000] flex flex-wrap items-center gap-2 max-w-[calc(100%-1.5rem)] pointer-events-auto">
@@ -591,13 +611,13 @@
 			</div>
 		</div>
 
-		<!-- Right: Live Civil Defect Stream -->
+		<!-- Right: Live Civil Defect Stream with Vertical Timeline (Matching Mockup Choice 1) -->
 		<div class="lg:col-span-5 xl:col-span-4 flex flex-col h-full bg-card/20 overflow-hidden">
 			<!-- Stream Header -->
 			<div class="p-3.5 border-b border-border flex items-center justify-between bg-card/60">
 				<div class="flex items-center gap-2">
 					<LayersIcon class="h-4 w-4 text-primary" />
-					<span class="text-xs font-semibold text-foreground">Live Road Telemetry Stream</span>
+					<span class="text-xs font-semibold text-foreground">Defect Incident Feed</span>
 					<Badge variant="secondary" class="text-[10px] px-1.5 h-4 font-mono">
 						{filteredIncidents.length}
 					</Badge>
@@ -608,75 +628,104 @@
 				</Button>
 			</div>
 
-			<!-- Incident Cards List -->
-			<div class="flex-1 overflow-y-auto p-3 space-y-2.5">
+			<!-- Incident Cards List with Timeline Connector -->
+			<div class="flex-1 overflow-y-auto p-4">
 				{#if filteredIncidents.length === 0}
 					<div class="text-center py-12 text-xs text-muted-foreground">
 						No incidents match the active filter criteria.
 					</div>
 				{:else}
-					{#each filteredIncidents as item}
-						{@const isSelected = selectedIncident?.id === item.id}
-						{@const isCritical = item.hazardSeverity >= 8}
-						{@const isModerate = item.hazardSeverity >= 5 && item.hazardSeverity < 8}
-						<div
-							role="button"
-							tabindex="0"
-							onclick={() => selectIncidentFromFeed(item)}
-							onkeydown={(e) => e.key === 'Enter' && selectIncidentFromFeed(item)}
-							class="p-3 rounded-lg border text-left transition-all cursor-pointer bg-card hover:border-foreground/30 {isSelected
-								? 'border-primary ring-1 ring-primary/20 bg-secondary/30'
-								: 'border-border'}"
-						>
-							<!-- Top Metadata -->
-							<div class="flex items-start justify-between gap-2">
-								<div class="space-y-0.5">
-									<div class="flex items-center gap-1.5">
-										<Badge variant="outline" class="text-[9px] font-mono px-1 py-0 border-border">
-											{item.id}
-										</Badge>
-										<Badge
-											variant={item.vruLethality === 'CRITICAL' ? 'destructive' : 'secondary'}
-											class="text-[9px] font-mono px-1.5 py-0"
-										>
-											{item.vruLethality} VRU
-										</Badge>
+					<div class="relative pl-5 space-y-3 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-border/80">
+						{#each filteredIncidents as item}
+							{@const isSelected = selectedIncident?.id === item.id}
+							{@const isCritical = item.hazardSeverity >= 8}
+							{@const isModerate = item.hazardSeverity >= 5 && item.hazardSeverity < 8}
+							<div class="relative">
+								<!-- Timeline Node Indicator -->
+								<span
+									class="absolute -left-[17px] top-4 h-2.5 w-2.5 rounded-full border-2 border-background {isCritical
+										? 'bg-destructive ring-2 ring-destructive/20'
+										: isModerate
+											? 'bg-amber-500 ring-2 ring-amber-500/20'
+											: 'bg-slate-500'}"
+								></span>
+
+								<!-- Incident Card -->
+								<div
+									role="button"
+									tabindex="0"
+									onclick={() => selectIncidentFromFeed(item)}
+									onkeydown={(e) => e.key === 'Enter' && selectIncidentFromFeed(item)}
+									class="p-3.5 rounded-lg border text-left transition-all cursor-pointer bg-card hover:border-foreground/30 {isSelected
+										? 'border-primary ring-1 ring-primary/20 bg-secondary/30'
+										: 'border-border'}"
+								>
+									<!-- Top Metadata -->
+									<div class="flex items-start justify-between gap-2">
+										<div class="flex items-center gap-1.5 flex-wrap">
+											<!-- Severity Pill -->
+											<span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded border {isCritical
+												? 'bg-destructive/15 text-destructive border-destructive/30'
+												: isModerate
+													? 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+													: 'bg-secondary text-foreground border-border'}">
+												Severity: {item.hazardSeverity}
+											</span>
+											<Badge
+												variant={item.vruLethality === 'CRITICAL' ? 'destructive' : 'secondary'}
+												class="text-[9px] font-mono px-1.5 py-0"
+											>
+												{item.vruLethality} VRU
+											</Badge>
+										</div>
+
+										<span class="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
+											<ClockIcon class="h-3 w-3" />
+											<span>{item.createdAt}</span>
+										</span>
 									</div>
-									<h4 class="text-xs font-semibold text-foreground line-clamp-1 mt-1">
+
+									<!-- Title -->
+									<h4 class="text-xs font-semibold text-foreground line-clamp-1 mt-2">
 										{item.title}
 									</h4>
-								</div>
 
-								<!-- Severity Dot Bomb Pill -->
-								<div class="flex flex-col items-end">
-									<div class="text-xs font-bold font-mono px-1.5 py-0.5 rounded border border-border {isCritical ? 'bg-destructive/15 text-destructive border-destructive/30' : isModerate ? 'bg-amber-500/15 text-amber-500 border-amber-500/30' : 'bg-secondary text-foreground'}">
-										{item.hazardSeverity}/10
+									<!-- ASTM Distress & Location -->
+									<p class="text-[11px] text-muted-foreground mt-1 line-clamp-1">
+										{item.astmCode} &bull; {item.locationName}
+									</p>
+
+									<!-- Card Footer Action Buttons -->
+									<div class="flex items-center justify-between mt-3 pt-2.5 border-t border-border/60 text-[11px] gap-2">
+										<span class="text-muted-foreground font-mono text-[10px]">
+											{item.status} &bull; {item.communityConfirmations} confirmed
+										</span>
+
+										<div class="flex items-center gap-1.5">
+											<Button
+												href="/dashboard"
+												size="sm"
+												variant="outline"
+												class="h-6 text-[10px] px-2 border-border gap-1"
+												onclick={(e) => e.stopPropagation()}
+											>
+												<WrenchIcon class="h-2.5 w-2.5" />
+												<span>Dispatch</span>
+											</Button>
+											<Button
+												size="sm"
+												variant="secondary"
+												class="h-6 text-[10px] px-2 font-medium"
+												onclick={(e) => openInspect(item, e)}
+											>
+												<span>Review</span>
+											</Button>
+										</div>
 									</div>
-									<span class="text-[9px] text-muted-foreground mt-0.5">{item.createdAt}</span>
 								</div>
 							</div>
-
-							<!-- ASTM Distress & Location -->
-							<p class="text-[11px] text-muted-foreground mt-1.5 line-clamp-1">
-								{item.distressType} &bull; {item.locationName}
-							</p>
-
-							<!-- Card Footer Actions -->
-							<div class="flex items-center justify-between mt-2.5 pt-2 border-t border-border/60 text-[11px]">
-								<span class="text-muted-foreground font-mono text-[10px]">
-									{item.status} &bull; {item.communityConfirmations} confirmed
-								</span>
-								<button
-									type="button"
-									onclick={(e) => openInspect(item, e)}
-									class="flex items-center gap-1 text-primary hover:underline font-medium text-[11px] cursor-pointer"
-								>
-									<span>Inspect Specs</span>
-									<ArrowUpRightIcon class="h-3 w-3" />
-								</button>
-							</div>
-						</div>
-					{/each}
+						{/each}
+					</div>
 				{/if}
 			</div>
 		</div>
@@ -713,6 +762,12 @@
 			</SheetHeader>
 
 			<div class="flex-1 overflow-y-auto p-5 space-y-5 text-xs">
+				{#if selectedIncident.imageUrl}
+					<div class="rounded-lg overflow-hidden border border-border bg-muted/30">
+						<img src={selectedIncident.imageUrl} alt={selectedIncident.title} class="w-full h-48 object-cover" />
+					</div>
+				{/if}
+
 				<!-- ASTM D6433 Classification Card -->
 				<div class="p-3.5 rounded-lg border border-border bg-muted/30 space-y-2">
 					<div class="text-[11px] uppercase font-semibold text-muted-foreground tracking-wider">
@@ -785,6 +840,23 @@
 </Sheet>
 
 <style>
+	/* Leaflet Base & Matte Dark Palette */
+	:global(.leaflet-container) {
+		background-color: #f8fafc;
+		font-family: inherit;
+		outline: none;
+	}
+
+	:global(.dark .leaflet-container) {
+		background-color: #0c0e14 !important;
+	}
+
+	/* Deep Matte Dark Mode for OpenStreetMap Base Tiles */
+	:global(.dark .leaflet-tile-pane) {
+		filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(125%) saturate(18%);
+		-webkit-filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(125%) saturate(18%);
+	}
+
 	:global(.surios-dot-bomb-container) {
 		background: transparent !important;
 		border: none !important;
@@ -808,7 +880,7 @@
 	}
 
 	:global(.surios-pulse-ring.ring-1) {
-		background: rgba(239, 68, 68, 0.4);
+		background: rgba(239, 68, 68, 0.45);
 		border: 1.5px solid rgba(239, 68, 68, 0.9);
 		animation: surios-radar-pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 	}
@@ -849,7 +921,7 @@
 		border-radius: 9999px;
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 		font-weight: 700;
-		box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+		box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 		transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
 	}
 
@@ -863,8 +935,8 @@
 	}
 
 	:global(.surios-badge.badge-moderate) {
-		width: 23px;
-		height: 23px;
+		width: 24px;
+		height: 24px;
 		background: #f59e0b;
 		color: #ffffff;
 		border: 2px solid #ffffff;
@@ -872,8 +944,8 @@
 	}
 
 	:global(.surios-badge.badge-low) {
-		width: 20px;
-		height: 20px;
+		width: 22px;
+		height: 22px;
 		background: #64748b;
 		color: #ffffff;
 		border: 1.5px solid #ffffff;
@@ -889,6 +961,116 @@
 		outline: 3px solid #38bdf8;
 		outline-offset: 2px;
 		transform: scale(1.2);
+	}
+
+	/* Custom Floating Popover Card (Choice 1 Mockup) */
+	:global(.surios-custom-popup .leaflet-popup-content-wrapper) {
+		background: var(--card) !important;
+		color: var(--card-foreground) !important;
+		border: 1px solid var(--border) !important;
+		border-radius: 12px !important;
+		box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4) !important;
+		padding: 0 !important;
+		overflow: hidden;
+	}
+
+	:global(.surios-custom-popup .leaflet-popup-content) {
+		margin: 0 !important;
+		line-height: normal !important;
+	}
+
+	:global(.surios-custom-popup .leaflet-popup-tip) {
+		background: var(--card) !important;
+		border: 1px solid var(--border) !important;
+	}
+
+	:global(.surios-card-popup) {
+		width: 240px;
+		overflow: hidden;
+		font-family: inherit;
+	}
+
+	:global(.surios-card-img-wrap) {
+		width: 100%;
+		height: 110px;
+		position: relative;
+		overflow: hidden;
+		background-color: var(--muted);
+	}
+
+	:global(.surios-card-img) {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	:global(.surios-card-header-bar) {
+		padding: 8px 12px;
+		border-bottom: 1px solid var(--border);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	:global(.surios-card-code) {
+		font-family: monospace;
+		font-size: 10px;
+		color: var(--muted-foreground);
+	}
+
+	:global(.surios-card-badge) {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+		padding: 2px 6px;
+		border-radius: 4px;
+		font-family: monospace;
+		font-size: 10px;
+		font-weight: 700;
+		color: #ffffff;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+	}
+
+	:global(.surios-card-content) {
+		padding: 10px 12px;
+	}
+
+	:global(.surios-card-title) {
+		font-weight: 700;
+		font-size: 12px;
+		color: var(--foreground);
+		margin: 0 0 4px 0;
+		line-height: 1.3;
+	}
+
+	:global(.surios-card-astm) {
+		font-size: 10px;
+		color: var(--muted-foreground);
+		margin-bottom: 6px;
+	}
+
+	:global(.surios-card-gps) {
+		font-family: monospace;
+		font-size: 9px;
+		color: var(--muted-foreground);
+		margin-bottom: 10px;
+	}
+
+	:global(.surios-card-inspect-btn) {
+		width: 100%;
+		padding: 6px 10px;
+		border-radius: 6px;
+		background-color: var(--primary);
+		color: var(--primary-foreground);
+		font-weight: 600;
+		font-size: 11px;
+		border: none;
+		cursor: pointer;
+		transition: opacity 0.15s ease;
+	}
+
+	:global(.surios-card-inspect-btn:hover) {
+		opacity: 0.9;
 	}
 
 	:global(.surios-tooltip) {
