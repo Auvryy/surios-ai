@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageProps } from './$types.js';
 	import type { FeedIncident } from './+page.server.js';
+	import type { Map as MapLibreMap, Marker as MapLibreMarker } from 'maplibre-gl';
 
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
@@ -36,12 +37,11 @@
 		id: string;
 		name: string;
 		classification: string;
-		coordinates: [number, number][];
+		coordinates: [number, number][]; // [longitude, latitude] for MapLibre
 		pci: number;
 		status: 'CRITICAL' | 'MODERATE' | 'GOOD';
 		color: string;
 		weight: number;
-		dashArray?: string;
 		distressCount: number;
 		surfaceType: string;
 		vruNote: string;
@@ -54,12 +54,12 @@
 			name: 'Manila East Rd / National Highway',
 			classification: 'Primary National Arterial',
 			coordinates: [
-				[14.2850, 121.4120],
-				[14.2825, 121.4150],
-				[14.2813, 121.4173],
-				[14.2785, 121.4250],
-				[14.2765, 121.4312],
-				[14.2740, 121.4420]
+				[121.4120, 14.2850],
+				[121.4150, 14.2825],
+				[121.4173, 14.2813],
+				[121.4250, 14.2785],
+				[121.4312, 14.2765],
+				[121.4420, 14.2740]
 			],
 			pci: 38,
 			status: 'CRITICAL',
@@ -75,10 +75,10 @@
 			name: 'Pedro Guevara Avenue (Poblacion)',
 			classification: 'Downtown Commercial Corridor',
 			coordinates: [
-				[14.2840, 121.4190],
-				[14.2810, 121.4195],
-				[14.2770, 121.4200],
-				[14.2730, 121.4205]
+				[121.4190, 14.2840],
+				[121.4195, 14.2810],
+				[121.4200, 14.2770],
+				[121.4205, 14.2730]
 			],
 			pci: 62,
 			status: 'MODERATE',
@@ -94,16 +94,15 @@
 			name: 'LSPU – Bubukal Student Access Corridor',
 			classification: 'University Access / High-VRU Belt',
 			coordinates: [
-				[14.2813, 121.4173],
-				[14.2780, 121.4140],
-				[14.2750, 121.4100],
-				[14.2690, 121.4021]
+				[121.4173, 14.2813],
+				[121.4140, 14.2780],
+				[121.4100, 14.2750],
+				[121.4021, 14.2690]
 			],
 			pci: 48,
 			status: 'CRITICAL',
 			color: '#e11d48',
 			weight: 5,
-			dashArray: '8, 6',
 			distressCount: 2,
 			surfaceType: 'Subgraded Asphalt with Unpaved Shoulders',
 			vruNote: 'Unprotected shoulder erosion creating sudden 75mm grade step-offs for student scooters.',
@@ -114,10 +113,10 @@
 			name: 'Gatid – Bagumbayan Bypass Road',
 			classification: 'Municipal Bypass Arterial',
 			coordinates: [
-				[14.2930, 121.4280],
-				[14.2905, 121.4240],
-				[14.2860, 121.4200],
-				[14.2850, 121.4120]
+				[121.4280, 14.2930],
+				[121.4240, 14.2905],
+				[121.4200, 14.2860],
+				[121.4120, 14.2850]
 			],
 			pci: 84,
 			status: 'GOOD',
@@ -133,10 +132,10 @@
 			name: 'Public Market Feeder Lane',
 			classification: 'Commercial Feeder / High Axle Load',
 			coordinates: [
-				[14.2770, 121.4200],
-				[14.2745, 121.4175],
-				[14.2721, 121.4150],
-				[14.2700, 121.4110]
+				[121.4200, 14.2770],
+				[121.4175, 14.2745],
+				[121.4150, 14.2721],
+				[121.4110, 14.2700]
 			],
 			pci: 42,
 			status: 'CRITICAL',
@@ -158,13 +157,11 @@
 	let isSheetOpen = $state(false);
 	let mapContainer = $state<HTMLDivElement | null>(null);
 
-	// Leaflet instance pointers for dynamic updates
-	let mapInstance: any = null;
-	let leafletLib: any = null;
-	let tileLayerInstance: any = null;
-	let markersGroup: any = null;
-	let corridorsGroup: any = null;
-	let markerMap = new Map<string, any>();
+	// MapLibre instance pointers
+	let mapInstance: MapLibreMap | null = null;
+	let maplibreglLib: any = null;
+	let markersList: MapLibreMarker[] = [];
+	let markerMap = new Map<string, { marker: MapLibreMarker; popup: any }>();
 
 	const incidents = $derived(data.incidents || []);
 
@@ -186,35 +183,153 @@
 		selectedIncident = item;
 		selectedCorridor = null;
 		if (mapInstance) {
-			mapInstance.flyTo([item.latitude, item.longitude], 16, { duration: 0.75 });
+			mapInstance.flyTo({
+				center: [item.longitude, item.latitude],
+				zoom: 16,
+				pitch: 20,
+				speed: 1.4,
+				curve: 1.2
+			});
 		}
-		const marker = markerMap.get(item.id);
-		if (marker) {
-			marker.openPopup();
+		const markerObj = markerMap.get(item.id);
+		if (markerObj) {
+			markerObj.marker.togglePopup();
 		}
 	}
 
 	function selectCorridor(corridor: RoadCorridor) {
 		selectedCorridor = corridor;
 		selectedIncident = null;
-		if (mapInstance && leafletLib && corridor.coordinates.length > 0) {
-			const bounds = leafletLib.latLngBounds(corridor.coordinates);
-			mapInstance.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, duration: 0.75 });
+		if (mapInstance && corridor.coordinates.length > 0) {
+			// Compute bounding box
+			let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+			for (const [lng, lat] of corridor.coordinates) {
+				if (lng < minLng) minLng = lng;
+				if (lng > maxLng) maxLng = lng;
+				if (lat < minLat) minLat = lat;
+				if (lat > maxLat) maxLat = lat;
+			}
+			mapInstance.fitBounds(
+				[[minLng, minLat], [maxLng, maxLat]],
+				{ padding: 60, maxZoom: 15, duration: 1000 }
+			);
 		}
 	}
 
 	function resetMapView() {
 		if (mapInstance) {
-			mapInstance.flyTo([14.2813, 121.4173], 14, { duration: 0.75 });
-			mapInstance.closePopup();
+			mapInstance.flyTo({
+				center: [121.4173, 14.2813],
+				zoom: 14,
+				pitch: 15,
+				bearing: 0,
+				speed: 1.2
+			});
+			// Close any open popups
+			markersList.forEach((m) => {
+				if (m.getPopup() && m.getPopup().isOpen()) {
+					m.togglePopup();
+				}
+			});
 		}
 		selectedIncident = null;
 		selectedCorridor = null;
 	}
 
+	function setupCorridorsLayer(map: MapLibreMap) {
+		if (!map.getSource('corridors')) {
+			map.addSource('corridors', {
+				type: 'geojson',
+				data: {
+					type: 'FeatureCollection',
+					features: SANTA_CRUZ_CORRIDORS.map((c) => ({
+						type: 'Feature',
+						properties: {
+							id: c.id,
+							name: c.name,
+							pci: c.pci,
+							status: c.status,
+							color: c.color,
+							surfaceType: c.surfaceType,
+							vruNote: c.vruNote,
+							lengthKm: c.lengthKm,
+							classification: c.classification,
+							distressCount: c.distressCount
+						},
+						geometry: {
+							type: 'LineString',
+							coordinates: c.coordinates
+						}
+					}))
+				}
+			});
+		}
+
+		// Blurred halo casing layer
+		if (!map.getLayer('corridors-casing')) {
+			map.addLayer({
+				id: 'corridors-casing',
+				type: 'line',
+				source: 'corridors',
+				layout: {
+					'line-cap': 'round',
+					'line-join': 'round',
+					'visibility': showCorridors ? 'visible' : 'none'
+				},
+				paint: {
+					'line-color': ['get', 'color'],
+					'line-width': 9,
+					'line-opacity': 0.35,
+					'line-blur': 2
+				}
+			});
+		}
+
+		// Core vector stroke layer
+		if (!map.getLayer('corridors-line')) {
+			map.addLayer({
+				id: 'corridors-line',
+				type: 'line',
+				source: 'corridors',
+				layout: {
+					'line-cap': 'round',
+					'line-join': 'round',
+					'visibility': showCorridors ? 'visible' : 'none'
+				},
+				paint: {
+					'line-color': ['get', 'color'],
+					'line-width': 4.5,
+					'line-opacity': 0.95
+				}
+			});
+
+			// Interactive clicks on corridor polylines
+			map.on('click', 'corridors-line', (e: any) => {
+				if (e.features && e.features[0]) {
+					const p = e.features[0].properties;
+					const found = SANTA_CRUZ_CORRIDORS.find((c) => c.id === p.id);
+					if (found) {
+						selectCorridor(found);
+					}
+				}
+			});
+
+			map.on('mouseenter', 'corridors-line', () => {
+				map.getCanvas().style.cursor = 'pointer';
+			});
+
+			map.on('mouseleave', 'corridors-line', () => {
+				map.getCanvas().style.cursor = '';
+			});
+		}
+	}
+
 	function renderMarkers(items: FeedIncident[]) {
-		if (!mapInstance || !leafletLib || !markersGroup) return;
-		markersGroup.clearLayers();
+		if (!mapInstance || !maplibreglLib) return;
+
+		// Clean up previous markers
+		markersList.forEach((m) => m.remove());
+		markersList = [];
 		markerMap.clear();
 
 		items.forEach((item) => {
@@ -236,24 +351,18 @@
 				ringsHtml = `<span class="surios-pulse-ring ring-moderate"></span>`;
 			}
 
-			const isSelected = selectedIncident?.id === item.id;
-			const customIcon = leafletLib.divIcon({
-				className: 'surios-dot-bomb-container',
-				html: `
-					<div class="surios-dot-bomb-wrapper ${isSelected ? 'is-selected' : ''}" data-id="${item.id}" title="${item.title}">
-						${ringsHtml}
-						<div class="surios-badge ${badgeClass}">
-							<span>${item.hazardSeverity}</span>
-						</div>
-					</div>
-				`,
-				iconSize: [36, 36],
-				iconAnchor: [18, 18]
-			});
+			// Marker HTML DOM Element
+			const el = document.createElement('div');
+			el.className = 'surios-dot-bomb-wrapper';
+			el.setAttribute('data-id', item.id);
+			el.innerHTML = `
+				${ringsHtml}
+				<div class="surios-badge ${badgeClass}">
+					<span>${item.hazardSeverity}</span>
+				</div>
+			`;
 
-			const marker = leafletLib.marker([item.latitude, item.longitude], { icon: customIcon });
-
-			// High-fidelity Floating Defect Inspection Card (Matching Mockup Choice 1)
+			// Floating Inspection Card Popover (Matching Mockup Choice 1)
 			const popupHtml = `
 				<div class="surios-card-popup">
 					${item.imageUrl ? `
@@ -284,119 +393,102 @@
 				</div>
 			`;
 
-			marker.bindPopup(popupHtml, {
+			const popup = new maplibreglLib.Popup({
+				offset: 20,
+				closeButton: false,
 				className: 'surios-custom-popup',
-				maxWidth: 260,
-				offset: [0, -16],
-				closeButton: false
-			});
+				maxWidth: '260px'
+			}).setHTML(popupHtml);
 
-			marker.on('click', () => {
+			const marker = new maplibreglLib.Marker({ element: el })
+				.setLngLat([item.longitude, item.latitude])
+				.setPopup(popup)
+				.addTo(mapInstance);
+
+			el.addEventListener('click', () => {
 				selectedIncident = item;
 				selectedCorridor = null;
 			});
 
-			marker.addTo(markersGroup);
-			markerMap.set(item.id, marker);
+			markersList.push(marker);
+			markerMap.set(item.id, { marker, popup });
 		});
 	}
 
-	function renderCorridors() {
-		if (!mapInstance || !leafletLib || !corridorsGroup) return;
-		corridorsGroup.clearLayers();
-
-		SANTA_CRUZ_CORRIDORS.forEach((corridor) => {
-			const isSelected = selectedCorridor?.id === corridor.id;
-			const polyline = leafletLib.polyline(corridor.coordinates, {
-				color: corridor.color,
-				weight: isSelected ? corridor.weight + 3 : corridor.weight,
-				opacity: isSelected ? 1.0 : 0.85,
-				dashArray: corridor.dashArray,
-				lineCap: 'round',
-				lineJoin: 'round'
-			});
-
-			polyline.bindTooltip(`
-				<div class="p-1 space-y-0.5 text-xs">
-					<div class="font-bold" style="color: ${corridor.color}">
-						${corridor.name}
-					</div>
-					<div class="text-[10px] text-muted-foreground">
-						PCI ${corridor.pci}/100 &bull; ${corridor.status}
-					</div>
-				</div>
-			`, { sticky: true, className: 'surios-tooltip' });
-
-			polyline.on('mouseover', () => {
-				polyline.setStyle({ weight: corridor.weight + 3, opacity: 1 });
-			});
-
-			polyline.on('mouseout', () => {
-				if (selectedCorridor?.id !== corridor.id) {
-					polyline.setStyle({ weight: corridor.weight, opacity: 0.85 });
-				}
-			});
-
-			polyline.on('click', () => {
-				selectCorridor(corridor);
-			});
-
-			polyline.addTo(corridorsGroup);
-		});
-	}
-
-	// Dynamic Leaflet Map Lifecycle
+	// MapLibre GL Lifecycle & Theme Synchronization
 	$effect(() => {
 		if (typeof window === 'undefined' || !mapContainer) return;
 
-		import('leaflet').then((L) => {
-			if (!mapContainer) return;
-			leafletLib = L;
+		let observer: MutationObserver | null = null;
 
-			mapInstance = L.map(mapContainer, {
-				center: [14.2813, 121.4173],
+		import('maplibre-gl').then((mod) => {
+			if (!mapContainer) return;
+			const maplibregl = (mod as any).default || mod;
+			maplibreglLib = maplibregl;
+
+			const isDarkInitial = document.documentElement.classList.contains('dark');
+			const initialStyle = isDarkInitial
+				? 'https://tiles.openfreemap.org/styles/dark'
+				: 'https://tiles.openfreemap.org/styles/liberty';
+
+			const map = new maplibregl.Map({
+				container: mapContainer,
+				style: initialStyle,
+				center: [121.4173, 14.2813],
 				zoom: 14,
-				minZoom: 12,
-				maxZoom: 19,
-				zoomControl: false
+				pitch: 15,
+				bearing: 0,
+				attributionControl: false
 			});
 
-			L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
+			mapInstance = map;
 
-			// Fast, high-density detailed street tiles (OpenStreetMap global CDN)
-			tileLayerInstance = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-				maxZoom: 19,
-				subdomains: ['a', 'b', 'c']
-			}).addTo(mapInstance);
+			// Add Controls
+			map.addControl(new maplibregl.NavigationControl({ showCompass: true, showZoom: true }), 'bottom-right');
+			map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
 
-			// Setup Layer Groups
-			corridorsGroup = L.featureGroup().addTo(mapInstance);
-			markersGroup = L.featureGroup().addTo(mapInstance);
+			map.on('load', () => {
+				setupCorridorsLayer(map);
+				renderMarkers(filteredIncidents);
+			});
 
-			// Initial Render
-			renderCorridors();
-			renderMarkers(filteredIncidents);
+			map.on('style.load', () => {
+				setupCorridorsLayer(map);
+			});
 
-			// Delegate clicks from inside Leaflet custom popups to Svelte
-			mapInstance.on('popupopen', (e: any) => {
-				const popupEl = e.popup.getElement();
-				if (!popupEl) return;
-				const btn = popupEl.querySelector('.surios-inspect-btn');
+			// Theme change observer
+			observer = new MutationObserver(() => {
+				const isDark = document.documentElement.classList.contains('dark');
+				const nextStyle = isDark
+					? 'https://tiles.openfreemap.org/styles/dark'
+					: 'https://tiles.openfreemap.org/styles/liberty';
+
+				if (map.getStyle()?.name !== nextStyle) {
+					map.setStyle(nextStyle);
+				}
+			});
+
+			observer.observe(document.documentElement, {
+				attributes: true,
+				attributeFilter: ['class']
+			});
+
+			// Delegate clicks from inside MapLibre Popups to Svelte
+			mapContainer.addEventListener('click', (e) => {
+				const btn = (e.target as HTMLElement)?.closest('.surios-inspect-btn');
 				if (btn) {
-					btn.addEventListener('click', () => {
-						const incidentId = btn.getAttribute('data-id');
-						const found = incidents.find((i) => i.id === incidentId);
-						if (found) {
-							selectedIncident = found;
-							isSheetOpen = true;
-						}
-					});
+					const incidentId = btn.getAttribute('data-id');
+					const found = incidents.find((i) => i.id === incidentId);
+					if (found) {
+						selectedIncident = found;
+						isSheetOpen = true;
+					}
 				}
 			});
 		});
 
 		return () => {
+			if (observer) observer.disconnect();
 			if (mapInstance) {
 				mapInstance.remove();
 				mapInstance = null;
@@ -411,31 +503,22 @@
 		}
 	});
 
-	// Reactive update for corridor visibility
+	// Reactive update for corridor line visibility
 	$effect(() => {
-		if (mapInstance && corridorsGroup) {
-			if (showCorridors) {
-				if (!mapInstance.hasLayer(corridorsGroup)) {
-					mapInstance.addLayer(corridorsGroup);
-				}
-			} else {
-				if (mapInstance.hasLayer(corridorsGroup)) {
-					mapInstance.removeLayer(corridorsGroup);
-				}
+		if (mapInstance && mapInstance.isStyleLoaded()) {
+			const visibility = showCorridors ? 'visible' : 'none';
+			if (mapInstance.getLayer('corridors-line')) {
+				mapInstance.setLayoutProperty('corridors-line', 'visibility', visibility);
 			}
-		}
-	});
-
-	// Reactive highlight for selected corridor polyline
-	$effect(() => {
-		if (mapInstance && corridorsGroup) {
-			renderCorridors();
+			if (mapInstance.getLayer('corridors-casing')) {
+				mapInstance.setLayoutProperty('corridors-casing', 'visibility', visibility);
+			}
 		}
 	});
 </script>
 
 <svelte:head>
-	<title>Map Feed — SuriOS Municipal Civil Infrastructure</title>
+	<title>Map Feed — SuriOS Municipal Civil Infrastructure (MapLibre Vector GIS)</title>
 </svelte:head>
 
 <div class="h-full flex flex-col">
@@ -443,10 +526,10 @@
 	<div class="px-4 py-3 border-b border-border bg-card/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
 		<div class="flex items-center gap-2">
 			<Badge variant="outline" class="text-[10px] font-mono border-border">
-				Laguna Corridor GIS
+				Laguna Vector GIS
 			</Badge>
 			<span class="text-xs text-muted-foreground">
-				Santa Cruz Centroid &bull; 14.2813° N, 121.4173° E
+				Santa Cruz Centroid &bull; 14.2813° N, 121.4173° E &bull; 60 FPS WebGL
 			</span>
 		</div>
 
@@ -474,12 +557,12 @@
 
 	<!-- Main Map Feed Grid: Matte Split Screen -->
 	<div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden min-h-[calc(100vh-8.5rem)]">
-		<!-- Left: Interactive GIS Map Canvas with Floating Matte HUD -->
+		<!-- Left: Interactive WebGL Vector GIS Map Canvas with Floating Matte HUD -->
 		<div class="lg:col-span-7 xl:col-span-8 relative border-b lg:border-b-0 lg:border-r border-border h-96 lg:h-full min-h-[360px]">
-			<div bind:this={mapContainer} class="w-full h-full bg-background"></div>
+			<div bind:this={mapContainer} class="w-full h-full bg-[#0c0c0c]"></div>
 
 			<!-- Floating Top-Left Matte HUD Bar -->
-			<div class="absolute top-3 left-3 z-[1000] flex flex-wrap items-center gap-2 max-w-[calc(100%-1.5rem)] pointer-events-auto">
+			<div class="absolute top-3 left-3 z-10 flex flex-wrap items-center gap-2 max-w-[calc(100%-1.5rem)] pointer-events-auto">
 				<!-- District PCI Badge -->
 				<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-card/90 backdrop-blur-md shadow-md text-xs">
 					<span class="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
@@ -496,7 +579,7 @@
 						type="button"
 						onclick={() => (showCorridors = !showCorridors)}
 						class="px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer {showCorridors ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
-						title="Toggle Road Corridor Telemetry Lines"
+						title="Toggle Road Corridor Vector Telemetry"
 					>
 						<RouteIcon class="h-3.5 w-3.5" />
 						<span>Corridors ({SANTA_CRUZ_CORRIDORS.length})</span>
@@ -514,7 +597,7 @@
 			</div>
 
 			<!-- Floating Bottom-Left Matte Corridor Telemetry Card / HUD Legend -->
-			<div class="absolute bottom-3 left-3 z-[1000] max-w-sm w-full sm:w-auto pointer-events-auto">
+			<div class="absolute bottom-3 left-3 z-10 max-w-sm w-full sm:w-auto pointer-events-auto">
 				{#if selectedCorridor}
 					<!-- Active Corridor Telemetry Card -->
 					<div class="p-3.5 rounded-lg border border-border bg-card/95 backdrop-blur-md shadow-lg space-y-2 text-xs">
@@ -572,7 +655,7 @@
 					<div class="p-3 rounded-lg border border-border bg-card/90 backdrop-blur-md shadow-md text-xs space-y-2">
 						<div class="flex items-center justify-between gap-4">
 							<span class="font-semibold text-foreground text-[11px] uppercase tracking-wider">Laguna Telemetry HUD</span>
-							<span class="text-[10px] text-muted-foreground font-mono">ASTM D6433</span>
+							<span class="text-[10px] text-muted-foreground font-mono">MapLibre Vector</span>
 						</div>
 						<div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
 							<!-- Critical Marker -->
@@ -840,26 +923,8 @@
 </Sheet>
 
 <style>
-	/* Leaflet Base & Matte Dark Palette */
-	:global(.leaflet-container) {
-		background-color: #f8fafc;
-		font-family: inherit;
+	:global(.maplibregl-canvas) {
 		outline: none;
-	}
-
-	:global(.dark .leaflet-container) {
-		background-color: #0c0e14 !important;
-	}
-
-	/* Deep Matte Dark Mode for OpenStreetMap Base Tiles */
-	:global(.dark .leaflet-tile-pane) {
-		filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(125%) saturate(18%);
-		-webkit-filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(125%) saturate(18%);
-	}
-
-	:global(.surios-dot-bomb-container) {
-		background: transparent !important;
-		border: none !important;
 	}
 
 	:global(.surios-dot-bomb-wrapper) {
@@ -957,14 +1022,8 @@
 		box-shadow: 0 6px 14px rgba(0, 0, 0, 0.5);
 	}
 
-	:global(.surios-dot-bomb-wrapper.is-selected .surios-badge) {
-		outline: 3px solid #38bdf8;
-		outline-offset: 2px;
-		transform: scale(1.2);
-	}
-
-	/* Custom Floating Popover Card (Choice 1 Mockup) */
-	:global(.surios-custom-popup .leaflet-popup-content-wrapper) {
+	/* Custom Floating Popover Card in MapLibre */
+	:global(.maplibregl-popup.surios-custom-popup .maplibregl-popup-content) {
 		background: var(--card) !important;
 		color: var(--card-foreground) !important;
 		border: 1px solid var(--border) !important;
@@ -974,14 +1033,9 @@
 		overflow: hidden;
 	}
 
-	:global(.surios-custom-popup .leaflet-popup-content) {
-		margin: 0 !important;
-		line-height: normal !important;
-	}
-
-	:global(.surios-custom-popup .leaflet-popup-tip) {
-		background: var(--card) !important;
-		border: 1px solid var(--border) !important;
+	:global(.maplibregl-popup.surios-custom-popup .maplibregl-popup-tip) {
+		border-top-color: var(--card) !important;
+		border-bottom-color: var(--card) !important;
 	}
 
 	:global(.surios-card-popup) {
@@ -1073,33 +1127,20 @@
 		opacity: 0.9;
 	}
 
-	:global(.surios-tooltip) {
-		background: var(--card) !important;
-		color: var(--card-foreground) !important;
-		border: 1px solid var(--border) !important;
-		border-radius: 6px !important;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
-		padding: 4px 8px !important;
-	}
-
-	:global(.leaflet-tooltip-top:before) {
-		border-top-color: var(--border) !important;
-	}
-
-	:global(.leaflet-control-zoom) {
+	:global(.maplibregl-ctrl-group) {
 		border: 1px solid var(--border) !important;
 		border-radius: 8px !important;
 		overflow: hidden;
+		background-color: var(--card) !important;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 	}
 
-	:global(.leaflet-control-zoom a) {
+	:global(.maplibregl-ctrl-group button) {
 		background-color: var(--card) !important;
-		color: var(--foreground) !important;
 		border-bottom: 1px solid var(--border) !important;
 	}
 
-	:global(.leaflet-control-zoom a:hover) {
+	:global(.maplibregl-ctrl-group button:hover) {
 		background-color: var(--secondary) !important;
 	}
 </style>
