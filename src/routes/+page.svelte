@@ -1,24 +1,24 @@
 <script lang="ts">
-	import CameraIcon from '@lucide/svelte/icons/camera';
-	import MapPinIcon from '@lucide/svelte/icons/map-pin';
-	import AlertTriangleIcon from '@lucide/svelte/icons/triangle-alert';
-	import CheckCircleIcon from '@lucide/svelte/icons/circle-check';
-	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
-	import WrenchIcon from '@lucide/svelte/icons/wrench';
-	import Loader2Icon from '@lucide/svelte/icons/loader';
-	import BikeIcon from '@lucide/svelte/icons/bike';
-	import UploadIcon from '@lucide/svelte/icons/upload';
-	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
+	import type { PageProps } from './$types.js';
+	import type { FeedIncident } from './+page.server.js';
 
-	import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '$lib/components/ui/card/index.js';
+	import MapPinIcon from '@lucide/svelte/icons/map-pin';
+	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
+	import BikeIcon from '@lucide/svelte/icons/bike';
+	import WrenchIcon from '@lucide/svelte/icons/wrench';
+	import CameraIcon from '@lucide/svelte/icons/camera';
+	import CheckCircleIcon from '@lucide/svelte/icons/circle-check';
+	import AlertTriangleIcon from '@lucide/svelte/icons/triangle-alert';
+	import LayersIcon from '@lucide/svelte/icons/layers';
+	import EyeIcon from '@lucide/svelte/icons/eye';
+	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
+
+	import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { Alert, AlertTitle, AlertDescription } from '$lib/components/ui/alert/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs/index.js';
 	import {
 		Sheet,
-		SheetTrigger,
 		SheetContent,
 		SheetHeader,
 		SheetTitle,
@@ -26,415 +26,344 @@
 		SheetFooter
 	} from '$lib/components/ui/sheet/index.js';
 
-	import type { TriageApiResponse, TriageAnalysis } from '$lib/types/triage.js';
+	let { data }: PageProps = $props();
 
-	let selectedFile = $state<File | null>(null);
-	let previewUrl = $state<string | null>(null);
-	let latitude = $state<number>(14.2813);
-	let longitude = $state<number>(121.4173);
-	let locationStatus = $state<string>('Santa Cruz, Laguna');
-	let isLocating = $state<boolean>(false);
-	let isAnalyzing = $state<boolean>(false);
-	let result = $state<TriageApiResponse['data'] | null>(null);
-	let errorMessage = $state<string | null>(null);
-	let rejectionAnalysis = $state<TriageAnalysis | null>(null);
-	let isSheetOpen = $state<boolean>(false);
+	let filter = $state<'ALL' | 'CRITICAL' | 'REPORTED' | 'DISPATCHED' | 'RESOLVED'>('ALL');
+	let selectedIncident = $state<FeedIncident | null>(null);
+	let isSheetOpen = $state(false);
+	let mapContainer = $state<HTMLDivElement | null>(null);
 
-	function handleFileChange(event: Event) {
-		const target = event.target as HTMLInputElement;
-		if (target.files && target.files[0]) {
-			const file = target.files[0];
-			selectedFile = file;
-			previewUrl = URL.createObjectURL(file);
-			errorMessage = null;
-			rejectionAnalysis = null;
-			result = null;
-		}
+	const incidents = $derived(data.incidents || []);
+
+	const filteredIncidents = $derived(
+		filter === 'ALL'
+			? incidents
+			: filter === 'CRITICAL'
+				? incidents.filter((i) => i.riskLevel === 'CRITICAL' || i.vruLethality === 'CRITICAL')
+				: incidents.filter((i) => i.status === filter)
+	);
+
+	function openInspect(incident: FeedIncident) {
+		selectedIncident = incident;
+		isSheetOpen = true;
 	}
 
-	function detectLocation() {
-		if (!('geolocation' in navigator)) return;
-		isLocating = true;
-		navigator.geolocation.getCurrentPosition(
-			(pos) => {
-				latitude = Number(pos.coords.latitude.toFixed(6));
-				longitude = Number(pos.coords.longitude.toFixed(6));
-				locationStatus = `${latitude}° N, ${longitude}° E`;
-				isLocating = false;
-			},
-			() => {
-				isLocating = false;
-			},
-			{ enableHighAccuracy: true, timeout: 8000 }
-		);
-	}
+	// Dynamic Leaflet Map Integration
+	$effect(() => {
+		if (typeof window === 'undefined' || !mapContainer) return;
 
-	async function analyzeImage() {
-		if (!selectedFile) {
-			errorMessage = 'Select a photo first.';
-			return;
-		}
+		let mapInstance: any = null;
 
-		isAnalyzing = true;
-		errorMessage = null;
-		rejectionAnalysis = null;
-		result = null;
+		import('leaflet').then((L) => {
+			if (!mapContainer) return;
 
-		try {
-			const formData = new FormData();
-			formData.append('image', selectedFile);
-			formData.append('latitude', latitude.toString());
-			formData.append('longitude', longitude.toString());
-
-			const response = await fetch('/api/triage', {
-				method: 'POST',
-				body: formData
+			mapInstance = L.map(mapContainer, {
+				center: [14.2813, 121.4173],
+				zoom: 14,
+				zoomControl: false
 			});
 
-			const jsonResponse: TriageApiResponse = await response.json();
+			L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 
-			if (!response.ok || !jsonResponse.success) {
-				errorMessage = jsonResponse.error || 'Inspection failed.';
-				if (response.status === 422 && (jsonResponse as any).analysis) {
-					rejectionAnalysis = (jsonResponse as any).analysis;
-				}
-				return;
+			// Carto Voyager Minimalist Vector Tiles
+			L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+				attribution: '&copy; OpenStreetMap &copy; CARTO',
+				maxZoom: 19
+			}).addTo(mapInstance);
+
+			// Plot Incident Markers
+			filteredIncidents.forEach((item) => {
+				const isCrit = item.hazardSeverity >= 8;
+				const isMod = item.hazardSeverity >= 5 && item.hazardSeverity < 8;
+
+				const markerColor = isCrit ? '#ef4444' : isMod ? '#f59e0b' : '#64748b';
+
+				const customIcon = L.divIcon({
+					className: 'surios-marker',
+					html: `
+						<div style="
+							width: 24px;
+							height: 24px;
+							background: ${markerColor};
+							border: 2px solid #ffffff;
+							border-radius: 50%;
+							display: flex;
+							align-items: center;
+							justify-content: center;
+							color: #ffffff;
+							font-weight: 700;
+							font-size: 10px;
+							box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+							cursor: pointer;
+						">
+							${item.hazardSeverity}
+						</div>
+					`,
+					iconSize: [24, 24],
+					iconAnchor: [12, 12]
+				});
+
+				const marker = L.marker([item.latitude, item.longitude], { icon: customIcon }).addTo(mapInstance);
+
+				marker.on('click', () => {
+					openInspect(item);
+				});
+			});
+		});
+
+		return () => {
+			if (mapInstance) {
+				mapInstance.remove();
 			}
-
-			result = jsonResponse.data;
-		} catch (err: any) {
-			errorMessage = err?.message || 'Network error.';
-		} finally {
-			isAnalyzing = false;
-		}
-	}
-
-	function resetForm() {
-		selectedFile = null;
-		if (previewUrl) URL.revokeObjectURL(previewUrl);
-		previewUrl = null;
-		result = null;
-		errorMessage = null;
-		rejectionAnalysis = null;
-	}
+		};
+	});
 </script>
 
-<div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-	<!-- Minimal Header -->
-	<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
-		<div>
-			<h1 class="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-				Road Defect Triage
-			</h1>
-			<p class="text-xs text-muted-foreground mt-0.5">
-				ASTM D6433 civil distress classification and rider hazard index.
-			</p>
+<svelte:head>
+	<title>Map Feed — SuriOS Municipal Civil Infrastructure</title>
+</svelte:head>
+
+<div class="h-full flex flex-col">
+	<!-- Feed Controls & Stats Strip -->
+	<div class="px-4 py-3 border-b border-border bg-card/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+		<div class="flex items-center gap-2">
+			<Badge variant="outline" class="text-[10px] font-mono border-border">
+				Laguna Corridor
+			</Badge>
+			<span class="text-xs text-muted-foreground">
+				Santa Cruz &bull; 14.2813° N, 121.4173° E
+			</span>
 		</div>
 
-		<div class="flex items-center gap-2 text-xs">
-			<Badge variant="outline" class="font-normal text-muted-foreground border-border">
-				Santa Cruz Anchor
-			</Badge>
-			<Badge variant="secondary" class="font-normal">
-				ASTM D6433
-			</Badge>
+		<!-- Filter Pill Group -->
+		<div class="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 sm:pb-0">
+			{#each [
+				{ id: 'ALL', label: 'All Incidents' },
+				{ id: 'CRITICAL', label: 'Critical VRU' },
+				{ id: 'REPORTED', label: 'Reported' },
+				{ id: 'DISPATCHED', label: 'Dispatched' },
+				{ id: 'RESOLVED', label: 'Resolved' }
+			] as tab}
+				<button
+					type="button"
+					onclick={() => (filter = tab.id as any)}
+					class="px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer {filter === tab.id
+						? 'bg-primary text-primary-foreground font-semibold'
+						: 'bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground'}"
+				>
+					{tab.label}
+				</button>
+			{/each}
 		</div>
 	</div>
 
-	<!-- Triage Canvas -->
-	<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" id="capture">
-		<!-- Left: Input & Image -->
-		<div class="lg:col-span-5 space-y-4">
-			<Card class="border border-border bg-card shadow-xs">
-				<CardHeader class="pb-3 flex flex-row items-center justify-between">
-					<CardTitle class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-						Evidence
-					</CardTitle>
-					{#if previewUrl}
-						<Button
-							variant="ghost"
-							size="sm"
-							onclick={resetForm}
-							class="text-xs text-muted-foreground hover:text-destructive h-6 px-1.5"
-						>
-							Clear
-						</Button>
-					{/if}
-				</CardHeader>
+	<!-- Main Map Feed Grid: Split Screen -->
+	<div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden min-h-[calc(100vh-8.5rem)]">
+		<!-- Left: Interactive GIS Map Canvas -->
+		<div class="lg:col-span-7 xl:col-span-8 relative border-b lg:border-b-0 lg:border-r border-border h-80 lg:h-full min-h-[300px]">
+			<div bind:this={mapContainer} class="w-full h-full bg-muted/20"></div>
 
-				<CardContent class="space-y-4">
-					{#if previewUrl}
-						<div class="relative rounded-xl overflow-hidden border border-border bg-secondary/30 aspect-video flex items-center justify-center">
-							<img src={previewUrl} alt="Preview" class="w-full h-full object-cover" />
-						</div>
-					{:else}
-						<label
-							class="flex flex-col items-center justify-center rounded-xl border border-dashed border-border hover:border-foreground/30 bg-secondary/15 hover:bg-secondary/30 p-8 cursor-pointer transition-colors aspect-video group"
-						>
-							<UploadIcon class="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors mb-2" />
-							<p class="text-xs font-medium text-foreground">Select road photo</p>
-							<p class="text-[11px] text-muted-foreground mt-0.5">JPEG, PNG, WebP</p>
-							<input
-								type="file"
-								accept="image/*"
-								capture="environment"
-								onchange={handleFileChange}
-								class="hidden"
-							/>
-						</label>
-					{/if}
-
-					<Separator class="my-1" />
-
-					<!-- Coordinates -->
-					<div class="space-y-1.5 text-xs">
-						<div class="flex items-center justify-between text-muted-foreground">
-							<span class="text-[11px] font-medium uppercase tracking-wider">Coordinates</span>
-							<button
-								type="button"
-								onclick={detectLocation}
-								disabled={isLocating}
-								class="text-[11px] text-foreground hover:underline disabled:opacity-50"
-							>
-								{isLocating ? 'Locking...' : 'Detect GPS'}
-							</button>
-						</div>
-
-						<div class="grid grid-cols-2 gap-2">
-							<div class="bg-secondary/30 border border-border rounded-lg p-2">
-								<span class="text-muted-foreground text-[10px] block">LAT</span>
-								<span class="font-mono text-foreground font-medium text-xs">{latitude}° N</span>
-							</div>
-							<div class="bg-secondary/30 border border-border rounded-lg p-2">
-								<span class="text-muted-foreground text-[10px] block">LNG</span>
-								<span class="font-mono text-foreground font-medium text-xs">{longitude}° E</span>
-							</div>
-						</div>
-					</div>
-				</CardContent>
-
-				<CardFooter class="pt-0">
-					<Button
-						type="button"
-						onclick={analyzeImage}
-						disabled={!selectedFile || isAnalyzing}
-						class="w-full h-9 font-medium text-xs rounded-lg"
-					>
-						{#if isAnalyzing}
-							<Loader2Icon class="h-3.5 w-3.5 animate-spin mr-1.5" />
-							<span>Analyzing...</span>
-						{:else}
-							<span>Run Triage</span>
-						{/if}
-					</Button>
-				</CardFooter>
-			</Card>
+			<!-- Floating Map Overlay Legend -->
+			<div class="absolute top-3 left-3 z-[1000] p-2 rounded-lg border border-border bg-background/90 backdrop-blur shadow-xs text-[11px] space-y-1">
+				<div class="font-semibold text-foreground text-[10px] uppercase tracking-wider">Severity Legend</div>
+				<div class="flex items-center gap-2">
+					<span class="h-2.5 w-2.5 rounded-full bg-destructive shrink-0"></span>
+					<span class="text-muted-foreground">Critical (8–10)</span>
+				</div>
+				<div class="flex items-center gap-2">
+					<span class="h-2.5 w-2.5 rounded-full bg-amber-500 shrink-0"></span>
+					<span class="text-muted-foreground">Moderate (5–7)</span>
+				</div>
+				<div class="flex items-center gap-2">
+					<span class="h-2.5 w-2.5 rounded-full bg-slate-500 shrink-0"></span>
+					<span class="text-muted-foreground">Low (1–4)</span>
+				</div>
+			</div>
 		</div>
 
-		<!-- Right: Results -->
-		<div class="lg:col-span-7">
-			{#if isAnalyzing}
-				<Card class="border border-border bg-card p-10 text-center flex flex-col items-center justify-center min-h-[380px] shadow-xs">
-					<Loader2Icon class="h-6 w-6 animate-spin text-muted-foreground mb-3" />
-					<h3 class="text-xs font-semibold text-foreground uppercase tracking-wider">Classifying Distress</h3>
-					<p class="text-xs text-muted-foreground max-w-xs mt-1">
-						Extracting ASTM D6433 metrics and calculating lethality index...
-					</p>
-				</Card>
-			{:else if errorMessage}
-				<Alert variant="destructive" class="min-h-[380px] flex flex-col justify-center p-6 bg-card border-destructive/40">
-					<AlertTriangleIcon class="h-4 w-4 text-destructive" />
-					<AlertTitle class="text-xs font-semibold uppercase tracking-wider mt-1">Notice</AlertTitle>
-					<AlertDescription class="text-xs mt-1.5 space-y-2">
-						<p class="text-foreground">{errorMessage}</p>
-						{#if rejectionAnalysis}
-							<p class="text-muted-foreground text-[11px]">{rejectionAnalysis.rejectionReason}</p>
-						{/if}
-					</AlertDescription>
-				</Alert>
-			{:else if result}
-				<Card class="border border-border bg-card shadow-xs space-y-4 p-5">
-					<!-- Top Meta -->
-					<div class="flex items-center justify-between pb-3 border-b border-border text-xs">
-						<div class="flex items-center gap-2">
-							<span class="font-semibold text-foreground">Defect Cataloged</span>
-							{#if result.reportId}
-								<span class="font-mono text-muted-foreground text-[10px]">
-									#{result.reportId.slice(0, 8)}
+		<!-- Right: Live Civil Defect Stream -->
+		<div class="lg:col-span-5 xl:col-span-4 flex flex-col h-full bg-card/20 overflow-hidden">
+			<!-- Stream Header -->
+			<div class="p-3.5 border-b border-border flex items-center justify-between bg-card/60">
+				<div class="flex items-center gap-2">
+					<LayersIcon class="h-4 w-4 text-primary" />
+					<span class="text-xs font-semibold text-foreground">Active Civil Incidents</span>
+					<Badge variant="secondary" class="text-[10px] px-1.5 h-4 font-mono">
+						{filteredIncidents.length}
+					</Badge>
+				</div>
+				<Button href="/report" size="sm" class="h-7 text-xs px-2.5 gap-1 rounded-md">
+					<CameraIcon class="h-3 w-3" />
+					<span>Field Capture</span>
+				</Button>
+			</div>
+
+			<!-- Incident Cards List -->
+			<div class="flex-1 overflow-y-auto p-3 space-y-2.5">
+				{#if filteredIncidents.length === 0}
+					<div class="text-center py-12 text-xs text-muted-foreground">
+						No incidents match the active filter criteria.
+					</div>
+				{:else}
+					{#each filteredIncidents as item}
+						{@const isSelected = selectedIncident?.id === item.id}
+						<div
+							role="button"
+							tabindex="0"
+							onclick={() => openInspect(item)}
+							onkeydown={(e) => e.key === 'Enter' && openInspect(item)}
+							class="p-3 rounded-lg border text-left transition-all cursor-pointer bg-card hover:border-foreground/30 {isSelected
+								? 'border-primary ring-1 ring-primary/20'
+								: 'border-border'}"
+						>
+							<!-- Top Metadata -->
+							<div class="flex items-start justify-between gap-2">
+								<div class="space-y-0.5">
+									<div class="flex items-center gap-1.5">
+										<Badge variant="outline" class="text-[9px] font-mono px-1 py-0 border-border">
+											{item.id}
+										</Badge>
+										<Badge
+											variant={item.vruLethality === 'CRITICAL' ? 'destructive' : 'secondary'}
+											class="text-[9px] font-mono px-1.5 py-0"
+										>
+											{item.vruLethality} VRU
+										</Badge>
+									</div>
+									<h4 class="text-xs font-semibold text-foreground line-clamp-1 mt-1">
+										{item.title}
+									</h4>
+								</div>
+
+								<!-- Severity Pill -->
+								<div class="flex flex-col items-end">
+									<div class="text-xs font-bold font-mono px-1.5 py-0.5 rounded border border-border bg-secondary text-foreground">
+										{item.hazardSeverity}/10
+									</div>
+									<span class="text-[9px] text-muted-foreground mt-0.5">{item.createdAt}</span>
+								</div>
+							</div>
+
+							<!-- ASTM Distress & Location -->
+							<p class="text-[11px] text-muted-foreground mt-1.5 line-clamp-1">
+								{item.distressType} &bull; {item.locationName}
+							</p>
+
+							<!-- Card Footer Actions -->
+							<div class="flex items-center justify-between mt-2.5 pt-2 border-t border-border/60 text-[11px]">
+								<span class="text-muted-foreground font-mono text-[10px]">
+									{item.status} &bull; {item.communityConfirmations} confirmed
 								</span>
-							{/if}
+								<div class="flex items-center gap-1 text-primary hover:underline font-medium text-[11px]">
+									<span>Inspect</span>
+									<ArrowUpRightIcon class="h-3 w-3" />
+								</div>
+							</div>
 						</div>
-						<Badge variant="outline" class="text-[11px] font-normal border-border">
-							Urgency: {result.analysis.urgency}
-						</Badge>
-					</div>
-
-					<!-- Two-Wheeler Hazard Banner -->
-					<div class="rounded-xl border p-3.5 flex items-start gap-3 {
-						result.analysis.vruLethality === 'CRITICAL' || result.analysis.vruLethality === 'HIGH'
-							? 'bg-destructive/10 border-destructive/30 text-destructive'
-							: result.analysis.vruLethality === 'MODERATE'
-								? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
-								: 'bg-secondary/40 border-border text-foreground'
-					}">
-						<BikeIcon class="h-4 w-4 shrink-0 mt-0.5 text-current" />
-						<div class="space-y-0.5 text-xs">
-							<p class="font-semibold uppercase tracking-wide">
-								Two-Wheeler Hazard: {result.analysis.vruLethality}
-							</p>
-							<p class="text-foreground opacity-90 text-[11px] leading-relaxed">
-								{result.analysis.vruDetails}
-							</p>
-						</div>
-					</div>
-
-					<!-- Segmented Tabs -->
-					<Tabs value="overview" class="w-full">
-						<TabsList class="grid w-full grid-cols-3 h-8 bg-secondary/40 p-0.5 rounded-lg">
-							<TabsTrigger value="overview" class="text-xs">Overview</TabsTrigger>
-							<TabsTrigger value="astm" class="text-xs">ASTM Specs</TabsTrigger>
-							<TabsTrigger value="dispatch" class="text-xs">Materials</TabsTrigger>
-						</TabsList>
-
-						<!-- Tab 1: Overview -->
-						<TabsContent value="overview" class="space-y-3 pt-3">
-							<div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-								<div class="rounded-lg bg-secondary/30 border border-border p-3 space-y-0.5">
-									<span class="text-[10px] text-muted-foreground uppercase tracking-wider block">Severity</span>
-									<div class="flex items-baseline gap-1">
-										<span class="text-xl font-bold text-foreground">{result.analysis.hazardSeverity}</span>
-										<span class="text-xs text-muted-foreground">/ 10</span>
-									</div>
-									<Badge
-										variant={result.analysis.riskLevel === 'CRITICAL' ? 'destructive' : 'secondary'}
-										class="text-[9px] h-4 px-1"
-									>
-										{result.analysis.riskLevel}
-									</Badge>
-								</div>
-
-								<div class="rounded-lg bg-secondary/30 border border-border p-3 space-y-0.5">
-									<span class="text-[10px] text-muted-foreground uppercase tracking-wider block">Distress</span>
-									<span class="text-xs font-semibold text-foreground capitalize block truncate">
-										{result.analysis.distressType.replace(/_/g, ' ')}
-									</span>
-									<span class="text-[10px] text-muted-foreground block font-mono">D6433</span>
-								</div>
-
-								<div class="rounded-lg bg-secondary/30 border border-border p-3 space-y-0.5 col-span-2 sm:col-span-1">
-									<span class="text-[10px] text-muted-foreground uppercase tracking-wider block">Dimensions</span>
-									<span class="text-xs font-mono text-foreground block truncate">
-										{result.analysis.estimatedDimensions.depthEstimate} deep
-									</span>
-									<span class="text-[10px] text-muted-foreground block truncate font-mono">
-										{result.analysis.estimatedDimensions.surfaceAreaEstimate}
-									</span>
-								</div>
-							</div>
-
-							<div class="p-3 rounded-lg bg-secondary/20 border border-border space-y-1">
-								<span class="text-[10px] text-muted-foreground uppercase tracking-wider block">Assessment</span>
-								<p class="text-xs text-foreground leading-relaxed">
-									{result.analysis.summary}
-								</p>
-							</div>
-						</TabsContent>
-
-						<!-- Tab 2: ASTM Specs -->
-						<TabsContent value="astm" class="space-y-2 pt-3 text-xs">
-							<div class="rounded-lg bg-secondary/20 border border-border p-3 divide-y divide-border">
-								<div class="flex items-center justify-between py-1.5">
-									<span class="text-muted-foreground">Standard</span>
-									<span class="font-mono text-foreground">ASTM D6433</span>
-								</div>
-								<div class="flex items-center justify-between py-1.5">
-									<span class="text-muted-foreground">Severity Level</span>
-									<span class="font-mono text-foreground">{result.analysis.riskLevel}</span>
-								</div>
-								<div class="flex items-center justify-between py-1.5">
-									<span class="text-muted-foreground">Location</span>
-									<span class="font-mono text-foreground">{latitude}° N, {longitude}° E</span>
-								</div>
-							</div>
-						</TabsContent>
-
-						<!-- Tab 3: Materials -->
-						<TabsContent value="dispatch" class="space-y-3 pt-3 text-xs">
-							<div class="rounded-lg bg-secondary/20 border border-border p-3 space-y-2">
-								<p class="font-medium text-foreground">
-									{result.analysis.recommendedAction}
-								</p>
-
-								{#if result.analysis.materialsChecklist && result.analysis.materialsChecklist.length > 0}
-									<Separator class="my-1.5" />
-									<ul class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-muted-foreground">
-										{#each result.analysis.materialsChecklist as item}
-											<li class="p-1.5 rounded bg-card border border-border text-foreground">
-												{item}
-											</li>
-										{/each}
-									</ul>
-								{/if}
-							</div>
-						</TabsContent>
-					</Tabs>
-
-					<!-- Bottom Action -->
-					<div class="pt-2 flex items-center justify-end border-t border-border">
-						<Sheet bind:open={isSheetOpen}>
-							<SheetTrigger>
-								<Button size="sm" class="h-8 text-xs font-medium gap-1">
-									<span>Dispatch Work Order</span>
-									<ArrowRightIcon class="h-3 w-3" />
-								</Button>
-							</SheetTrigger>
-							<SheetContent side="right" class="w-full sm:max-w-md bg-card border-border p-6 space-y-4">
-								<SheetHeader>
-									<SheetTitle class="text-sm font-bold text-foreground">
-										Municipal Dispatch Order
-									</SheetTitle>
-									<SheetDescription class="text-xs text-muted-foreground">
-										Civil maintenance work order generated by SuriOS.
-									</SheetDescription>
-								</SheetHeader>
-
-								<Separator />
-
-								<div class="space-y-3 text-xs">
-									<div class="p-2.5 rounded bg-secondary/40 border border-border">
-										<span class="text-[10px] text-muted-foreground block">TICKET</span>
-										<span class="font-mono font-semibold text-foreground">
-											#{result.reportId || 'AUTO-GEN'}
-										</span>
-									</div>
-									<div>
-										<span class="text-[10px] text-muted-foreground block">LOCATION</span>
-										<p class="font-mono text-foreground">{latitude}° N, {longitude}° E</p>
-									</div>
-									<div>
-										<span class="text-[10px] text-muted-foreground block">ACTION</span>
-										<p class="text-foreground mt-0.5">{result.analysis.recommendedAction}</p>
-									</div>
-								</div>
-
-								<SheetFooter class="pt-2">
-									<Button class="w-full text-xs h-8" onclick={() => isSheetOpen = false}>
-										Confirm Dispatch
-									</Button>
-								</SheetFooter>
-							</SheetContent>
-						</Sheet>
-					</div>
-				</Card>
-			{:else}
-				<Card class="border border-dashed border-border bg-card/30 p-10 text-center flex flex-col items-center justify-center min-h-[380px] shadow-xs">
-					<ShieldAlertIcon class="h-5 w-5 text-muted-foreground/60 mb-2" />
-					<h3 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Triage Standby</h3>
-					<p class="text-xs text-muted-foreground mt-1 max-w-xs">
-						Capture a pavement defect to classify distress.
-					</p>
-				</Card>
-			{/if}
+					{/each}
+				{/if}
+			</div>
 		</div>
 	</div>
 </div>
+
+<!-- Slide-over Detailed Inspection Drawer -->
+<Sheet bind:open={isSheetOpen}>
+	<SheetContent side="right" class="w-full sm:max-w-lg p-0 flex flex-col bg-card">
+		{#if selectedIncident}
+			<SheetHeader class="p-5 border-b border-border space-y-1.5">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-2">
+						<Badge variant="outline" class="text-[10px] font-mono border-border">
+							{selectedIncident.id}
+						</Badge>
+						<Badge
+							variant={selectedIncident.vruLethality === 'CRITICAL' ? 'destructive' : 'secondary'}
+							class="text-[10px] font-mono"
+						>
+							{selectedIncident.vruLethality} VRU Risk
+						</Badge>
+					</div>
+					<Badge variant="outline" class="text-[10px] font-mono border-border">
+						{selectedIncident.status}
+					</Badge>
+				</div>
+				<SheetTitle class="text-base font-bold text-foreground text-left">
+					{selectedIncident.title}
+				</SheetTitle>
+				<SheetDescription class="text-xs text-muted-foreground text-left">
+					{selectedIncident.locationName} ({selectedIncident.latitude}° N, {selectedIncident.longitude}° E)
+				</SheetDescription>
+			</SheetHeader>
+
+			<div class="flex-1 overflow-y-auto p-5 space-y-5 text-xs">
+				<!-- ASTM D6433 Classification Card -->
+				<div class="p-3.5 rounded-lg border border-border bg-muted/30 space-y-2">
+					<div class="text-[11px] uppercase font-semibold text-muted-foreground tracking-wider">
+						ASTM D6433 Standard Distress Spec
+					</div>
+					<div class="text-sm font-semibold text-foreground">
+						{selectedIncident.astmCode}
+					</div>
+					<p class="text-muted-foreground leading-relaxed text-[11px]">
+						Classified according to municipal asphalt distress identification procedures.
+					</p>
+				</div>
+
+				<!-- Vulnerable Road User (VRU) Profiling -->
+				<div class="p-3.5 rounded-lg border border-destructive/20 bg-destructive/5 space-y-1.5">
+					<div class="flex items-center gap-1.5 text-destructive font-semibold text-[11px]">
+						<BikeIcon class="h-3.5 w-3.5" />
+						<span>Two-Wheeler & Pedestrian Threat Analysis</span>
+					</div>
+					<p class="text-foreground leading-relaxed text-[11px]">
+						{selectedIncident.vruDetails}
+					</p>
+				</div>
+
+				<!-- Recommended Civil Maintenance Action -->
+				<div class="space-y-2">
+					<h4 class="font-semibold text-foreground text-xs uppercase tracking-wider">
+						Civil Engineering Remediation
+					</h4>
+					<div class="p-3 rounded-lg border border-border bg-card">
+						<p class="font-medium text-foreground">{selectedIncident.recommendedAction}</p>
+					</div>
+				</div>
+
+				<!-- Materials & Equipment Checklist -->
+				<div class="space-y-2">
+					<h4 class="font-semibold text-foreground text-xs uppercase tracking-wider">
+						Required Materials &amp; Crew Equipment
+					</h4>
+					<div class="space-y-1">
+						{#each selectedIncident.materialsChecklist as mat}
+							<div class="flex items-center gap-2 p-2 rounded-md border border-border/80 bg-muted/20 text-muted-foreground">
+								<WrenchIcon class="h-3 w-3 text-primary shrink-0" />
+								<span>{mat}</span>
+							</div>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Community Confirmations -->
+				<div class="flex items-center justify-between p-3 rounded-lg border border-border bg-card text-muted-foreground">
+					<span>Community Validation</span>
+					<strong class="text-foreground font-semibold">
+						{selectedIncident.communityConfirmations} field confirmations
+					</strong>
+				</div>
+			</div>
+
+			<SheetFooter class="p-4 border-t border-border flex items-center justify-between gap-2 bg-card/50">
+				<Button variant="outline" size="sm" class="text-xs h-8" onclick={() => (isSheetOpen = false)}>
+					Close
+				</Button>
+				<Button href="/dashboard" size="sm" class="text-xs h-8 gap-1.5">
+					<WrenchIcon class="h-3.5 w-3.5" />
+					<span>Route Dispatch Crew</span>
+				</Button>
+			</SheetFooter>
+		{/if}
+	</SheetContent>
+</Sheet>
