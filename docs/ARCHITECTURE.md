@@ -1,128 +1,162 @@
-# SuriOS — System Architecture & Data Flow
+# SuriOS — System Architecture, Security & Data Flow
 
-This document details the end-to-end system architecture, service interactions, data flow, and infrastructure design for **SuriOS**.
+This document details the end-to-end system architecture, service interactions, authentication security, database schema, and cloud infrastructure design for **SuriOS**.
 
 ---
 
-## 1. High-Level Architecture Diagram
+## 1. High-Level System Architecture Diagram
 
 ```mermaid
 flowchart TD
-    subgraph Clients["📱 Client & Citizen Layer"]
-        Citizen["📱 Citizen Mobile Web<br/>(Camera + HTML5 GPS)"]
-        Inspector["🔍 Field Inspector Web<br/>(High-Res Image + Survey Data)"]
-        Dispatcher["💻 Municipal Command Dashboard<br/>(Interactive GIS Map + Ticket Queue)"]
+    subgraph Clients["📱 Client & Municipal Actor Layer"]
+        Citizen["📱 Citizen Mobile Web<br/>(/report Camera + HTML5 GPS)"]
+        Inspector["🔍 Field Safety Officer<br/>(/ Map Feed + /verification Audit)"]
+        Engineer["💻 Chief Municipal Engineer<br/>(/dashboard Dispatch + /settings ASTM)"]
     end
 
-    subgraph Edge["☁️ Edge & Security Layer (Cloudflare)"]
-        CF["☁️ Cloudflare CDN & DNS<br/>(Instant Edge SSL/HTTPS, DDoS Shield)"]
+    subgraph Edge["☁️ Edge & Reverse Proxy Layer"]
+        CF["☁️ Cloudflare CDN & DNS<br/>(Universal Edge SSL/HTTPS, DDoS Shield)"]
         Nginx["🛡️ Nginx Reverse Proxy (Azure VM)<br/>(Subdomain Routing to Port 3000)"]
     end
 
-    subgraph AppServer["⚡ Application Layer (SvelteKit 3 / Node 22)"]
-        SSR["🎨 SSR & SPA Router (Svelte 5 Runes)"]
-        API["⚡ Server API Routes (/api/triage)"]
-        FormAction["📝 Form Actions (Progressive Enhancement)"]
-        TriageEngine["🧠 Gemini Triage Client (@google/genai)"]
+    subgraph AppServer["⚡ Application & Security Layer (SvelteKit 3 / Node 22)"]
+        Hooks["🔐 Server Hooks (src/hooks.server.ts)<br/>(Session Validation & RBAC Route Guards)"]
+        AuthEngine["🔑 Crypto Auth Engine (src/lib/server/auth.ts)<br/>(NIST Scrypt + Timing-Safe Verification)"]
+        SSR["🎨 SSR & Sidebar App Shell (Svelte 5 Runes)"]
+        API["⚡ REST API Routes (/api/triage, /api/verify-patch)"]
+        FormAction["📝 Progressive Form Actions (use:enhance)"]
+        TriageEngine["🧠 Gemini Vision Client (src/lib/server/gemini.ts)"]
     end
 
-    subgraph ExternalAI["✨ Intelligence Layer (Google Cloud)"]
-        Gemini["🧠 Google Gemini 3.5 Flash<br/>(ASTM D6433 + Two-Wheeler Lethality Index)"]
-        FallbackGemini["🤖 Gemini 3.5 Flash Lite<br/>(Zero-Downtime Fallback Model)"]
+    subgraph ExternalAI["✨ Multimodal Intelligence Layer (Google Cloud)"]
+        GeminiLite["⚡ Gemini Flash Lite Latest<br/>(Primary Sub-2s Vision Inference)"]
+        GeminiFlash["🧠 Gemini Flash Latest / 3.8 Flash<br/>(Automatic High-Capacity Fallback)"]
     end
 
-    subgraph StorageLayer["💾 Data & Persistence Layer"]
-        Drizzle["💧 Drizzle ORM (Type-Safe Query Client)"]
-        Postgres[("🐘 PostgreSQL 16 Alpine<br/>(Reports, Geo-Coords, Triage JSONB, Status)")]
-        LocalDisk[("💾 Docker Storage Volume<br/>(Uploaded Road Imagery in static/uploads)")]
+    subgraph StorageLayer["💾 Persistence & Volume Layer"]
+        Drizzle["💧 Drizzle ORM (Type-Safe SQL Client)"]
+        Postgres[("🐘 PostgreSQL 16 Alpine<br/>(users, sessions, reports)")]
+        LocalDisk[("💾 Docker Storage Volume<br/>(Road Evidence in static/uploads)")]
     end
 
-    Citizen -->|"HTTPS (Multipart Form + GPS)"| CF
-    Inspector -->|"HTTPS (Survey Payload)"| CF
-    Dispatcher -->|"HTTPS (Map & Ticket Actions)"| CF
-
+    Citizen & Inspector & Engineer -->|"HTTPS Request"| CF
     CF -->|"Proxied Traffic"| Nginx
-    Nginx -->|"Proxy Pass (Port 3000)"| AppServer
+    Nginx -->|"Proxy Pass (Port 3000)"| Hooks
 
-    FormAction -->|"Save Image File"| LocalDisk
-    API -->|"Save Image File"| LocalDisk
-    API -->|"Send Buffer + Prompt"| TriageEngine
-    TriageEngine -->|"Primary API Call"| Gemini
-    Gemini -.->|"Auto-Fallback on Demand"| FallbackGemini
-    Gemini -->|"Structured JSON Schema"| TriageEngine
-    TriageEngine -->|"Insert Record via"| Drizzle
-    Drizzle -->|"Persist Ticket"| Postgres
+    Hooks -->|"Validate surios_session Cookie"| AuthEngine
+    AuthEngine <-->|"Query Session & User"| Drizzle
+    Hooks -->|"Populate event.locals"| SSR & API & FormAction
 
-    Dispatcher <-->|"Query Tickets & Mutate Status"| API
-    API <-->|"Fetch GeoJSON & Coordinates"| Drizzle
+    API -->|"Write Verified Image"| LocalDisk
+    API -->|"Send Image Buffer + System Prompt"| TriageEngine
+    TriageEngine -->|"1. Primary Inference"| GeminiLite
+    GeminiLite -.->|"2. Auto-Fallback"| GeminiFlash
+    GeminiLite -->|"Structured JSON + Zod Validation"| TriageEngine
+    TriageEngine -->|"25m Haversine Cluster Check & Insert"| Drizzle
+    Drizzle <-->|"ACID Transactions"| Postgres
 ```
 
 ---
 
-## 2. Core Subsystems
+## 2. Core Architectural Subsystems
 
-### A. 📱 Citizen & Field Capture Layer (Mobile Web)
-* **⚡ Progressive Mobile Web:** Built with Svelte 5 and Tailwind CSS v4, optimized for mobile viewports (`sm:`).
-* **📸 Direct Hardware Capture:** Integrates `<input type="file" capture="environment">` for immediate rear-camera access on mobile devices.
-* **📍 Geolocation Ingestion:** Uses the browser `navigator.geolocation` API to capture precise latitude, longitude, and accuracy radius.
-* **🏍️ Two-Wheeler Lethality Alert:** Instant visual warning banner notifying citizens if the road defect is a lethal hazard for motorcycles, tricycles, and bicycles.
+### A. 🔐 Authentication & Municipal RBAC Subsystem (`src/lib/server/auth.ts` & `src/hooks.server.ts`)
+* **Zero-Dependency Native Cryptography:** Uses Node.js built-in `node:crypto` (`scryptSync` with a 16-byte random salt and `timingSafeEqual` constant-time comparison) to eliminate native C++ addon compilation failures in Alpine Docker containers while guaranteeing NIST-grade password security.
+* **Sliding-Window Database Sessions:** 32-byte random hex tokens stored in the `sessions` table with a 30-day expiration window that automatically renews when less than 15 days remain.
+* **Automatic Demo Seeding (`ensureInitialSeedUsers`):** On server initialization (`ServerInit` hook), verifies if `users` is empty and seeds 3 ready-to-test municipal accounts (`engineer@surios.gov`, `inspector@surios.gov`, `citizen@surios.gov`).
+* **Server-Side Route Guards:** `src/hooks.server.ts` intercepts unauthenticated requests to protected operational routes (`/dashboard`, `/profile`, `/settings`) and issues an HTTP `303` redirect to `/login?redirectTo=...`.
 
-### B. 🛠️ Application & Orchestration Layer (SvelteKit 3)
-* **⚡ Svelte 5 Runes Reactivity:** `$state`, `$derived`, and `$effect` power surgical DOM updates with zero Virtual DOM overhead.
-* **🚀 Production Node Adapter:** Built with `@sveltejs/adapter-node` compiling into a standalone Node server (`build/index.js`).
-* **🔒 Server-Side Key Shielding:** Environment variables (`GEMINI_API_KEY`) are accessed strictly on the server via `$env/static/private` or Node process environment.
+### B. 🧱 Authentic `shadcn-svelte` Sidebar Application Shell (`src/routes/+layout.svelte`)
+* **Collapsible Desktop & Mobile Shell:** Persistent left sidebar (`w-64`) on desktop and a slide-over `<Sheet side="left">` drawer on mobile viewports, categorized into:
+  1. **Operations & GIS:** Map Feed (`/`), Dispatch Canvas (`/dashboard`), Field Report (`/report`).
+  2. **Municipal Modules:** Proof of Patch (`/verification`), Road Analytics (`/analytics`), Contractors & Crews (`/crews`), Community Hub (`/community`).
+  3. **Standards & Policy:** Civil Standards (`/docs`).
+  4. **Personnel & Account:** Profile (`/profile`), Settings (`/settings`).
+* **Zero-Flicker Theme Engine:** Pre-hydration inline script in `src/app.html` combined with OKLCH semantic tokens in `src/routes/layout.css` ensures 100% parity between Dark Mode (`#09090b`) and Light Mode (`#ffffff`).
 
-### C. 🧠 Intelligence & Vision Layer (Google Gemini)
-* **✨ Models:** Primary `gemini-3.5-flash` with automatic fallback to `gemini-3.5-flash-lite` via `@google/genai`.
-* **📊 ASTM D6433 Standards:** Formal civil distress classification (*pothole, alligator cracking, longitudinal cracking, rutting, ravelling, drainage failure*).
-* **🛡️ Spam & Anti-Abuse Rejection:** Instant binary rejection for non-infrastructure imagery (e.g., indoor rooms, pets, selfies, food).
-* **🏍️ Two-Wheeler Lethality Index (SDG 9.1):** Evaluates hazard rating (*NONE, LOW, MODERATE, HIGH, CRITICAL*) specifically for vulnerable road users (60%+ of Philippine road transport).
-* **🔧 Action & Materials Estimation:** Recommends exact public works repair methods and generates a crew equipment checklist.
+### C. 🧠 Multimodal Vision & Civil Triage Pipeline (`src/lib/server/gemini.ts`)
+* **Resilient Multi-Model Fallback Chain:** Sequentially attempts `gemini-flash-lite-latest` $\rightarrow$ `gemini-flash-latest` $\rightarrow$ `gemini-3.8-flash` via `@google/genai` with `responseMimeType: 'application/json'`.
+* **Dual-Stage Validation:**
+  1. **Spam & Non-Infrastructure Gate:** Rejects selfies, indoor rooms, pets, and non-road imagery (`isValidInfrastructure: false`), returning HTTP `422` without polluting the database.
+  2. **Zod Schema Enforcement (`TriageAnalysisSchema`):** Normalizes enum casing and enforces safe defaults so malformed fields never crash the server.
+* **ASTM D6433 & VRU Lethality Profiling:** Categorizes pavement distress (*pothole, alligator cracking, longitudinal/transverse cracking, rutting, ravelling/weathering, drainage failure, edge break*) and evaluates specific kinematic threats to motorcycles, tricycles, and bicycles.
 
-### D. 🐘 Data & Storage Layer (PostgreSQL + Drizzle ORM)
-* **💧 Drizzle ORM Schema:**
-  * `id`: UUID primary key (`defaultRandom()`).
-  * `image_path`: Relative file path inside `static/uploads/`.
-  * `latitude` & `longitude`: High-precision decimals (`DECIMAL(10, 8)` / `DECIMAL(11, 8)`).
-  * `distress_type`: Standardized civil category (`pothole`, `alligator_cracking`, etc.).
-  * `hazard_severity`: Integer rating from `1` to `10`.
-  * `risk_level`: General risk tier (`LOW`, `MODERATE`, `CRITICAL`).
-  * `vru_lethality`: Rider threat level (`NONE` to `CRITICAL`).
-  * `vru_details`: Kinematic hazard explanation for two-wheelers.
-  * `recommended_action`: Repair specification.
-  * `materials_checklist`: `JSONB` array of required crew equipment.
-  * `status`: Lifecycle enum (`REPORTED`, `DISPATCHED`, `RESOLVED`).
-  * `community_confirmations`: Counter for proximity-linked citizen upvotes (~25m).
-  * `resolved_image_path`: After-repair photo for Gemini "Proof of Patch" verification.
-  * `triage_payload`: Full structured Gemini JSON document.
-  * `created_at` & `updated_at`: UTC timestamps.
-
-### E. 💻 Municipal Command Dashboard
-* **🗺️ Interactive GIS Mapping:** Leaflet or MapLibre GL mounted cleanly inside a Svelte 5 `$effect()` block.
-* **📍 Severity Color Clustering:**
-  * 🟢 **Green (1–3):** Minor surface degradation (monitoring queue).
-  * 🟡 **Amber (4–6):** Moderate structural defect (scheduled maintenance).
-  * 🔴 **Red (7–10):** Critical safety hazard / deep pothole (emergency dispatch).
-* **📋 Ticket Management Drawer:** Slide-over sheet (`shadcn-svelte`) showing original photo, AI distress diagnosis, materials checklist, and dispatch controls.
+### D. 📍 Spatial GIS & Proximity Geo-Clustering Layer (`/` & `/dashboard`)
+* **SSR-Safe Leaflet Integration:** Dynamically imports `leaflet` inside a Svelte 5 `$effect()` hook only when `typeof window !== 'undefined'`, paired with high-contrast Carto Voyager vector tiles anchored at **Santa Cruz, Laguna (`14.2813° N, 121.4173° E`)**.
+* **Numeric Severity Marker Encoding:** Adhering to our Zero AI-Slop Charter (no decorative status dots), map pins render the exact numeric **Hazard Severity Index (`1` to `10`)** inside a crisp bordered badge:
+  * **Low (`1–4`):** Neutral Slate (`#64748b`) — Routine monitoring & crack sealing.
+  * **Moderate (`5–7`):** Warning Amber (`#f59e0b`) — Scheduled cold/hot mix patching.
+  * **Critical (`8–10`):** Destructive Red (`#ef4444`) — Emergency dispatch for lethal VRU craters.
+* **Haversine `~25m` Deduplication:** Proximate reports of the same defect merge into a single canonical ticket, incrementing `community_confirmations` as a priority multiplier.
 
 ---
 
-## 3. Infrastructure & Deployment Topology
+## 3. Database Entity-Relationship Schema (`src/lib/server/db/schema.ts`)
+
+```mermaid
+erDiagram
+    USERS ||--o{ SESSIONS : "authenticates via"
+    USERS {
+        uuid id PK
+        text email UK
+        text name
+        text password_hash
+        text role "CITIZEN | OFFICER | ENGINEER | ADMIN"
+        text department
+        text badge_number
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    SESSIONS {
+        text id PK "32-byte hex token"
+        uuid user_id FK
+        timestamptz expires_at
+        text ip_address
+        text user_agent
+        timestamptz created_at
+    }
+    REPORTS {
+        uuid id PK
+        text image_path
+        numeric latitude "DECIMAL(10,8)"
+        numeric longitude "DECIMAL(11,8)"
+        text distress_type "ASTM D6433 category"
+        integer hazard_severity "1 to 10"
+        text risk_level "LOW | MODERATE | CRITICAL"
+        text vru_lethality "NONE | LOW | MODERATE | HIGH | CRITICAL"
+        text vru_details
+        text recommended_action
+        jsonb materials_checklist "string[]"
+        text status "REPORTED | DISPATCHED | IN_REPAIR | RESOLVED"
+        integer community_confirmations "Default 1"
+        text resolved_image_path "Proof of Patch image"
+        jsonb triage_payload "Full Gemini JSON"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+```
+
+---
+
+## 4. Cloud Infrastructure & Deployment Topology
 
 ```mermaid
 flowchart LR
     Internet((🌐 Public Internet)) -->|"HTTPS (Port 443)"| CF["☁️ Cloudflare Edge CDN<br/>(Universal SSL, DDoS Shield)"]
-    CF -->|"Proxied Traffic (HTTP/HTTPS)"| AzureVM["🖥️ Ubuntu Azure VM (Standard_B2s)"]
+    CF -->|"Proxied Traffic"| AzureVM["🖥️ Ubuntu 24.04 Azure VM<br/>(104.215.147.125)"]
 
-    subgraph DockerCompose["🐳 Docker Compose Network"]
-        AppContainer["⚡ SuriOS Web Container<br/>(Node 22 / SvelteKit, Port 3000)"]
-        DBContainer["🐘 PostgreSQL Container<br/>(Data Volume, Internal Port 5432)"]
+    subgraph DockerCompose["🐳 Docker Compose (docker-compose.prod.yml)"]
+        AppContainer["⚡ surios_web_prod<br/>(Node 22 Alpine, Port 3000)"]
+        DBContainer["🐘 surios_db_prod<br/>(PostgreSQL 16 Alpine, Port 5432)"]
+        UploadsVol[("💾 surios_prod_uploads")]
+        PgDataVol[("💾 surios_prod_pgdata")]
     end
 
     AzureVM -->|"Port 3000"| AppContainer
-    AppContainer -->|"Internal Network"| DBContainer
+    AppContainer -->|"Internal Bridge"| DBContainer
+    AppContainer --- UploadsVol
+    DBContainer --- PgDataVol
 ```
 
-* **☁️ Cloudflare:** DNS and Edge SSL proxy for `https://surios.site`.
-* **🖥️ Azure Virtual Machine:** Ubuntu 24.04 LTS instance hosting multi-container Docker network.
-* **🐳 Docker Compose:** Isolated production environment (`docker-compose.prod.yml`).
+* **Local vs. Production Port Isolation:** Local PostgreSQL runs on port `5433` (`surios_local_db` in `docker-compose.yml`) to prevent collisions with existing host services on `5432`, while production runs over an isolated internal Docker bridge (`db:5432` in `docker-compose.prod.yml`).
+* **HTTPS Geolocation Compliance:** Cloudflare Universal SSL terminates HTTPS at the edge for `https://surios.site`, satisfying mobile browsers' strict secure-context requirement for `navigator.geolocation` and camera hardware access.
