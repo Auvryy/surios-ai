@@ -20,6 +20,7 @@ export interface FeedIncident {
 	status: 'REPORTED' | 'DISPATCHED' | 'IN_REPAIR' | 'RESOLVED';
 	communityConfirmations: number;
 	createdAt: string;
+	imageUrl?: string;
 }
 
 const defaultIncidents: FeedIncident[] = [
@@ -39,7 +40,8 @@ const defaultIncidents: FeedIncident[] = [
 		materialsChecklist: ['Tack Coat Emulsion (0.2 gal/yd²)', 'Cold/Hot Asphalt Mix (0.35 tonnes)', 'Vibratory Plate Compactor', 'Asphalt Rake & Tamper'],
 		status: 'REPORTED',
 		communityConfirmations: 5,
-		createdAt: '12m ago'
+		createdAt: '12m ago',
+		imageUrl: '/uploads/1792497053187-c0f0987e311e.jpeg'
 	},
 	{
 		id: 'TKT-7819',
@@ -57,7 +59,8 @@ const defaultIncidents: FeedIncident[] = [
 		materialsChecklist: ['Asphalt Milling Machine', 'Bituminous Base Course', 'Hot Mix Asphalt Surface Course', 'Joint Sealant'],
 		status: 'DISPATCHED',
 		communityConfirmations: 3,
-		createdAt: '45m ago'
+		createdAt: '45m ago',
+		imageUrl: '/uploads/1792498308438-da49636d411c.jpeg'
 	},
 	{
 		id: 'TKT-7814',
@@ -75,7 +78,8 @@ const defaultIncidents: FeedIncident[] = [
 		materialsChecklist: ['Aggregate Base Coarse Type A', 'Pneumatic Roller', 'Bituminous Primer'],
 		status: 'REPORTED',
 		communityConfirmations: 2,
-		createdAt: '2h ago'
+		createdAt: '2h ago',
+		imageUrl: '/uploads/1792498021617-5b77bb42b306.jpeg'
 	},
 	{
 		id: 'TKT-7798',
@@ -93,7 +97,8 @@ const defaultIncidents: FeedIncident[] = [
 		materialsChecklist: ['ASTM D6690 Type II Crack Sealant', 'Air Lance Compressor', 'Pour Pot / Applicator Wand'],
 		status: 'RESOLVED',
 		communityConfirmations: 4,
-		createdAt: '5h ago'
+		createdAt: '5h ago',
+		imageUrl: '/uploads/1792497981972-7aa635807eb0.jpeg'
 	},
 	{
 		id: 'TKT-7782',
@@ -111,7 +116,8 @@ const defaultIncidents: FeedIncident[] = [
 		materialsChecklist: ['Crushed Gravel Base', 'Tack Coat', 'Hot Mix Asphalt Wearing Coarse'],
 		status: 'IN_REPAIR',
 		communityConfirmations: 7,
-		createdAt: '1d ago'
+		createdAt: '1d ago',
+		imageUrl: '/uploads/1792498042266-dce0cd7802f6.jpeg'
 	}
 ];
 
@@ -140,7 +146,8 @@ export const load: PageServerLoad = async () => {
 				materialsChecklist: r.materialsChecklist || ['Cold Patch Asphalt Mix', 'Compactor', 'Safety Cones'],
 				status: (r.status as any) || 'REPORTED',
 				communityConfirmations: r.communityConfirmations || 1,
-				createdAt: 'Just now'
+				createdAt: 'Just now',
+				imageUrl: r.imagePath || undefined
 			}));
 
 			return {
