@@ -78,6 +78,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		// Insert report into PostgreSQL
 		let reportId: string | undefined;
+		let rawId: string | undefined;
 		try {
 			const [inserted] = await db
 				.insert(reports)
@@ -98,7 +99,10 @@ export const POST: RequestHandler = async ({ request }) => {
 				})
 				.returning({ id: reports.id });
 
-			reportId = inserted?.id;
+			if (inserted?.id) {
+				rawId = inserted.id;
+				reportId = `TKT-${inserted.id.slice(0, 6).toUpperCase()}`;
+			}
 		} catch (dbError: any) {
 			console.error('[Triage API] Database insertion warning:', dbError?.message || dbError);
 			// Even if DB fails in offline mode, return AI analysis
@@ -107,7 +111,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({
 			success: true,
 			data: {
-				reportId,
+				reportId: reportId || 'TKT-PENDING',
+				rawId,
 				imageUrl: relativeImagePath,
 				latitude,
 				longitude,

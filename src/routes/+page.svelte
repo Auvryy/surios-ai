@@ -441,6 +441,28 @@
 			renderCorridors();
 		}
 	});
+
+	// Auto-select incident from URL ?id= or ?focus= query parameter
+	$effect(() => {
+		if (typeof window === 'undefined' || !mapInstance || incidents.length === 0) return;
+		const params = new URLSearchParams(window.location.search);
+		const targetId = params.get('id') || params.get('focus');
+		if (targetId) {
+			const found = incidents.find(
+				(i) =>
+					i.id === targetId ||
+					i.rawId === targetId ||
+					i.id.toLowerCase() === targetId.toLowerCase() ||
+					(i.rawId && targetId.toLowerCase() === i.rawId.toLowerCase())
+			);
+			if (found) {
+				// Defer slightly to ensure markers are placed in DOM
+				setTimeout(() => {
+					selectIncidentFromFeed(found);
+				}, 100);
+			}
+		}
+	});
 </script>
 
 <svelte:head>
