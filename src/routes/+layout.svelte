@@ -25,6 +25,10 @@
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
+	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
+	import TruckIcon from '@lucide/svelte/icons/truck';
+	import CheckCheckIcon from '@lucide/svelte/icons/check-check';
+	import AwardIcon from '@lucide/svelte/icons/award';
 
 	let { data, children }: LayoutProps = $props();
 
@@ -41,6 +45,15 @@
 				{ name: 'Map Feed', href: '/', icon: MapPinIcon, badge: 'Live' },
 				{ name: 'Dispatch Canvas', href: '/dashboard', icon: LayoutDashboardIcon, badge: 'LGU' },
 				{ name: 'Field Report', href: '/report', icon: CameraIcon, badge: null }
+			]
+		},
+		{
+			title: 'Municipal Modules (Upcoming)',
+			items: [
+				{ name: 'Proof of Patch', href: '/verification', icon: CheckCheckIcon, badge: 'Planned' },
+				{ name: 'Road Analytics', href: '/analytics', icon: TrendingUpIcon, badge: 'Planned' },
+				{ name: 'Contractors & Crews', href: '/crews', icon: TruckIcon, badge: 'Planned' },
+				{ name: 'Community Hub', href: '/community', icon: AwardIcon, badge: 'Planned' }
 			]
 		},
 		{
