@@ -8,24 +8,21 @@
 
 ---
 
-## 1. System Sitemap & 10-Route Architecture
+## 1. System Sitemap & Dual-Persona Route Architecture
 
-SuriOS is structured around an authentic **`shadcn-svelte` Sidebar Application Shell** (`src/routes/+layout.svelte`) with dedicated distraction-free views for authentication (`/login`, `/register`).
+SuriOS is structured around a **Two-Persona Swiss Minimalist Sidebar Shell** (`src/routes/+layout.svelte`) that strictly separates **Community Citizen (`CITIZEN`)** workflows from **Government Engineering (`ENGINEER` / `OFFICER` / `ADMIN`)** workflows. Non-essential standalone pages (`/docs` "Civil Standards" and `/crews` standalone contractor directory) have been pruned to prevent feature bloat; crew assignment is embedded directly inline within `/dashboard`.
 
-| Route | Module Name | Access Level | 5-Word Functional Mandate | Current Status |
+| Route | Module Name | Target Persona | 5-Word Functional Mandate | Current Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **`/`** | **Map Feed** | Public / All Roles | *Real-time geolocated road hazard stream.* | **Active (Phase 1.5)** — Split-screen Leaflet GIS + incident feed + inspection drawer. |
-| **`/dashboard`** | **Dispatch Canvas** | Protected (`CITIZEN`*, `OFFICER`, `ENGINEER`, `ADMIN`) | *Municipal maintenance work order board.* | **Active Shell / Phase 2 Wiring** — KPI cards, filter table, crew dispatch & status mutations. |
-| **`/report`** | **Field Report** | Public / All Roles | *Camera triage for civil defects.* | **Active / Phase 2 Enhancement** — Mobile camera shutter, GPS lock, `/api/triage` integration. |
-| **`/verification`** | **Proof of Patch** | Protected (`OFFICER`, `ENGINEER`, `ADMIN`) | *AI-verified asphalt repair sign-off archive.* | **Phase 2/3 Target** — Empty state active; dual before/after photo AI verification pipeline specified below. |
-| **`/analytics`** | **Road Analytics** | Protected (All Logged-In) | *Longitudinal road degradation trend analytics.* | **Phase 3 Target** — Empty state active; PCI decay curves & monsoon correlation specified below. |
-| **`/crews`** | **Contractors & Crews** | Protected (`OFFICER`, `ENGINEER`, `ADMIN`) | *Municipal contractor and crew directory.* | **Phase 3 Target** — Empty state active; DPWH contractor roster & equipment readiness specified below. |
-| **`/community`** | **Community Hub** | Public / All Roles | *Citizen hazard reporting validation leaderboard.* | **Phase 3 Target** — Empty state active; proximity consensus & barangay safety bulletins specified below. |
-| **`/docs`** | **Civil Standards** | Public / All Roles | *ASTM D6433 asphalt distress manual.* | **Active (Phase 1)** — Live engineering reference for ASTM D6433, VRU Index, and Zero AI-Slop Charter. |
-| **`/profile`** | **Personnel Profile** | Protected (All Logged-In) | *Municipal credentials and activity statistics.* | **Active (Phase 1)** — Municipal badge card, privileges list, profile update, and password rotation. |
-| **`/settings`** | **System Settings** | Protected (All Logged-In) | *Workspace preferences and alert thresholds.* | **Active (Phase 1)** — Theme toggle, VRU alert switches, ASTM depth sliders, and live AI diagnostics. |
-
-*\*Note: `CITIZEN` users can view transparency metrics on `/dashboard`, while `OFFICER`, `ENGINEER`, and `ADMIN` roles can mutate ticket states and dispatch crews.*
+| **`/community`** | **Civic Feed** | Community (`CITIZEN`) | *Single-column social road hazard stream.* | **Active** — Centered feed (`max-w-2xl`), vertical inset media dock, `+1 Confirmed` upvoting. |
+| **`/liked`** | **Liked History** | Community (`CITIZEN`) | *Track confirmed hazards repair progress.* | **Active** — Citizen watchlist tracking DPWH repair states (`REPORTED` $\rightarrow$ `DISPATCHED` $\rightarrow$ `RESOLVED`). |
+| **`/report`** | **Camera Report** | Community (`CITIZEN`) | *Camera triage for civil defects.* | **Active** — Mobile camera shutter, GPS lock, `/api/triage` integration. |
+| **`/`** | **Map Playground / GIS** | Shared (Community & Gov) | *Real-time geolocated road hazard map.* | **Active** — Interactive Leaflet GIS canvas + safe route avoidance + inspection drawer. |
+| **`/dashboard`** | **Triage & Resolve** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *Municipal maintenance work order board.* | **Active** — Unified filter pills, inline crew dispatch, status resolution, and CSV export. |
+| **`/verification`** | **Proof of Patch QA** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *AI-verified asphalt repair sign-off archive.* | **Active** — Before/After photo QA, ASTM D2950 compaction density & DPWH seal. |
+| **`/analytics`** | **Road Analytics** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *Longitudinal road degradation trend analytics.* | **Active** — 5-year PCI decay curves, monsoon correlation & preventative ROI calculator. |
+| **`/profile`** | **Role Profile** | Shared (Role-Adaptive) | *Credentials, stats, and persona switcher.* | **Active** — Adapts to Guardian vs Engineering Officer + 1-Click Demo Persona Switcher. |
+| **`/settings`** | **System Settings** | Shared (All Logged-In) | *Workspace preferences and alert thresholds.* | **Active** — Theme toggle, VRU alert switches, and ASTM threshold calibration. |
 
 ---
 
@@ -215,12 +212,11 @@ $$d = 2r \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta\phi}{2}\right) + \cos(\phi_
 
 ---
 
-### 4.6. Upcoming Municipal Modules (`/analytics`, `/crews`, `/community`)
-Each upcoming module currently renders the reusable [`EmptyState`](../src/lib/components/ui/empty-state.svelte) component and follows a clear upgrade path for Phase 3:
-1. **`/analytics` (Road Degradation Analytics):**
+### 4.6. Specialized Modules (`/analytics`, `/community`, `/liked`)
+1. **`/analytics` (Road Degradation Analytics — Government Only):**
    * Aggregates PostgreSQL `reports` by `distressType`, `riskLevel`, and barangay corridor.
-   * Displays a **Preventative vs. Reactive Cost Calculator** showing estimated LGU budget saved by fixing defects at Phase 1/2 ($30/m²) vs. Phase 3 structural failure ($300/m²).
-2. **`/crews` (Contractors & Heavy Equipment Directory):**
-   * Lists municipal maintenance units (*Santa Cruz MEO Quick Response Unit A*, *DPWH Laguna 2nd District Asphalt Team*, *Pagsanjan Corridor Drainage Crew*) with active ticket counts and equipment inventories.
-3. **`/community` (Community Consensus & Safety Leaderboard):**
-   * Displays top citizen reporters ranked by verified infrastructure submissions and community confirmations, plus active wet-season/monsoon two-wheeler hazard advisories.
+   * Displays 5-year longitudinal PCI decay curves and a **Preventative vs. Reactive Cost Calculator** showing estimated LGU budget saved by fixing defects early.
+2. **`/community` (Civic Social Stream — Community Only):**
+   * Single-column centered feed (`max-w-2xl mx-auto`) with vertical inset photo/map dock, `+1 Confirmed` upvoting, and top citizen safety contributors.
+3. **`/liked` (Liked & Confirmed History — Community Only):**
+   * Tracks every road defect a citizen has upvoted so they can monitor DPWH dispatch and repair verification in real time.

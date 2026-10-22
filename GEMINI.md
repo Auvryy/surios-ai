@@ -137,19 +137,18 @@ surios-ai/
     ├── app.d.ts                     # SvelteKit App.Locals & PageData typings
     ├── hooks.server.ts              # Session validation, seed init & RBAC route guards
     ├── routes/
-    │   ├── +layout.svelte           # Authentic shadcn collapsible sidebar shell
+    │   ├── +layout.svelte           # Swiss Minimalist two-persona sidebar shell
     │   ├── +layout.server.ts        # Safe user session serialization
     │   ├── layout.css               # Tailwind v4 + OKLCH theme tokens + Leaflet CSS
-    │   ├── +page.svelte             # 1. Map Feed (Split-screen GIS + live defect stream)
-    │   ├── dashboard/               # 2. Dispatch Canvas (Municipal work order command board)
-    │   ├── report/                  # 3. Field Report (Mobile camera shutter & GPS triage)
-    │   ├── verification/            # 4. Proof of Patch (AI repair sign-off archive)
-    │   ├── analytics/               # 5. Road Analytics (PCI decay & budget savings)
-    │   ├── crews/                   # 6. Contractors & Crews (Equipment & SLA directory)
-    │   ├── community/               # 7. Community Hub (Consensus & safety leaderboard)
-    │   ├── docs/                    # 8. Civil Standards (In-app ASTM D6433 & design manual)
-    │   ├── profile/                 # 9. Personnel Profile (Municipal ID, stats & password)
-    │   ├── settings/                # 10. System Settings (Alerts, ASTM sliders & diagnostics)
+    │   ├── +page.svelte             # 1. Map Playground / GIS Canvas
+    │   ├── community/               # 2. Community Feed (Single-column social stream)
+    │   ├── liked/                   # 3. Liked & Confirmed History (Citizen repair tracker)
+    │   ├── report/                  # 4. Camera Report (Mobile camera shutter & GPS triage)
+    │   ├── dashboard/               # 5. Triage & Resolve (Gov work order dispatch & resolution)
+    │   ├── verification/            # 6. Proof of Patch QA (Gov AI repair sign-off archive)
+    │   ├── analytics/               # 7. Road Analytics (Gov PCI decay & budget savings)
+    │   ├── profile/                 # 8. Role-Adaptive Profile & 1-Click Persona Switcher
+    │   ├── settings/                # 9. System Settings
     │   ├── login/                   # Municipal & citizen authentication
     │   ├── register/                # Account onboarding with role selector
     │   ├── logout/                  # Session invalidation endpoint

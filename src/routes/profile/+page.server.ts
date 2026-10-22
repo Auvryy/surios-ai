@@ -205,11 +205,13 @@ export const actions: Actions = {
 	switchPersona: async (event) => {
 		const formData = await event.request.formData();
 		const targetEmail = (formData.get('email') as string)?.trim().toLowerCase();
+		const redirectTo = (formData.get('redirectTo') as string)?.trim();
 
 		if (!targetEmail) {
 			return fail(400, { error: 'Target persona email is required.' });
 		}
 
+		let targetRole = 'CITIZEN';
 		try {
 			const [targetUser] = await db
 				.select()
@@ -221,6 +223,7 @@ export const actions: Actions = {
 				return fail(404, { error: 'Target persona not found.' });
 			}
 
+			targetRole = targetUser.role;
 			const sessionToken = generateSessionToken();
 			const session = await createSession(sessionToken, targetUser.id, {
 				ipAddress: event.getClientAddress?.(),
@@ -231,10 +234,18 @@ export const actions: Actions = {
 			event.locals.user = targetUser;
 			event.locals.session = session;
 
-			return { success: `Switched active role to ${targetUser.name} (${targetUser.role}).` };
+			if (!redirectTo) {
+				return { success: `Switched active role to ${targetUser.name} (${targetUser.role}).` };
+			}
 		} catch (err) {
 			console.error('[Switch Persona Error]', err);
 			return fail(500, { error: 'Failed to switch persona.' });
+		}
+
+		if (redirectTo) {
+			const isGov = targetRole === 'ENGINEER' || targetRole === 'OFFICER' || targetRole === 'ADMIN';
+			const destination = redirectTo === 'auto' ? (isGov ? '/dashboard' : '/community') : redirectTo;
+			throw redirect(303, destination);
 		}
 	}
 };

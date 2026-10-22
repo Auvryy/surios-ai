@@ -86,10 +86,10 @@ Phase 3 activates the remaining specialized modules and prepares the platform fo
    * Build `POST /api/verify-patch` and `verifyRoadPatch()` in `src/lib/server/gemini.ts`.
    * Allow field officers/engineers to select a `DISPATCHED` or `IN_REPAIR` ticket, upload an after-repair photo, and receive a 3-point AI audit (**Surface Planarity**, **Edge Tacking**, **Void Elimination**) before transitioning the ticket to `RESOLVED`.
 
-2. **Activate `/analytics`, `/crews`, and `/community`:**
-   * **`/analytics`:** Live breakdown of defects by ASTM category, VRU risk distribution bar charts (built with clean CSS/Tailwind bars — zero heavy chart bloat), and the **Preventative vs. Reactive Cost Savings Calculator** (\$1 saves \$6–\$10).
-   * **`/crews`:** Interactive directory of Santa Cruz MEO and DPWH District II maintenance units with active work order counts.
-   * **`/community`:** Top citizen safety contributors and wet-season two-wheeler hazard advisories.
+2. **Activate `/analytics`, `/community`, and `/liked` (with Overscoped `/docs` and `/crews` Pruned):**
+   * **`/analytics` (Gov Only):** Live breakdown of defects by ASTM category, 5-year PCI decay curves, and the **Preventative vs. Reactive Cost Savings Calculator** (\$1 saves \$6–\$10).
+   * **`/community` & `/liked` (Community Only):** Single-column Swiss Minimalist social stream with vertical inset media dock, top citizen safety contributors, and personal liked/confirmed hazard tracking.
+   * **Scope Discipline:** Standalone `/docs` ("Civil Standards") and `/crews` ("Contractors & Crews") pages were removed to prevent feature bloat; crew assignment is built directly inline into `/dashboard`.
 
 3. **Final Zero AI-Slop & Mobile Responsiveness Audit:**
    * Verify zero gradients, zero neon glows, zero green status dots, 100% light/dark mode parity, and $\ge 48\text{px}$ mobile touch targets across all 10 routes.

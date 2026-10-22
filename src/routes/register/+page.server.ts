@@ -20,7 +20,7 @@ const registerSchema = z.object({
 });
 
 export const load: PageServerLoad = async ({ url }) => {
-	const redirectTo = url.searchParams.get('redirectTo') || '/dashboard';
+	const redirectTo = url.searchParams.get('redirectTo') || '';
 	return { redirectTo };
 };
 
@@ -32,7 +32,7 @@ export const actions: Actions = {
 		const password = formData.get('password') as string;
 		const role = (formData.get('role') as string) || 'CITIZEN';
 		const department = (formData.get('department') as string)?.trim() || undefined;
-		const redirectTo = (formData.get('redirectTo') as string) || '/dashboard';
+		const requestedRedirect = (formData.get('redirectTo') as string)?.trim();
 
 		const validation = registerSchema.safeParse({ name, email, password, role, department });
 		if (!validation.success) {
@@ -40,8 +40,15 @@ export const actions: Actions = {
 			return fail(400, { name, email, role, department, error });
 		}
 
+		const isGov = role === 'ENGINEER' || role === 'OFFICER';
+		let destination = isGov ? '/dashboard' : '/community';
+		if (requestedRedirect && requestedRedirect.startsWith('/')) {
+			if (isGov || !requestedRedirect.startsWith('/dashboard')) {
+				destination = requestedRedirect;
+			}
+		}
+
 		try {
-			// Check if email already registered
 			const existing = await db
 				.select({ id: users.id })
 				.from(users)
@@ -89,6 +96,6 @@ export const actions: Actions = {
 			});
 		}
 
-		throw redirect(303, redirectTo);
+		throw redirect(303, destination);
 	}
 };

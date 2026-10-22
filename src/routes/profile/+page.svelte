@@ -43,6 +43,12 @@
 		}
 	});
 
+	const isGovUser = $derived(
+		data.user?.role === 'ENGINEER' ||
+		data.user?.role === 'OFFICER' ||
+		data.user?.role === 'ADMIN'
+	);
+
 	function getInitials(nameStr: string): string {
 		if (!nameStr) return 'SO';
 		const parts = nameStr.trim().split(/\s+/);
@@ -52,7 +58,7 @@
 </script>
 
 <svelte:head>
-	<title>Municipal Profile — SuriOS</title>
+	<title>{isGovUser ? 'Municipal Officer Profile' : 'Road Guardian Profile'} — SuriOS</title>
 </svelte:head>
 
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -60,19 +66,25 @@
 	<div class="flex items-center justify-between border-b border-border pb-4">
 		<div class="space-y-1">
 			<div class="flex items-center gap-2">
-				<Badge variant="outline" class="text-xs font-mono border-border">
-					Personnel ID
-				</Badge>
-				<span class="text-xs text-muted-foreground">Municipal Registry</span>
+				<span class="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+					{isGovUser ? 'Municipal Engineering Registry' : 'Laguna Road Guardians'}
+				</span>
 			</div>
 			<h1 class="text-2xl font-bold tracking-tight text-foreground">
-				Civil Staff Profile
+				{isGovUser ? 'Civil Engineering Profile' : 'Community Guardian Profile'}
 			</h1>
 		</div>
 
-		<Badge variant="secondary" class="text-xs font-mono px-2.5 py-1 border-border">
-			{data.user?.role}
-		</Badge>
+		<div class="flex items-center gap-2">
+			{#if !isGovUser}
+				<Button href="/liked" variant="outline" size="sm" class="h-8 text-xs border-border shadow-none">
+					Liked History
+				</Button>
+			{/if}
+			<Badge variant="secondary" class="text-xs font-mono px-2.5 py-1 border-border">
+				{isGovUser ? data.user?.role : 'COMMUNITY'}
+			</Badge>
+		</div>
 	</div>
 
 	<!-- Form Status Feedback -->
@@ -120,9 +132,9 @@
 			<div class="flex flex-col items-start sm:items-end text-xs text-muted-foreground font-mono">
 				<span class="flex items-center gap-1.5 font-medium text-foreground">
 					<BadgeCheckIcon class="h-3.5 w-3.5 text-primary" />
-					<span>Active Municipal Officer</span>
+					<span>{isGovUser ? 'Active Municipal Officer' : 'Verified Road Guardian'}</span>
 				</span>
-				<span class="text-[11px] opacity-75 mt-0.5">Santa Cruz, Laguna Jurisdiction</span>
+				<span class="text-[11px] opacity-75 mt-0.5">Santa Cruz, Laguna</span>
 			</div>
 		</CardContent>
 	</Card>
