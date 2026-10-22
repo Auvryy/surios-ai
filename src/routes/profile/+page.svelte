@@ -14,23 +14,41 @@
 	import CheckCircleIcon from '@lucide/svelte/icons/circle-check';
 	import AlertCircleIcon from '@lucide/svelte/icons/circle-alert';
 	import WrenchIcon from '@lucide/svelte/icons/wrench';
-	import LayersIcon from '@lucide/svelte/icons/layers';
+	import UsersIcon from '@lucide/svelte/icons/users';
+	import BadgeCheckIcon from '@lucide/svelte/icons/badge-check';
+	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
+	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
 
 	let { data, form }: PageProps & { form: ActionData } = $props();
 
 	let name = $state('');
+	let email = $state('');
 	let department = $state('');
+	let badgeNumber = $state('');
+
 	let currentPassword = $state('');
 	let newPassword = $state('');
+	let confirmPassword = $state('');
+
 	let isUpdating = $state(false);
 	let isChangingPassword = $state(false);
+	let isSwitchingPersona = $state<string | null>(null);
 
 	$effect(() => {
 		if (data.user) {
 			name = data.user.name || '';
+			email = data.user.email || '';
 			department = data.user.department || '';
+			badgeNumber = data.user.badgeNumber || '';
 		}
 	});
+
+	function getInitials(nameStr: string): string {
+		if (!nameStr) return 'SO';
+		const parts = nameStr.trim().split(/\s+/);
+		if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+		return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+	}
 </script>
 
 <svelte:head>
@@ -52,7 +70,7 @@
 			</h1>
 		</div>
 
-		<Badge variant="secondary" class="text-xs font-mono px-2 py-1 border-border">
+		<Badge variant="secondary" class="text-xs font-mono px-2.5 py-1 border-border">
 			{data.user?.role}
 		</Badge>
 	</div>
@@ -80,65 +98,136 @@
 	<Card class="border-border bg-card shadow-none">
 		<CardContent class="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 			<div class="flex items-center gap-4">
-				<div class="h-14 w-14 rounded-lg bg-secondary text-foreground font-bold text-xl flex items-center justify-center border border-border shrink-0">
-					{data.user?.name.charAt(0)}
+				<div class="h-14 w-14 rounded-lg bg-secondary text-foreground font-bold text-lg flex items-center justify-center border border-border shrink-0 tracking-tight">
+					{getInitials(name || data.user?.name || '')}
 				</div>
 				<div class="space-y-0.5">
 					<div class="flex items-center gap-2">
-						<h3 class="text-base font-bold text-foreground">{data.user?.name}</h3>
-						{#if data.user?.badgeNumber}
+						<h3 class="text-base font-bold text-foreground">{name || data.user?.name}</h3>
+						{#if badgeNumber || data.user?.badgeNumber}
 							<Badge variant="outline" class="text-[10px] font-mono border-border">
-								{data.user?.badgeNumber}
+								{badgeNumber || data.user?.badgeNumber}
 							</Badge>
 						{/if}
 					</div>
-					<p class="text-xs text-muted-foreground">{data.user?.email}</p>
+					<p class="text-xs text-muted-foreground">{email || data.user?.email}</p>
 					<p class="text-xs text-muted-foreground">
-						{data.user?.department || 'Civil Infrastructure & Transport Directorate'}
+						{department || data.user?.department || 'Civil Infrastructure & Transport Directorate'}
 					</p>
 				</div>
 			</div>
 
 			<div class="flex flex-col items-start sm:items-end text-xs text-muted-foreground font-mono">
-				<span>Status: Active Official</span>
-				<span class="text-[11px] opacity-75">SDG 9 Municipal Registry</span>
+				<span class="flex items-center gap-1.5 font-medium text-foreground">
+					<BadgeCheckIcon class="h-3.5 w-3.5 text-primary" />
+					<span>Active Municipal Officer</span>
+				</span>
+				<span class="text-[11px] opacity-75 mt-0.5">Santa Cruz, Laguna Jurisdiction</span>
 			</div>
 		</CardContent>
 	</Card>
 
-	<!-- Activity Statistics -->
+	<!-- Quick 1-Click Persona Switcher for Hackathon Demonstrations -->
+	<div class="space-y-2.5">
+		<div class="flex items-center justify-between">
+			<span class="text-xs font-medium text-foreground flex items-center gap-1.5">
+				<UsersIcon class="h-3.5 w-3.5 text-muted-foreground" />
+				<span>1-Click Demo Persona Switcher</span>
+			</span>
+			<span class="text-[10px] text-muted-foreground">Switch municipal roles instantly for evaluation</span>
+		</div>
+
+		<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+			{#each data.personas as persona}
+				{@const isCurrent = data.user?.email === persona.email}
+				<form
+					method="POST"
+					action="?/switchPersona"
+					use:enhance={() => {
+						isSwitchingPersona = persona.email;
+						return async ({ update }) => {
+							isSwitchingPersona = null;
+							await update();
+						};
+					}}
+					class="w-full"
+				>
+					<input type="hidden" name="email" value={persona.email} />
+					<button
+						type="submit"
+						disabled={isCurrent || isSwitchingPersona !== null}
+						class="w-full rounded-xl border p-3.5 text-left transition-all duration-150 flex flex-col justify-between gap-2.5 cursor-pointer {isCurrent
+							? 'border-foreground bg-secondary/50 shadow-xs'
+							: 'border-border bg-card hover:border-foreground/30 hover:bg-secondary/20'}"
+					>
+						<div class="space-y-1">
+							<div class="flex items-center justify-between gap-1">
+								<span class="text-xs font-semibold text-foreground">
+									{persona.name}
+								</span>
+								<Badge
+									variant={persona.role === 'ENGINEER' ? 'default' : persona.role === 'OFFICER' ? 'secondary' : 'outline'}
+									class="text-[9px] font-mono px-1.5 py-0"
+								>
+									{persona.role}
+								</Badge>
+							</div>
+							<p class="text-[11px] text-muted-foreground line-clamp-1">
+								{persona.department || 'Civil Infrastructure'}
+							</p>
+						</div>
+
+						<div class="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/60">
+							<span class="font-mono truncate">{persona.badgeNumber || persona.email}</span>
+							<span class="font-medium shrink-0 ml-1">
+								{#if isCurrent}
+									<span class="text-foreground">✓ Active</span>
+								{:else if isSwitchingPersona === persona.email}
+									<RefreshCwIcon class="h-3 w-3 animate-spin inline mr-1" /> Switching...
+								{:else}
+									Switch &rarr;
+								{/if}
+							</span>
+						</div>
+					</button>
+				</form>
+			{/each}
+		</div>
+	</div>
+
+	<!-- Live Municipal Activity Statistics (Queried from Database) -->
 	<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
 		<Card class="border-border bg-card p-3.5 space-y-1 shadow-none">
-			<span class="text-[11px] text-muted-foreground">Reports Filed</span>
-			<div class="text-xl font-bold text-foreground">{data.stats.totalSubmissions}</div>
-			<p class="text-[10px] text-muted-foreground">Geotagged hazards</p>
+			<span class="text-[11px] text-muted-foreground">Reports Cataloged</span>
+			<div class="text-xl font-bold text-foreground font-mono">{data.stats.totalSubmissions}</div>
+			<p class="text-[10px] text-muted-foreground">Geotagged road defects</p>
 		</Card>
 
 		<Card class="border-border bg-card p-3.5 space-y-1 shadow-none">
-			<span class="text-[11px] text-muted-foreground">Verified Fixes</span>
-			<div class="text-xl font-bold text-foreground">{data.stats.verifiedDistresses}</div>
-			<p class="text-[10px] text-muted-foreground">ASTM standard</p>
+			<span class="text-[11px] text-muted-foreground">Critical VRU Hazards</span>
+			<div class="text-xl font-bold text-destructive font-mono">{data.stats.criticalHazards}</div>
+			<p class="text-[10px] text-muted-foreground">Severity 8–10 alerts</p>
 		</Card>
 
 		<Card class="border-border bg-card p-3.5 space-y-1 shadow-none">
-			<span class="text-[11px] text-muted-foreground">Dispatches Approved</span>
-			<div class="text-xl font-bold text-foreground">{data.stats.dispatchesAuthorized}</div>
-			<p class="text-[10px] text-muted-foreground">Work orders issued</p>
+			<span class="text-[11px] text-muted-foreground">Active Dispatches</span>
+			<div class="text-xl font-bold text-foreground font-mono">{data.stats.dispatchesAuthorized}</div>
+			<p class="text-[10px] text-muted-foreground">Municipal work orders</p>
 		</Card>
 
 		<Card class="border-border bg-card p-3.5 space-y-1 shadow-none">
 			<span class="text-[11px] text-muted-foreground">Community Upvotes</span>
-			<div class="text-xl font-bold text-foreground">{data.stats.communityUpvotes}</div>
-			<p class="text-[10px] text-muted-foreground">Consensus points</p>
+			<div class="text-xl font-bold text-foreground font-mono">{data.stats.communityUpvotes}</div>
+			<p class="text-[10px] text-muted-foreground">Consensus confirmations</p>
 		</Card>
 	</div>
 
 	<!-- Municipal Role & Authorized Privileges -->
 	<Card class="border-border bg-card shadow-none">
 		<CardHeader class="pb-3">
-			<CardTitle class="text-sm font-semibold tracking-tight">Authorized Municipal Roles</CardTitle>
+			<CardTitle class="text-sm font-semibold tracking-tight">Authorized Municipal Powers</CardTitle>
 			<CardDescription class="text-xs text-muted-foreground">
-				Operational permissions assigned to your account in the Santa Cruz jurisdiction.
+				Jurisdictional authorizations assigned to your personnel level ({data.user?.role}) under UN SDG 9.1.
 			</CardDescription>
 		</CardHeader>
 		<CardContent>
@@ -160,7 +249,7 @@
 			<CardHeader class="pb-3">
 				<CardTitle class="text-sm font-semibold tracking-tight">General Information</CardTitle>
 				<CardDescription class="text-xs text-muted-foreground">
-					Update your official display name and agency unit.
+					Update your official display name, email, and municipal office unit.
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
@@ -177,17 +266,32 @@
 					class="space-y-3"
 				>
 					<div class="space-y-1">
-						<label for="name" class="text-xs font-medium text-foreground">Full Name</label>
+						<label for="name" class="text-xs font-medium text-foreground">Official Full Name</label>
 						<Input id="name" name="name" bind:value={name} class="h-8 text-xs" required />
 					</div>
 
 					<div class="space-y-1">
-						<label for="department" class="text-xs font-medium text-foreground">Department / Office</label>
-						<Input id="department" name="department" bind:value={department} class="h-8 text-xs" />
+						<label for="email" class="text-xs font-medium text-foreground">Email Address</label>
+						<Input id="email" name="email" type="email" bind:value={email} class="h-8 text-xs" required />
+					</div>
+
+					<div class="space-y-1">
+						<label for="department" class="text-xs font-medium text-foreground">Department / Municipal Office</label>
+						<Input id="department" name="department" bind:value={department} class="h-8 text-xs" placeholder="e.g. Santa Cruz Municipal Engineering Office" />
+					</div>
+
+					<div class="space-y-1">
+						<label for="badgeNumber" class="text-xs font-medium text-foreground">Personnel Badge / Field ID</label>
+						<Input id="badgeNumber" name="badgeNumber" bind:value={badgeNumber} class="h-8 text-xs font-mono" placeholder="e.g. SC-MEO-041" />
 					</div>
 
 					<Button type="submit" disabled={isUpdating} size="sm" class="h-8 text-xs font-medium w-full mt-2">
-						{isUpdating ? 'Saving...' : 'Save Profile Changes'}
+						{#if isUpdating}
+							<RefreshCwIcon class="h-3 w-3 animate-spin mr-1.5" />
+							<span>Saving to Municipal Registry...</span>
+						{:else}
+							<span>Save Profile Changes</span>
+						{/if}
 					</Button>
 				</form>
 			</CardContent>
@@ -198,7 +302,7 @@
 			<CardHeader class="pb-3">
 				<CardTitle class="text-sm font-semibold tracking-tight">Security &amp; Credentials</CardTitle>
 				<CardDescription class="text-xs text-muted-foreground">
-					Rotate your password using NIST-compliant salted scrypt hashing.
+					Rotate your password using NIST-compliant salted scrypt cryptographic hashing.
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
@@ -211,6 +315,7 @@
 							isChangingPassword = false;
 							currentPassword = '';
 							newPassword = '';
+							confirmPassword = '';
 							await update();
 						};
 					}}
@@ -242,8 +347,26 @@
 						/>
 					</div>
 
+					<div class="space-y-1">
+						<label for="confirmPassword" class="text-xs font-medium text-foreground">Confirm New Password</label>
+						<Input
+							id="confirmPassword"
+							name="confirmPassword"
+							type="password"
+							bind:value={confirmPassword}
+							placeholder="Repeat new password"
+							class="h-8 text-xs font-mono"
+							required
+						/>
+					</div>
+
 					<Button type="submit" disabled={isChangingPassword} size="sm" class="h-8 text-xs font-medium w-full mt-2">
-						{isChangingPassword ? 'Updating Password...' : 'Update Password'}
+						{#if isChangingPassword}
+							<RefreshCwIcon class="h-3 w-3 animate-spin mr-1.5" />
+							<span>Encrypting &amp; Updating...</span>
+						{:else}
+							<span>Update Password</span>
+						{/if}
 					</Button>
 				</form>
 			</CardContent>
