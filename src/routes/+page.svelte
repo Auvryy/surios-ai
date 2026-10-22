@@ -40,131 +40,7 @@
 		SheetFooter
 	} from '$lib/components/ui/sheet/index.js';
 
-	interface RoadCorridor {
-		id: string;
-		name: string;
-		classification: string;
-		coordinates: [number, number][];
-		pci: number;
-		status: 'CRITICAL' | 'MODERATE' | 'GOOD';
-		color: string;
-		weight: number;
-		dashArray?: string;
-		distressCount: number;
-		surfaceType: string;
-		vruNote: string;
-		lengthKm: string;
-	}
-
-	const SANTA_CRUZ_CORRIDORS: RoadCorridor[] = [
-		{
-			id: 'CORR-01',
-			name: 'Manila East Rd / National Highway',
-			classification: 'Primary National Arterial',
-			coordinates: [
-				[14.2842, 121.4172],
-				[14.2835, 121.4188],
-				[14.2828, 121.4205],
-				[14.2815, 121.4230],
-				[14.2800, 121.4260],
-				[14.2785, 121.4290],
-				[14.2768, 121.4330],
-				[14.2750, 121.4380],
-				[14.2735, 121.4430]
-			],
-			pci: 38,
-			status: 'CRITICAL',
-			color: '#ef4444',
-			weight: 5,
-			distressCount: 2,
-			surfaceType: 'Asphalt Concrete over Jointed PCCP',
-			vruNote: 'High risk of rim strike & loss-of-control for tricycles/motorcycles during monsoon pooling.',
-			lengthKm: '3.4 km'
-		},
-		{
-			id: 'CORR-02',
-			name: 'Pedro Guevara Avenue (Poblacion)',
-			classification: 'Downtown Commercial Corridor',
-			coordinates: [
-				[14.2842, 121.4172],
-				[14.2830, 121.4182],
-				[14.2815, 121.4190],
-				[14.2790, 121.4198],
-				[14.2760, 121.4202],
-				[14.2730, 121.4205]
-			],
-			pci: 62,
-			status: 'MODERATE',
-			color: '#f59e0b',
-			weight: 5,
-			distressCount: 1,
-			surfaceType: 'Dense Bituminous Surface Course',
-			vruNote: 'Transverse cracking across pedestrian crossings and passenger drop-off zones.',
-			lengthKm: '1.2 km'
-		},
-		{
-			id: 'CORR-03',
-			name: 'Quezon Ave – Bubukal Student Corridor',
-			classification: 'University Access / High-VRU Belt',
-			coordinates: [
-				[14.2838, 121.4165],
-				[14.2818, 121.4148],
-				[14.2790, 121.4125],
-				[14.2750, 121.4090],
-				[14.2715, 121.4050],
-				[14.2690, 121.4021]
-			],
-			pci: 48,
-			status: 'CRITICAL',
-			color: '#e11d48',
-			weight: 5,
-			dashArray: '8, 6',
-			distressCount: 2,
-			surfaceType: 'Subgraded Asphalt with Unpaved Shoulders',
-			vruNote: 'Unprotected shoulder erosion creating sudden 75mm grade step-offs for student scooters.',
-			lengthKm: '2.1 km'
-		},
-		{
-			id: 'CORR-04',
-			name: 'Gatid – Bagumbayan Bypass Road',
-			classification: 'Municipal Bypass Arterial',
-			coordinates: [
-				[14.2930, 121.4280],
-				[14.2915, 121.4250],
-				[14.2890, 121.4225],
-				[14.2865, 121.4190],
-				[14.2845, 121.4170]
-			],
-			pci: 84,
-			status: 'GOOD',
-			color: '#10b981',
-			weight: 4,
-			distressCount: 0,
-			surfaceType: 'Reinforced Concrete Pavement (Rigid)',
-			vruNote: 'Uniform grade with minimal longitudinal cracking; safe multi-modal throughput.',
-			lengthKm: '2.6 km'
-		},
-		{
-			id: 'CORR-05',
-			name: 'Aguinaldo St / Public Market Feeder',
-			classification: 'Commercial Feeder / High Axle Load',
-			coordinates: [
-				[14.2820, 121.4170],
-				[14.2790, 121.4162],
-				[14.2760, 121.4155],
-				[14.2730, 121.4150],
-				[14.2710, 121.4145]
-			],
-			pci: 42,
-			status: 'CRITICAL',
-			color: '#ef4444',
-			weight: 5,
-			distressCount: 1,
-			surfaceType: 'Asphalt Wearing Course with Base Failure',
-			vruNote: 'Deep pothole clusters obscured by market wash runoff; extreme rollover hazard.',
-			lengthKm: '1.1 km'
-		}
-	];
+	import { SANTA_CRUZ_CORRIDORS, type RoadCorridor } from '$lib/data/corridors.js';
 
 	let { data }: PageProps = $props();
 
@@ -536,6 +412,14 @@
 			renderCorridors();
 			renderMarkers(filteredIncidents);
 
+			// Automatically trace the road dispatch route from Depot to the top critical defect on initial view
+			const topDefect = filteredIncidents.find((i) => i.hazardSeverity >= 8) || filteredIncidents[0];
+			if (topDefect) {
+				setTimeout(() => {
+					calculateDispatchRoute(topDefect);
+				}, 250);
+			}
+
 			// Delegate clicks from inside Leaflet custom popups to Svelte
 			mapInstance.on('popupopen', (e: any) => {
 				const popupEl = e.popup.getElement();
@@ -628,9 +512,9 @@
 	<title>Map Feed — SuriOS Municipal Civil Infrastructure</title>
 </svelte:head>
 
-<div class="h-full flex flex-col">
+<div class="h-full flex flex-col overflow-hidden">
 	<!-- Feed Controls & Stats Strip -->
-	<div class="px-4 py-3 border-b border-border bg-card/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+	<div class="px-4 py-3 border-b border-border bg-card/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
 		<div class="flex items-center gap-2">
 			<Badge variant="outline" class="text-[10px] font-mono border-border">
 				Laguna Corridor GIS
@@ -663,9 +547,9 @@
 	</div>
 
 	<!-- Main Map Feed Grid: Matte Split Screen -->
-	<div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden min-h-[calc(100vh-8.5rem)]">
+	<div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden min-h-0 h-full">
 		<!-- Left: Interactive GIS Map Canvas with Floating Matte HUD -->
-		<div class="lg:col-span-7 xl:col-span-8 relative border-b lg:border-b-0 lg:border-r border-border h-96 lg:h-full min-h-[360px]">
+		<div class="lg:col-span-7 xl:col-span-8 relative border-b lg:border-b-0 lg:border-r border-border h-full min-h-0 overflow-hidden">
 			<div bind:this={mapContainer} class="w-full h-full bg-[#0c0e14] {activeTileStyle === 'geoapify-dark' ? 'surios-geoapify-map' : 'surios-matte-map'}"></div>
 
 			<!-- Floating Top-Left Matte HUD Bar -->
@@ -931,7 +815,7 @@
 		</div>
 
 		<!-- Right: Live Civil Defect Stream with Vertical Timeline (Matching Mockup Choice 1) -->
-		<div class="lg:col-span-5 xl:col-span-4 flex flex-col h-full bg-card/20 overflow-hidden">
+		<div class="lg:col-span-5 xl:col-span-4 flex flex-col h-full min-h-0 bg-card/20 overflow-hidden">
 			<!-- Stream Header -->
 			<div class="p-3.5 border-b border-border flex items-center justify-between bg-card/60">
 				<div class="flex items-center gap-2">
