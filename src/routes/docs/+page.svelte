@@ -672,14 +672,14 @@
 
 			<Separator />
 
-			<!-- 7.2 Option 2: Synchronized 55/45 Split-Screen UX -->
+			<!-- 7.2 Focused Social Stream & Dedicated GIS Canvas Architecture -->
 			<div class="space-y-3">
 				<div class="flex items-center gap-2">
 					<Badge variant="secondary" class="text-[10px] font-mono border-border">7.2 UX PATTERN</Badge>
-					<h3 class="text-sm font-semibold text-foreground">Option 2: Synchronized 55/45 Split-Screen Architecture</h3>
+					<h3 class="text-sm font-semibold text-foreground">Focused Single-Column Social Stream &amp; Full GIS Canvas Decoupling</h3>
 				</div>
 				<p>
-					To resolve the classic tension between chronological social browsing and spatial geographical navigation, SuriOS implements the <strong class="text-foreground">55/45 Golden Civil Split-Screen UX</strong>:
+					To avoid visual overload and cognitive fatigue, SuriOS strictly decouples the <strong class="text-foreground">Civic Social Media Feed</strong> from the <strong class="text-foreground">Dedicated GIS Telemetry Canvas</strong>:
 				</p>
 
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
@@ -687,45 +687,27 @@
 						<div class="flex items-center justify-between">
 							<span class="font-semibold text-foreground flex items-center gap-1.5">
 								<Columns2Icon class="h-3.5 w-3.5 text-primary" />
-								<span>55% Civic Social Stream (Left)</span>
+								<span>Centered Civic Stream (No Side Map)</span>
 							</span>
-							<Badge variant="outline" class="text-[9px] font-mono border-border">PRIMARY VIEWPORT</Badge>
+							<Badge variant="outline" class="text-[9px] font-mono border-border">DISTRACTION-FREE</Badge>
 						</div>
 						<p class="text-[11px] leading-relaxed">
-							Scrollable social feed designed for high information density. Each card presents verified citizen reports, VRU risk badges, multi-image galleries, and interactive confirmation buttons. Built with virtualized windowing for 60fps scrolling on lower-end mobile devices.
+							Clean centered feed column (<code class="font-mono text-primary text-[10px]">max-w-2xl mx-auto</code>) on both desktop PC and mobile smartphones. Emphasizes citizen discussion, community upvotes, and defect photo inspection without competing visual noise from a side map.
 						</p>
 					</div>
 
 					<div class="p-3.5 rounded-xl bg-secondary/30 border border-border space-y-1.5">
 						<div class="flex items-center justify-between">
 							<span class="font-semibold text-foreground flex items-center gap-1.5">
-								<RadarIcon class="h-3.5 w-3.5 text-primary" />
-								<span>45% Sticky Leaflet Radar Map (Right)</span>
+								<MapPinIcon class="h-3.5 w-3.5 text-primary" />
+								<span>Embedded Mini-Map to Full GIS Deep-Link</span>
 							</span>
-							<Badge variant="outline" class="text-[9px] font-mono border-primary/40 text-primary">STICKY TELEMETRY</Badge>
+							<Badge variant="outline" class="text-[9px] font-mono border-primary/40 text-primary">DEEP NAVIGATION</Badge>
 						</div>
 						<p class="text-[11px] leading-relaxed">
-							Viewport-pinned Leaflet GIS radar displaying Santa Cruz and Pagsanjan road networks in light CAD Positron styling. As users scroll the stream, the map dynamically pans and highlights matching corridor polylines, squircle dot markers, and active municipal repair crews.
+							Each report card features a compact vector mini-map tile inside the hero photo. Clicking <code class="font-mono text-primary text-[10px]">[ MAP ]</code> seamlessly deep-links to the full-screen city-wide GIS Map canvas (<code class="font-mono text-primary text-[10px]">/?incident=&#123;id&#125;</code>) for deep turn-by-turn routing and provincial telemetry.
 						</p>
 					</div>
-				</div>
-
-				<div class="p-3.5 rounded-xl bg-secondary/20 border border-border space-y-2">
-					<p class="font-semibold text-foreground text-xs flex items-center gap-1.5">
-						<NavigationIcon class="h-3.5 w-3.5 text-primary" />
-						Bi-directional Reactive Synchronization Engine
-					</p>
-					<ul class="space-y-1.5 list-disc list-inside text-[11px]">
-						<li>
-							<strong class="text-foreground">Stream-to-Radar Hook:</strong> Modern Svelte 5 runes coupled with an Intersection Observer emit the active visible incident ID. The sticky Leaflet map fires a lightweight <code class="font-mono text-primary text-[10px]">map.panTo([lat, lng], &#123; animate: true &#125;)</code> and pulses the active squircle marker without full component re-rendering.
-						</li>
-						<li>
-							<strong class="text-foreground">Radar-to-Stream Hook:</strong> Clicking any defect marker or corridor vector on the Leaflet radar immediately dispatches a scroll event to the left column, smoothly scrolling the stream to the matching card and momentarily stroking its border in Civil Amber.
-						</li>
-						<li>
-							<strong class="text-foreground">Mobile Adaptive Degradation:</strong> On viewports below 1024px, the 55/45 desktop split smoothly collapses into an ergonomic tabbed or floating sheet interface with a sticky <span class="font-mono text-primary text-[10px]">Radar Pill</span> button, granting motorcycle commuters instant thumb-reach access between stream and map.
-						</li>
-					</ul>
 				</div>
 			</div>
 

@@ -5,8 +5,6 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 
-	import { SANTA_CRUZ_CORRIDORS } from '$lib/data/corridors.js';
-
 	import AwardIcon from '@lucide/svelte/icons/award';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
@@ -142,8 +140,6 @@
 	let leaderboardSearch = $state('');
 
 	// UI Interactive States
-	let activeHazardId = $state<string | null>(null);
-	let highlightedPostId = $state<string | null>(null);
 	let openMenuPostId = $state<string | null>(null);
 	let copiedPostId = $state<string | null>(null);
 	let toastMessage = $state<string | null>(null);
@@ -161,16 +157,6 @@
 		severity: 0,
 		location: ''
 	});
-
-	// Leaflet Radar Map State
-	let mapContainer = $state<HTMLDivElement | null>(null);
-	let leafletLib: any = null;
-	let mapInstance: any = null;
-	let tileLayerInstance: any = null;
-	let corridorsGroup: any = null;
-	let markersGroup: any = null;
-	let markerMap = new Map<string, any>();
-	let isDarkMode = $state(false);
 
 	// Guardians Honor Roll Data
 	let guardians = $state<GuardianLeader[]>([
@@ -550,11 +536,6 @@
 		})
 	);
 
-	// Currently Active Defect in Radar
-	const activePost = $derived(
-		posts.find((p) => p.id === activeHazardId) || null
-	);
-
 	// Filtered Guardians Leaderboard
 	const filteredGuardians = $derived(
 		guardians.filter((g) => {
@@ -708,236 +689,6 @@
 		lightbox.currentIndex = (lightbox.currentIndex - 1 + lightbox.images.length) % lightbox.images.length;
 	}
 
-	// Leaflet Map Interactivity
-	function updateTileLayer() {
-		if (!mapInstance || !leafletLib) return;
-		if (tileLayerInstance) {
-			mapInstance.removeLayer(tileLayerInstance);
-			tileLayerInstance = null;
-		}
-
-		tileLayerInstance = leafletLib.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-			maxZoom: 19,
-			subdomains: ['a', 'b', 'c']
-		}).addTo(mapInstance);
-	}
-
-	function renderCorridors() {
-		if (!mapInstance || !leafletLib || !corridorsGroup) return;
-		corridorsGroup.clearLayers();
-
-		SANTA_CRUZ_CORRIDORS.forEach((corridor) => {
-			const polyline = leafletLib.polyline(corridor.coordinates, {
-				color: corridor.color,
-				weight: 4,
-				opacity: 0.75,
-				dashArray: corridor.dashArray,
-				lineCap: 'round',
-				lineJoin: 'round'
-			});
-
-			polyline.bindTooltip(`
-				<div class="text-[11px] font-mono leading-tight">
-					<strong style="color: ${corridor.color}">${corridor.name}</strong><br/>
-					<span>PCI: ${corridor.pci}/100 • ${corridor.status}</span>
-				</div>
-			`, { sticky: true, className: 'surios-radar-tooltip' });
-
-			polyline.addTo(corridorsGroup);
-		});
-	}
-
-	function renderMarkers() {
-		if (!mapInstance || !leafletLib || !markersGroup) return;
-		markersGroup.clearLayers();
-		markerMap.clear();
-
-		filteredPosts.forEach((post) => {
-			const isCritical = post.severity >= 8.0;
-			const isSelected = activeHazardId === post.id;
-			const color = isCritical ? '#ef4444' : post.severity >= 6.0 ? '#f59e0b' : '#64748b';
-
-			const customIcon = leafletLib.divIcon({
-				className: 'surios-radar-marker-container',
-				html: `
-					<div class="radar-squircle-node ${isSelected ? 'is-active' : ''} ${isCritical ? 'is-critical' : ''}" data-id="${post.id}">
-						${isCritical ? '<div class="radar-ping-ring"></div>' : ''}
-						<div class="radar-squircle-box" style="background-color: ${color}">
-							<span>${post.severity.toFixed(1)}</span>
-						</div>
-					</div>
-				`,
-				iconSize: [32, 32],
-				iconAnchor: [16, 16]
-			});
-
-			const marker = leafletLib.marker([post.latitude, post.longitude], {
-				icon: customIcon,
-				title: post.title,
-				zIndexOffset: isSelected ? 1000 : isCritical ? 500 : 100
-			});
-
-			marker.on('click', () => {
-				selectPostFromMap(post.id);
-			});
-
-			const popupHtml = `
-				<div class="surios-radar-card-popup">
-					<div class="flex items-center justify-between gap-2 border-b border-border/40 pb-1 mb-1">
-						<span class="font-mono text-[10px] text-muted-foreground font-bold">${post.id}</span>
-						<span class="text-[9px] font-mono px-1 py-0.5 rounded text-white font-bold" style="background-color: ${color}">
-							VRU ${post.severity.toFixed(1)}/10
-						</span>
-					</div>
-					<h4 class="font-bold text-xs text-foreground leading-snug">${post.title}</h4>
-					<p class="text-[11px] text-muted-foreground mt-0.5">${post.location}</p>
-					<div class="text-[10px] font-mono text-primary font-semibold mt-1">${post.astmCode}</div>
-					<div class="mt-2 pt-1.5 border-t border-border/40 flex items-center justify-between gap-2">
-						<button class="radar-scroll-btn text-[10px] font-medium text-primary hover:underline" data-id="${post.id}">
-							Scroll to Post &darr;
-						</button>
-						<a href="/?incident=${post.id}" class="text-[10px] font-mono text-muted-foreground hover:text-foreground">
-							GIS Map &rarr;
-						</a>
-					</div>
-				</div>
-			`;
-
-			marker.bindPopup(popupHtml, {
-				className: 'surios-radar-leaflet-popup',
-				closeButton: false,
-				offset: [0, -10]
-			});
-
-			marker.addTo(markersGroup);
-			markerMap.set(post.id, marker);
-		});
-	}
-
-	// Smoothly fly right-side map to post GPS coordinates and highlight
-	function focusHazard(hazardId: string, shouldFly: boolean = true) {
-		activeHazardId = hazardId;
-		const post = posts.find((p) => p.id === hazardId);
-		if (!post || !mapInstance || !leafletLib) return;
-
-		if (shouldFly) {
-			mapInstance.flyTo([post.latitude, post.longitude], 16, {
-				duration: 0.8,
-				easeLinearity: 0.25
-			});
-		}
-
-		renderMarkers();
-
-		const marker = markerMap.get(hazardId);
-		if (marker) {
-			marker.openPopup();
-		}
-	}
-
-	// Clicking map pin smoothly scrolls left-side feed to post card
-	function selectPostFromMap(hazardId: string) {
-		activeHazardId = hazardId;
-		renderMarkers();
-
-		const element = document.getElementById(`post-${hazardId}`);
-		if (element) {
-			element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-			highlightedPostId = hazardId;
-			setTimeout(() => {
-				if (highlightedPostId === hazardId) highlightedPostId = null;
-			}, 2500);
-		}
-	}
-
-	function resetRadarView() {
-		activeHazardId = null;
-		if (mapInstance && leafletLib) {
-			mapInstance.setView([14.2813, 121.4173], 14, { animate: true });
-			renderMarkers();
-		}
-	}
-
-	// Leaflet dynamic mount & theme sync
-	$effect(() => {
-		if (typeof window === 'undefined' || !mapContainer) return;
-
-		isDarkMode = document.documentElement.classList.contains('dark');
-
-		const observer = new MutationObserver(() => {
-			const dark = document.documentElement.classList.contains('dark');
-			if (dark !== isDarkMode) {
-				isDarkMode = dark;
-				updateTileLayer();
-				renderCorridors();
-				renderMarkers();
-			}
-		});
-
-		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-
-		import('leaflet').then((L) => {
-			if (!mapContainer) return;
-			leafletLib = L;
-
-			mapInstance = L.map(mapContainer, {
-				center: [14.2813, 121.4173],
-				zoom: 14,
-				minZoom: 12,
-				maxZoom: 19,
-				zoomControl: false
-			});
-
-			L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
-
-			updateTileLayer();
-
-			corridorsGroup = L.featureGroup().addTo(mapInstance);
-			markersGroup = L.featureGroup().addTo(mapInstance);
-
-			renderCorridors();
-			renderMarkers();
-
-			// Auto focus first critical defect
-			const firstCrit = posts.find((p) => p.severity >= 8.0);
-			if (firstCrit) {
-				activeHazardId = firstCrit.id;
-				setTimeout(() => {
-					focusHazard(firstCrit.id, false);
-				}, 400);
-			}
-
-			// Delegate popup scroll button clicks
-			mapInstance.on('popupopen', (e: any) => {
-				const el = e.popup.getElement();
-				if (!el) return;
-				const btn = el.querySelector('.radar-scroll-btn');
-				if (btn) {
-					btn.addEventListener('click', () => {
-						const id = btn.getAttribute('data-id');
-						if (id) selectPostFromMap(id);
-					});
-				}
-			});
-		});
-
-		return () => {
-			observer.disconnect();
-			if (mapInstance) {
-				mapInstance.remove();
-				mapInstance = null;
-			}
-		};
-	});
-
-	// Re-render markers if filter changes
-	$effect(() => {
-		if (mapInstance && leafletLib && markersGroup) {
-			renderMarkers();
-		}
-	});
-
 	function getVruBadgeClass(risk: SocialHazardPost['vruRisk']): string {
 		switch (risk) {
 			case 'CRITICAL':
@@ -965,7 +716,7 @@
 />
 
 <svelte:head>
-	<title>Civic Social Stream & Radar Map — Santa Cruz, Laguna — SuriOS</title>
+	<title>Civic Social Stream — Santa Cruz, Laguna — SuriOS</title>
 </svelte:head>
 
 <div class="max-w-[1600px] mx-auto px-3 sm:px-5 lg:px-8 py-5 space-y-6 font-sans">
@@ -974,7 +725,7 @@
 		<div class="space-y-1">
 			<div class="flex flex-wrap items-center gap-2">
 				<Badge variant="outline" class="text-xs font-mono border-primary text-primary bg-primary/5">
-					Option 2: Civic Social Stream & Live Radar
+					Civic Social Stream
 				</Badge>
 				<span class="text-xs text-muted-foreground font-mono">Santa Cruz, Laguna • SDG 9 / SDG 11</span>
 			</div>
@@ -983,7 +734,7 @@
 				Laguna Road Guardians Social Stream
 			</h1>
 			<p class="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
-				Crowdsourced road hazard consensus, two-wheeler accident triage, and synchronized live GIS radar mapping.
+				Crowdsourced road hazard consensus, two-wheeler accident triage, and citizen verified defect discussions.
 			</p>
 		</div>
 
@@ -1290,10 +1041,8 @@
 		</div>
 	</div>
 
-	<!-- Option 2 Split-Screen Layout: Left Feed (approx 58-60%) & Right Sticky Live Radar Map (approx 40-42%) -->
-	<div class="flex flex-col lg:flex-row gap-6 items-start">
-		<!-- LEFT SIDE: Civic Social Feed Stream (approx 58-60% width) -->
-		<div class="w-full lg:w-[58%] xl:w-[60%] space-y-5">
+	<!-- Centered Civic Social Feed Stream (Pure Social Media Feed with Zero Side Map) -->
+	<div class="max-w-2xl mx-auto w-full space-y-6">
 			{#if filteredPosts.length === 0}
 				<Card class="border border-border bg-card shadow-none p-10 text-center space-y-3">
 					<p class="text-base font-semibold text-foreground">No road hazards match this filter.</p>
@@ -1314,8 +1063,7 @@
 				{#each filteredPosts as post (post.id)}
 					<div
 						id="post-{post.id}"
-						class="rounded-xl border bg-card transition-all duration-200 overflow-hidden {activeHazardId === post.id ? 'border-primary ring-1 ring-primary/40 shadow-sm' : highlightedPostId === post.id ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-foreground/25'}"
-						onmouseenter={() => focusHazard(post.id, false)}
+						class="rounded-xl border border-border bg-card transition-all duration-200 overflow-hidden hover:border-foreground/25 shadow-xs"
 						role="article"
 					>
 						<!-- Post Header -->
@@ -1460,12 +1208,11 @@
 										</div>
 									</button>
 
-									<!-- Slot 3: Compact embedded vector Mini-Map card -->
-									<button
-										type="button"
-										class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden border border-white/30 bg-background/95 hover:bg-background shadow-xs group/map cursor-pointer flex flex-col items-center justify-between p-1 transition-all hover:ring-2 hover:ring-primary text-foreground"
-										onclick={(e) => { e.stopPropagation(); focusHazard(post.id, true); }}
-										title="Focus Santa Cruz Live Radar Map on this defect"
+									<!-- Slot 3: Compact embedded vector Mini-Map tile (Deep-links to separate full map) -->
+									<a
+										href="/?incident={post.id}"
+										class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden border border-white/30 bg-background/95 hover:bg-background shadow-xs group/map cursor-pointer flex flex-col items-center justify-between p-1 transition-all hover:ring-2 hover:ring-primary text-foreground text-left"
+										title="Open {post.corridorName} in Full GIS Map"
 									>
 										<!-- Stylized Vector Road Grid -->
 										<svg class="absolute inset-0 w-full h-full opacity-25 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
@@ -1488,7 +1235,7 @@
 												MAP
 											</span>
 										</div>
-									</button>
+									</a>
 								</div>
 							</div>
 						</div>
@@ -1506,6 +1253,15 @@
 							<div class="flex items-center gap-1.5 text-xs text-muted-foreground pt-0.5">
 								<MapPinIcon class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
 								<span class="font-medium text-foreground/85">{post.location}</span>
+								<span class="text-muted-foreground">•</span>
+								<a
+									href="/?incident={post.id}"
+									class="font-mono text-[11px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-0.5"
+									title="Open in Full GIS Map"
+								>
+									<span>{post.coordinatesString}</span>
+									<ArrowUpRightIcon class="h-3 w-3" />
+								</a>
 								{#if post.escalatedToDpwh}
 									<span class="text-muted-foreground">•</span>
 									<span class="text-xs font-mono text-primary font-medium">DPWH Dispatched</span>
@@ -1622,113 +1378,7 @@
 				{/each}
 			{/if}
 		</div>
-
-		<!-- RIGHT SIDE: Sticky Live Radar Map of Santa Cruz, Laguna (approx 40-42% width) -->
-		<div class="w-full lg:w-[42%] xl:w-[40%] lg:sticky lg:top-4 lg:h-[calc(100vh-3.5rem)] shrink-0">
-			<div class="w-full h-[450px] lg:h-full rounded-xl border border-border bg-card overflow-hidden flex flex-col shadow-none relative">
-				<!-- Radar Map Header Bar -->
-				<div class="h-12 px-3.5 border-b border-border bg-card/95 backdrop-blur flex items-center justify-between shrink-0">
-					<div class="flex items-center gap-2">
-						<span class="relative flex h-2.5 w-2.5">
-							<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-							<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-						</span>
-						<span class="font-bold text-xs tracking-tight text-foreground font-mono">
-							SANTA CRUZ GIS RADAR
-						</span>
-						<Badge variant="outline" class="text-[9px] font-mono border-border text-muted-foreground">
-							{filteredPosts.length} Pins
-						</Badge>
-					</div>
-
-					<div class="flex items-center gap-1.5">
-						<Button
-							variant="ghost"
-							size="sm"
-							class="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground gap-1"
-							onclick={resetRadarView}
-							title="Reset Radar View"
-						>
-							<RotateCcwIcon class="h-3 w-3" />
-							<span class="font-mono">Reset</span>
-						</Button>
-
-						<a
-							href="/?incident={activeHazardId || ''}"
-							class="inline-flex"
-							title="Open full interactive GIS map"
-						>
-							<Button variant="outline" size="sm" class="h-7 px-2 text-[11px] border-border gap-1 font-mono">
-								<span>Full View</span>
-								<ArrowUpRightIcon class="h-3 w-3 text-primary" />
-							</Button>
-						</a>
-					</div>
-				</div>
-
-				<!-- Leaflet Radar Canvas Container -->
-				<div
-					bind:this={mapContainer}
-					class="w-full flex-1 relative surios-radar-map {isDarkMode ? 'surios-dark-map is-osm' : 'surios-light-map is-osm'}"
-				></div>
-
-				<!-- Radar Bottom Inspection HUD Overlay -->
-				{#if activePost}
-					<div class="absolute bottom-3 left-3 right-3 z-[1000] bg-card/95 backdrop-blur border border-border rounded-xl p-3 shadow-md space-y-2 animate-in slide-in-from-bottom-2 duration-150">
-						<div class="flex items-start justify-between gap-2">
-							<div class="space-y-0.5">
-								<div class="flex items-center gap-2">
-									<span class="text-[10px] font-mono font-bold text-primary">{activePost.id}</span>
-									<Badge variant="outline" class="text-[9px] font-mono {getVruBadgeClass(activePost.vruRisk)}">
-										VRU {activePost.severity.toFixed(1)}/10
-									</Badge>
-									<span class="text-[10px] text-muted-foreground font-mono">{activePost.coordinatesString}</span>
-								</div>
-								<h4 class="text-xs font-bold text-foreground line-clamp-1">{activePost.title}</h4>
-								<p class="text-[11px] text-muted-foreground line-clamp-1">{activePost.location}</p>
-							</div>
-							<button
-								type="button"
-								class="text-muted-foreground hover:text-foreground p-1 cursor-pointer"
-								onclick={() => (activeHazardId = null)}
-								title="Dismiss inspector"
-							>
-								<XIcon class="h-3.5 w-3.5" />
-							</button>
-						</div>
-
-						<div class="flex items-center justify-between gap-2 pt-1 border-t border-border/50 text-[11px]">
-							<Button
-								variant="outline"
-								size="sm"
-								class="h-7 text-xs border-border gap-1 font-mono"
-								onclick={() => selectPostFromMap(activePost.id)}
-							>
-								<span>Scroll to Post</span>
-								<ChevronDownIcon class="h-3 w-3" />
-							</Button>
-							<a
-								href="/?incident={activePost.id}"
-								class="text-xs font-mono text-primary hover:underline flex items-center gap-1 font-medium"
-							>
-								<span>Open GIS Dispatch Canvas</span>
-								<ArrowUpRightIcon class="h-3 w-3" />
-							</a>
-						</div>
-					</div>
-				{:else}
-					<div class="absolute bottom-3 left-3 right-3 z-[1000] bg-card/90 backdrop-blur border border-border/80 rounded-xl px-3 py-2 shadow-sm flex items-center justify-between text-[11px] text-muted-foreground pointer-events-none">
-						<span class="flex items-center gap-1.5 font-mono">
-							<span class="h-2 w-2 rounded-full bg-primary animate-pulse"></span>
-							Radar Tracking Active
-						</span>
-						<span class="text-[10px]">Hover any post card to pan coordinates</span>
-					</div>
-				{/if}
-			</div>
-		</div>
 	</div>
-</div>
 
 <!-- Image Lightbox Modal -->
 {#if lightbox.isOpen}
@@ -1822,120 +1472,3 @@
 		<span>{toastMessage}</span>
 	</div>
 {/if}
-
-<style>
-	/* Light Mode Map Canvas */
-	:global(.surios-light-map.leaflet-container),
-	:global(.surios-light-map .leaflet-container) {
-		background-color: #f8fafc !important;
-		font-family: inherit;
-		outline: none;
-	}
-
-	:global(.surios-light-map.is-osm .leaflet-tile-pane) {
-		filter: contrast(100%) brightness(100%) saturate(85%);
-		-webkit-filter: contrast(100%) brightness(100%) saturate(85%);
-	}
-
-	/* Dark Mode Map Canvas */
-	:global(.surios-dark-map.leaflet-container),
-	:global(.surios-dark-map .leaflet-container) {
-		background-color: #0c0e14 !important;
-		font-family: inherit;
-		outline: none;
-	}
-
-	:global(.surios-dark-map.is-osm .leaflet-tile-pane) {
-		filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(125%) saturate(18%);
-		-webkit-filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(125%) saturate(18%);
-	}
-
-	/* Squircle Defect Marker Styling */
-	:global(.surios-radar-marker-container) {
-		background: transparent !important;
-		border: none !important;
-	}
-
-	:global(.radar-squircle-node) {
-		position: relative;
-		width: 32px;
-		height: 32px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		cursor: pointer;
-		transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-	}
-
-	:global(.radar-squircle-box) {
-		width: 28px;
-		height: 28px;
-		border-radius: 8px; /* Authentic Squircle */
-		color: #ffffff;
-		font-weight: 700;
-		font-size: 11px;
-		font-family: monospace;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border: 1.5px solid rgba(255, 255, 255, 0.95);
-		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-		transition: all 0.2s ease;
-	}
-
-	:global(.radar-squircle-node:hover .radar-squircle-box),
-	:global(.radar-squircle-node.is-active .radar-squircle-box) {
-		transform: scale(1.15);
-		border-color: #f59e0b; /* Safety Amber */
-		box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.45), 0 4px 8px rgba(0, 0, 0, 0.35);
-	}
-
-	:global(.radar-ping-ring) {
-		position: absolute;
-		width: 36px;
-		height: 36px;
-		border-radius: 10px;
-		background-color: rgba(239, 68, 68, 0.35);
-		animation: radar-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
-		pointer-events: none;
-	}
-
-	@keyframes radar-ping {
-		0% {
-			transform: scale(0.8);
-			opacity: 0.9;
-		}
-		100% {
-			transform: scale(2.2);
-			opacity: 0;
-		}
-	}
-
-	/* Leaflet Radar Custom Popup */
-	:global(.surios-radar-leaflet-popup .leaflet-popup-content-wrapper) {
-		background: var(--card, #18181b) !important;
-		color: var(--foreground, #fafafa) !important;
-		border: 1px solid var(--border, #27272a) !important;
-		border-radius: 10px !important;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
-		padding: 0 !important;
-	}
-
-	:global(.surios-radar-leaflet-popup .leaflet-popup-content) {
-		margin: 10px !important;
-		line-height: 1.4 !important;
-	}
-
-	:global(.surios-radar-leaflet-popup .leaflet-popup-tip) {
-		background: var(--card, #18181b) !important;
-	}
-
-	:global(.surios-radar-tooltip) {
-		background: var(--card, #18181b) !important;
-		color: var(--foreground, #fafafa) !important;
-		border: 1px solid var(--border, #27272a) !important;
-		border-radius: 6px !important;
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
-		padding: 4px 8px !important;
-	}
-</style>
