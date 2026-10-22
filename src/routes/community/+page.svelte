@@ -5,8 +5,6 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 
-	import { SANTA_CRUZ_CORRIDORS } from '$lib/data/corridors.js';
-
 	import AwardIcon from '@lucide/svelte/icons/award';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
@@ -15,6 +13,7 @@
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import NavigationIcon from '@lucide/svelte/icons/navigation';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
+	import ArrowUpIcon from '@lucide/svelte/icons/arrow-up';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import CameraIcon from '@lucide/svelte/icons/camera';
 	import CheckCircleIcon from '@lucide/svelte/icons/circle-check';
@@ -141,8 +140,6 @@
 	let leaderboardSearch = $state('');
 
 	// UI Interactive States
-	let activeHazardId = $state<string | null>(null);
-	let highlightedPostId = $state<string | null>(null);
 	let openMenuPostId = $state<string | null>(null);
 	let copiedPostId = $state<string | null>(null);
 	let toastMessage = $state<string | null>(null);
@@ -160,16 +157,6 @@
 		severity: 0,
 		location: ''
 	});
-
-	// Leaflet Radar Map State
-	let mapContainer = $state<HTMLDivElement | null>(null);
-	let leafletLib: any = null;
-	let mapInstance: any = null;
-	let tileLayerInstance: any = null;
-	let corridorsGroup: any = null;
-	let markersGroup: any = null;
-	let markerMap = new Map<string, any>();
-	let isDarkMode = $state(false);
 
 	// Guardians Honor Roll Data
 	let guardians = $state<GuardianLeader[]>([
@@ -251,6 +238,56 @@
 	// Civic Social Hazard Posts Stream (Santa Cruz, Laguna)
 	let posts = $state<SocialHazardPost[]>([
 		{
+			id: 'REP-9032',
+			title: 'Sunken Crosswalk Utility Trench',
+			location: 'Quezon Ave cor. EDSA, Diliman',
+			corridorName: 'Quezon Avenue Corridor',
+			corridorId: 'CORR-03',
+			coordinatesString: '14.6507° N, 121.0345° E',
+			latitude: 14.6507,
+			longitude: 121.0345,
+			severity: 8.9,
+			vruRisk: 'CRITICAL',
+			astmCode: 'ASTM D6433 (Utility Cut Depression)',
+			depthEstimate: '52mm transverse trench',
+			safetyTags: ['VRU CRITICAL 8.9/10', 'School Zone Danger', 'Tricycle Alert', 'Rim Catch Hazard'],
+			description: 'Depression across eastbound pedestrian crosswalk causing wheel entrapment and trip hazards for pedestrians and cyclists.',
+			author: {
+				name: 'Ria Santos',
+				handle: '@ria_commutes',
+				roleTag: 'Student Mobility Coordinator',
+				avatarInitials: 'RS',
+				isVerified: true
+			},
+			timeAgo: '1h ago',
+			mainImage: '/uploads/pothole-pre-repair.jpg',
+			secondaryImages: [
+				{ src: '/uploads/patch-post-repair.jpg', label: 'Crosswalk Alignment' },
+				{ src: '/samples/pothole-severe.jpg', label: 'Trench Depth Lip' }
+			],
+			totalPhotosCount: 5,
+			confirmations: 27,
+			userConfirmed: true,
+			isTricycleCorridor: true,
+			escalatedToDpwh: true,
+			dpwhTicket: 'DPWH-IV-A-2026-9032',
+			crewAssigned: 'Laguna Water Utility Ops',
+			showComments: false,
+			comments: [
+				{
+					id: 'c6',
+					author: 'Engr. Mateo Cruz',
+					handle: '@cruz_civil',
+					role: 'LSPU Civil Engineering Faculty Volunteer',
+					avatarInitials: 'MC',
+					isOfficial: true,
+					officialBadge: 'Civil Inspector Volunteer',
+					timeAgo: '55m ago',
+					text: 'Subgrade moisture settling is evident beneath the asphalt skin. Requires full gravel re-compaction prior to hot asphalt resurfacing.'
+				}
+			]
+		},
+		{
 			id: 'REP-9041',
 			title: 'Deep 68mm Rim-Strike Crater & Submerged Ponding Hole',
 			location: 'Pedro Guevara Ave (Near LSPU Main Gate 2), Santa Cruz',
@@ -286,7 +323,7 @@
 			escalatedToDpwh: true,
 			dpwhTicket: 'DPWH-IV-A-2026-9041',
 			crewAssigned: 'Crew Alpha (Cold-Patch Squad)',
-			showComments: true,
+			showComments: false,
 			comments: [
 				{
 					id: 'c1',
@@ -376,56 +413,6 @@
 					avatarInitials: 'CD',
 					timeAgo: '35m ago',
 					text: 'Commuter cyclists have to take the center lane here to avoid tire wedge. Glad this is confirmed for DPWH edge reconstitution.'
-				}
-			]
-		},
-		{
-			id: 'REP-9032',
-			title: 'Sunken Crosswalk Utility Trench near Elementary School',
-			location: 'Quezon Ave – Bubukal Student Corridor, Santa Cruz',
-			corridorName: 'Quezon Avenue Corridor',
-			corridorId: 'CORR-03',
-			coordinatesString: '14.2690° N, 121.4021° E',
-			latitude: 14.2690,
-			longitude: 121.4021,
-			severity: 8.9,
-			vruRisk: 'CRITICAL',
-			astmCode: 'ASTM D6433 (Utility Cut Depression)',
-			depthEstimate: '52mm transverse trench',
-			safetyTags: ['VRU CRITICAL 8.9/10', 'School Zone Danger', 'Tricycle Alert', 'Rim Catch Hazard'],
-			description: 'Uncompacted transverse water utility trench intersecting the pedestrian school crosswalk. Causes sudden steering jerk for e-trikes and scooters carrying elementary students during morning peak.',
-			author: {
-				name: 'Ria Santos',
-				handle: '@ria_commutes',
-				roleTag: 'Student Mobility Coordinator',
-				avatarInitials: 'RS',
-				isVerified: true
-			},
-			timeAgo: '1h 10m ago',
-			mainImage: '/uploads/pothole-pre-repair.jpg',
-			secondaryImages: [
-				{ src: '/uploads/patch-post-repair.jpg', label: 'Crosswalk Alignment' },
-				{ src: '/samples/pothole-severe.jpg', label: 'Trench Depth Lip' }
-			],
-			totalPhotosCount: 3,
-			confirmations: 27,
-			userConfirmed: true,
-			isTricycleCorridor: true,
-			escalatedToDpwh: true,
-			dpwhTicket: 'DPWH-IV-A-2026-9032',
-			crewAssigned: 'Laguna Water Utility Ops',
-			showComments: false,
-			comments: [
-				{
-					id: 'c6',
-					author: 'Engr. Mateo Cruz',
-					handle: '@cruz_civil',
-					role: 'LSPU Civil Engineering Faculty Volunteer',
-					avatarInitials: 'MC',
-					isOfficial: true,
-					officialBadge: 'Civil Inspector Volunteer',
-					timeAgo: '55m ago',
-					text: 'Subgrade moisture settling is evident beneath the asphalt skin. Requires full gravel re-compaction prior to hot asphalt resurfacing.'
 				}
 			]
 		},
@@ -547,11 +534,6 @@
 
 			return matchesTab && matchesQuery;
 		})
-	);
-
-	// Currently Active Defect in Radar
-	const activePost = $derived(
-		posts.find((p) => p.id === activeHazardId) || null
 	);
 
 	// Filtered Guardians Leaderboard
@@ -707,236 +689,6 @@
 		lightbox.currentIndex = (lightbox.currentIndex - 1 + lightbox.images.length) % lightbox.images.length;
 	}
 
-	// Leaflet Map Interactivity
-	function updateTileLayer() {
-		if (!mapInstance || !leafletLib) return;
-		if (tileLayerInstance) {
-			mapInstance.removeLayer(tileLayerInstance);
-			tileLayerInstance = null;
-		}
-
-		tileLayerInstance = leafletLib.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-			maxZoom: 19,
-			subdomains: ['a', 'b', 'c']
-		}).addTo(mapInstance);
-	}
-
-	function renderCorridors() {
-		if (!mapInstance || !leafletLib || !corridorsGroup) return;
-		corridorsGroup.clearLayers();
-
-		SANTA_CRUZ_CORRIDORS.forEach((corridor) => {
-			const polyline = leafletLib.polyline(corridor.coordinates, {
-				color: corridor.color,
-				weight: 4,
-				opacity: 0.75,
-				dashArray: corridor.dashArray,
-				lineCap: 'round',
-				lineJoin: 'round'
-			});
-
-			polyline.bindTooltip(`
-				<div class="text-[11px] font-mono leading-tight">
-					<strong style="color: ${corridor.color}">${corridor.name}</strong><br/>
-					<span>PCI: ${corridor.pci}/100 • ${corridor.status}</span>
-				</div>
-			`, { sticky: true, className: 'surios-radar-tooltip' });
-
-			polyline.addTo(corridorsGroup);
-		});
-	}
-
-	function renderMarkers() {
-		if (!mapInstance || !leafletLib || !markersGroup) return;
-		markersGroup.clearLayers();
-		markerMap.clear();
-
-		filteredPosts.forEach((post) => {
-			const isCritical = post.severity >= 8.0;
-			const isSelected = activeHazardId === post.id;
-			const color = isCritical ? '#ef4444' : post.severity >= 6.0 ? '#f59e0b' : '#64748b';
-
-			const customIcon = leafletLib.divIcon({
-				className: 'surios-radar-marker-container',
-				html: `
-					<div class="radar-squircle-node ${isSelected ? 'is-active' : ''} ${isCritical ? 'is-critical' : ''}" data-id="${post.id}">
-						${isCritical ? '<div class="radar-ping-ring"></div>' : ''}
-						<div class="radar-squircle-box" style="background-color: ${color}">
-							<span>${post.severity.toFixed(1)}</span>
-						</div>
-					</div>
-				`,
-				iconSize: [32, 32],
-				iconAnchor: [16, 16]
-			});
-
-			const marker = leafletLib.marker([post.latitude, post.longitude], {
-				icon: customIcon,
-				title: post.title,
-				zIndexOffset: isSelected ? 1000 : isCritical ? 500 : 100
-			});
-
-			marker.on('click', () => {
-				selectPostFromMap(post.id);
-			});
-
-			const popupHtml = `
-				<div class="surios-radar-card-popup">
-					<div class="flex items-center justify-between gap-2 border-b border-border/40 pb-1 mb-1">
-						<span class="font-mono text-[10px] text-muted-foreground font-bold">${post.id}</span>
-						<span class="text-[9px] font-mono px-1 py-0.5 rounded text-white font-bold" style="background-color: ${color}">
-							VRU ${post.severity.toFixed(1)}/10
-						</span>
-					</div>
-					<h4 class="font-bold text-xs text-foreground leading-snug">${post.title}</h4>
-					<p class="text-[11px] text-muted-foreground mt-0.5">${post.location}</p>
-					<div class="text-[10px] font-mono text-primary font-semibold mt-1">${post.astmCode}</div>
-					<div class="mt-2 pt-1.5 border-t border-border/40 flex items-center justify-between gap-2">
-						<button class="radar-scroll-btn text-[10px] font-medium text-primary hover:underline" data-id="${post.id}">
-							Scroll to Post &darr;
-						</button>
-						<a href="/?incident=${post.id}" class="text-[10px] font-mono text-muted-foreground hover:text-foreground">
-							GIS Map &rarr;
-						</a>
-					</div>
-				</div>
-			`;
-
-			marker.bindPopup(popupHtml, {
-				className: 'surios-radar-leaflet-popup',
-				closeButton: false,
-				offset: [0, -10]
-			});
-
-			marker.addTo(markersGroup);
-			markerMap.set(post.id, marker);
-		});
-	}
-
-	// Smoothly fly right-side map to post GPS coordinates and highlight
-	function focusHazard(hazardId: string, shouldFly: boolean = true) {
-		activeHazardId = hazardId;
-		const post = posts.find((p) => p.id === hazardId);
-		if (!post || !mapInstance || !leafletLib) return;
-
-		if (shouldFly) {
-			mapInstance.flyTo([post.latitude, post.longitude], 16, {
-				duration: 0.8,
-				easeLinearity: 0.25
-			});
-		}
-
-		renderMarkers();
-
-		const marker = markerMap.get(hazardId);
-		if (marker) {
-			marker.openPopup();
-		}
-	}
-
-	// Clicking map pin smoothly scrolls left-side feed to post card
-	function selectPostFromMap(hazardId: string) {
-		activeHazardId = hazardId;
-		renderMarkers();
-
-		const element = document.getElementById(`post-${hazardId}`);
-		if (element) {
-			element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-			highlightedPostId = hazardId;
-			setTimeout(() => {
-				if (highlightedPostId === hazardId) highlightedPostId = null;
-			}, 2500);
-		}
-	}
-
-	function resetRadarView() {
-		activeHazardId = null;
-		if (mapInstance && leafletLib) {
-			mapInstance.setView([14.2813, 121.4173], 14, { animate: true });
-			renderMarkers();
-		}
-	}
-
-	// Leaflet dynamic mount & theme sync
-	$effect(() => {
-		if (typeof window === 'undefined' || !mapContainer) return;
-
-		isDarkMode = document.documentElement.classList.contains('dark');
-
-		const observer = new MutationObserver(() => {
-			const dark = document.documentElement.classList.contains('dark');
-			if (dark !== isDarkMode) {
-				isDarkMode = dark;
-				updateTileLayer();
-				renderCorridors();
-				renderMarkers();
-			}
-		});
-
-		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-
-		import('leaflet').then((L) => {
-			if (!mapContainer) return;
-			leafletLib = L;
-
-			mapInstance = L.map(mapContainer, {
-				center: [14.2813, 121.4173],
-				zoom: 14,
-				minZoom: 12,
-				maxZoom: 19,
-				zoomControl: false
-			});
-
-			L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
-
-			updateTileLayer();
-
-			corridorsGroup = L.featureGroup().addTo(mapInstance);
-			markersGroup = L.featureGroup().addTo(mapInstance);
-
-			renderCorridors();
-			renderMarkers();
-
-			// Auto focus first critical defect
-			const firstCrit = posts.find((p) => p.severity >= 8.0);
-			if (firstCrit) {
-				activeHazardId = firstCrit.id;
-				setTimeout(() => {
-					focusHazard(firstCrit.id, false);
-				}, 400);
-			}
-
-			// Delegate popup scroll button clicks
-			mapInstance.on('popupopen', (e: any) => {
-				const el = e.popup.getElement();
-				if (!el) return;
-				const btn = el.querySelector('.radar-scroll-btn');
-				if (btn) {
-					btn.addEventListener('click', () => {
-						const id = btn.getAttribute('data-id');
-						if (id) selectPostFromMap(id);
-					});
-				}
-			});
-		});
-
-		return () => {
-			observer.disconnect();
-			if (mapInstance) {
-				mapInstance.remove();
-				mapInstance = null;
-			}
-		};
-	});
-
-	// Re-render markers if filter changes
-	$effect(() => {
-		if (mapInstance && leafletLib && markersGroup) {
-			renderMarkers();
-		}
-	});
-
 	function getVruBadgeClass(risk: SocialHazardPost['vruRisk']): string {
 		switch (risk) {
 			case 'CRITICAL':
@@ -964,7 +716,7 @@
 />
 
 <svelte:head>
-	<title>Civic Social Stream & Radar Map — Santa Cruz, Laguna — SuriOS</title>
+	<title>Civic Social Stream — Santa Cruz, Laguna — SuriOS</title>
 </svelte:head>
 
 <div class="max-w-[1600px] mx-auto px-3 sm:px-5 lg:px-8 py-5 space-y-6 font-sans">
@@ -973,7 +725,7 @@
 		<div class="space-y-1">
 			<div class="flex flex-wrap items-center gap-2">
 				<Badge variant="outline" class="text-xs font-mono border-primary text-primary bg-primary/5">
-					Option 2: Civic Social Stream & Live Radar
+					Civic Social Stream
 				</Badge>
 				<span class="text-xs text-muted-foreground font-mono">Santa Cruz, Laguna • SDG 9 / SDG 11</span>
 			</div>
@@ -982,7 +734,7 @@
 				Laguna Road Guardians Social Stream
 			</h1>
 			<p class="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
-				Crowdsourced road hazard consensus, two-wheeler accident triage, and synchronized live GIS radar mapping.
+				Crowdsourced road hazard consensus, two-wheeler accident triage, and citizen verified defect discussions.
 			</p>
 		</div>
 
@@ -1289,10 +1041,8 @@
 		</div>
 	</div>
 
-	<!-- Option 2 Split-Screen Layout: Left Feed (approx 58-60%) & Right Sticky Live Radar Map (approx 40-42%) -->
-	<div class="flex flex-col lg:flex-row gap-6 items-start">
-		<!-- LEFT SIDE: Civic Social Feed Stream (approx 58-60% width) -->
-		<div class="w-full lg:w-[58%] xl:w-[60%] space-y-5">
+	<!-- Centered Civic Social Feed Stream (Pure Social Media Feed with Zero Side Map) -->
+	<div class="max-w-2xl mx-auto w-full space-y-6">
 			{#if filteredPosts.length === 0}
 				<Card class="border border-border bg-card shadow-none p-10 text-center space-y-3">
 					<p class="text-base font-semibold text-foreground">No road hazards match this filter.</p>
@@ -1313,54 +1063,38 @@
 				{#each filteredPosts as post (post.id)}
 					<div
 						id="post-{post.id}"
-						class="rounded-xl border bg-card transition-all duration-200 overflow-hidden {activeHazardId === post.id ? 'border-primary ring-1 ring-primary/40 shadow-sm' : highlightedPostId === post.id ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-foreground/25'}"
-						onmouseenter={() => focusHazard(post.id, false)}
+						class="rounded-xl border border-border bg-card transition-all duration-200 overflow-hidden hover:border-foreground/25 shadow-xs"
 						role="article"
 					>
 						<!-- Post Header -->
 						<div class="p-4 sm:p-5 pb-3">
-							<div class="flex items-start justify-between gap-3">
-								<div class="flex items-center gap-3">
-									<!-- Author Avatar Squircle -->
-									<div class="w-10 h-10 rounded-lg bg-secondary border border-border flex items-center justify-center font-bold text-xs text-foreground font-mono shrink-0 shadow-none">
+							<div class="flex items-center justify-between gap-3">
+								<div class="flex items-center gap-2.5">
+									<!-- Author Avatar Circle -->
+									<div class="w-9 h-9 rounded-full bg-secondary border border-border flex items-center justify-center font-bold text-xs text-foreground font-mono shrink-0 shadow-none">
 										{post.author.avatarInitials}
 									</div>
 
-									<div class="space-y-0.5">
-										<div class="flex items-center gap-2">
-											<span class="text-sm font-bold text-foreground">{post.author.name}</span>
-											{#if post.author.isVerified}
-												<span title="Verified Laguna Road Guardian" class="text-primary flex items-center">
-													<CheckCircleIcon class="h-3.5 w-3.5 fill-primary/20" />
-												</span>
-											{/if}
-										</div>
-
-										<div class="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-											<span class="text-primary font-medium">{post.author.roleTag}</span>
-											<span>•</span>
-											<span class="font-mono">{post.timeAgo}</span>
-										</div>
+									<div class="flex items-center gap-1.5 text-xs">
+										<span class="text-sm font-bold text-foreground leading-none">{post.author.name}</span>
+										<span class="text-muted-foreground leading-none">•</span>
+										<span class="text-muted-foreground font-mono leading-none">{post.timeAgo}</span>
 									</div>
 								</div>
 
-								<!-- Header Actions & Three-Dots Menu -->
-								<div class="relative shrink-0 flex items-center gap-1.5">
-									<Button
-										variant="ghost"
-										size="sm"
-										class="h-8 text-xs text-muted-foreground hover:text-foreground gap-1 px-2"
-										onclick={() => focusHazard(post.id, true)}
-										title="Focus on right-side live radar map"
+								<!-- Header Actions: Minimalist Severity Badge & Three-Dots Menu -->
+								<div class="relative shrink-0 flex items-center gap-2">
+									<Badge
+										variant="outline"
+										class="text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full {getVruBadgeClass(post.vruRisk)} shadow-none"
 									>
-										<NavigationIcon class="h-3.5 w-3.5 text-primary" />
-										<span class="hidden sm:inline font-mono">Map Pin</span>
-									</Button>
+										{post.severity.toFixed(1)} {post.vruRisk}
+									</Badge>
 
 									<Button
 										variant="ghost"
 										size="icon"
-										class="h-8 w-8 text-muted-foreground hover:text-foreground"
+										class="h-8 w-8 text-muted-foreground hover:text-foreground rounded-full"
 										title="Options"
 										onclick={(e) => {
 											e.stopPropagation();
@@ -1417,237 +1151,167 @@
 							</div>
 						</div>
 
-						<!-- Media Gallery with Thumbnail Stack & Mini-Map Slot (Matching User Mockup) -->
+						<!-- Media Gallery with Inset Vertical Dock (Choice A Vertical Minimalist) -->
 						<div class="px-4 sm:px-5 pb-3">
-							<!-- Desktop / Tablet 2-Column Split for Media -->
-							<div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
-								<!-- Main Prominent Header Image (approx 68% / 8 cols) -->
+							<div class="relative w-full h-64 sm:h-72 md:h-80 rounded-lg overflow-hidden border border-border bg-muted group">
+								<!-- Primary Defect Photo -->
 								<button
 									type="button"
-									class="sm:col-span-8 relative rounded-lg overflow-hidden border border-border bg-muted cursor-pointer group text-left p-0"
+									class="w-full h-full block p-0 cursor-pointer text-left focus:outline-none"
 									onclick={() => openLightbox(post, 0)}
-									title="Click to view full photo"
+									title="Click to view full photo in lightbox"
 								>
 									<img
 										src={post.mainImage}
 										alt={post.title}
-										class="w-full h-56 sm:h-64 object-cover group-hover:scale-102 transition-transform duration-300"
+										class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
 									/>
-									<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2.5">
-										<span class="text-[11px] font-mono text-white flex items-center gap-1">
+									<div class="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 pointer-events-none">
+										<span class="text-[11px] font-mono text-white flex items-center gap-1.5 bg-black/50 px-2.5 py-1 rounded-md backdrop-blur-xs">
 											<Maximize2Icon class="h-3.5 w-3.5" />
 											Inspect Full Defect Photo
 										</span>
 									</div>
-									<div class="absolute top-2 left-2 flex items-center gap-1.5">
-										<Badge variant="outline" class="text-[10px] font-mono bg-black/70 text-white border-white/20">
-											{post.astmCode}
-										</Badge>
-									</div>
-									<div class="absolute bottom-2 right-2">
-										<Badge variant="outline" class="text-[10px] font-mono bg-black/70 text-amber-400 border-amber-500/40">
-											{post.depthEstimate}
-										</Badge>
-									</div>
 								</button>
 
-								<!-- Secondary Thumbnail Stack & 3rd Slot Mini-Map (approx 32% / 4 cols) -->
-								<div class="sm:col-span-4 grid grid-cols-3 sm:grid-cols-1 gap-2">
-									<!-- Slot 1: Secondary angle / ruler measurement photo -->
+								<!-- Inset Vertical Column Dock (Inside Top-Right Corner of Main Image) -->
+								<div class="absolute top-2.5 right-2.5 z-20 flex flex-col gap-1.5 p-1 rounded-lg bg-black/45 backdrop-blur-md border border-white/20 shadow-lg">
+									<!-- Slot 1: Secondary Photo Thumbnail -->
 									<button
 										type="button"
-										class="relative h-20 rounded-lg overflow-hidden border border-border bg-muted cursor-pointer group text-left p-0"
-										onclick={() => openLightbox(post, 1)}
-										title="Secondary Angle / Measurement"
+										class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden border border-white/20 bg-black/60 shadow-xs group/thumb cursor-pointer hover:ring-2 hover:ring-primary transition-all p-0"
+										onclick={(e) => { e.stopPropagation(); openLightbox(post, 1); }}
+										title="Secondary Angle: {post.secondaryImages[0]?.label || 'Detail'}"
 									>
 										<img
 											src={post.secondaryImages[0]?.src || post.mainImage}
-											alt="Secondary Angle"
-											class="w-full h-full object-cover group-hover:scale-105 transition-transform"
+											alt="Secondary angle"
+											class="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform"
 										/>
-										<div class="absolute bottom-1 left-1.5 text-[9px] font-mono px-1 py-0.5 rounded bg-black/75 text-white truncate max-w-[90%]">
-											{post.secondaryImages[0]?.label || 'Profile'}
-										</div>
 									</button>
 
-									<!-- Slot 2: Multi-image thumbnail with darker overlay (+3 more) -->
+									<!-- Slot 2: Multi-image thumbnail (+X more) -->
 									<button
 										type="button"
-										class="relative h-20 rounded-lg overflow-hidden border border-border bg-muted cursor-pointer group text-left p-0"
-										onclick={() => openLightbox(post, 2)}
+										class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden border border-white/20 bg-black/80 shadow-xs group/thumb cursor-pointer hover:ring-2 hover:ring-primary transition-all p-0"
+										onclick={(e) => { e.stopPropagation(); openLightbox(post, 2); }}
 										title="View all {post.totalPhotosCount} photos"
 									>
 										<img
 											src={post.secondaryImages[1]?.src || post.mainImage}
-											alt="Additional angle"
-											class="w-full h-full object-cover"
+											alt="More angles"
+											class="w-full h-full object-cover opacity-35 group-hover/thumb:opacity-50 transition-opacity"
 										/>
-										<div class="absolute inset-0 bg-black/65 group-hover:bg-black/55 transition-colors flex flex-col items-center justify-center text-white font-mono">
-											<span class="text-xs font-bold">+{post.totalPhotosCount - 2} more</span>
-											<span class="text-[9px] text-white/80">photos</span>
+										<div class="absolute inset-0 flex flex-col items-center justify-center text-white font-mono leading-none">
+											<span class="text-xs sm:text-sm font-bold">+{Math.max(post.totalPhotosCount - 2, 1)}</span>
+											<span class="text-[8px] sm:text-[9px] uppercase tracking-wider text-white/80 mt-0.5">more</span>
 										</div>
 									</button>
 
-									<!-- Slot 3: Compact embedded vector Mini-Map card -->
-									<button
-										type="button"
-										class="relative h-20 rounded-lg border border-border bg-secondary/30 hover:border-primary hover:bg-primary/5 p-2 flex flex-col justify-between text-left transition-all group overflow-hidden cursor-pointer"
-										onclick={() => focusHazard(post.id, true)}
-										title="Focus Santa Cruz Live Radar Map on this defect"
+									<!-- Slot 3: Compact embedded vector Mini-Map tile (Deep-links to separate full map) -->
+									<a
+										href="/?incident={post.id}"
+										class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden border border-white/30 bg-background/95 hover:bg-background shadow-xs group/map cursor-pointer flex flex-col items-center justify-between p-1 transition-all hover:ring-2 hover:ring-primary text-foreground text-left"
+										title="Open {post.corridorName} in Full GIS Map"
 									>
-										<!-- Background stylized road grid vector -->
-										<svg class="absolute inset-0 w-full h-full opacity-20 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+										<!-- Stylized Vector Road Grid -->
+										<svg class="absolute inset-0 w-full h-full opacity-25 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
 											<defs>
-												<pattern id="road-grid-{post.id}" width="16" height="16" patternUnits="userSpaceOnUse">
-													<path d="M 16 0 L 0 0 0 16" fill="none" stroke="currentColor" stroke-width="0.5" />
+												<pattern id="road-grid-inset-{post.id}" width="10" height="10" patternUnits="userSpaceOnUse">
+													<path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" stroke-width="0.5" />
 												</pattern>
 											</defs>
-											<rect width="100%" height="100%" fill="url(#road-grid-{post.id})" />
-											<line x1="0" y1="50" x2="160" y2="20" stroke="currentColor" stroke-width="6" stroke-linecap="round" />
-											<line x1="0" y1="50" x2="160" y2="20" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="3,3" />
-											<circle cx="70" cy="35" r="4" fill="#ef4444" />
-											<circle cx="70" cy="35" r="8" fill="none" stroke="#ef4444" stroke-width="1" class="animate-ping" opacity="0.6" />
+											<rect width="100%" height="100%" fill="url(#road-grid-inset-{post.id})" />
+											<line x1="0" y1="45" x2="65" y2="15" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+											<line x1="0" y1="45" x2="65" y2="15" stroke="#f59e0b" stroke-width="1" stroke-dasharray="2,2" />
 										</svg>
 
-										<div class="relative z-10 flex items-center justify-between">
-											<span class="text-[10px] font-mono font-bold uppercase tracking-wider text-primary flex items-center gap-1">
-												<NavigationIcon class="h-2.5 w-2.5" />
-												Radar Pin
-											</span>
-											<span class="text-[9px] font-mono text-muted-foreground group-hover:text-primary transition-colors flex items-center gap-0.5">
-												Focus &rarr;
-											</span>
+										<div class="relative z-10 w-full flex items-center justify-center pt-1">
+											<MapPinIcon class="h-4 w-4 sm:h-5 sm:h-5 text-destructive fill-destructive drop-shadow" />
 										</div>
 
-										<div class="relative z-10 space-y-0.5">
-											<div class="text-[10px] font-semibold text-foreground truncate max-w-[130px]">
-												{post.corridorName}
-											</div>
-											<div class="text-[9px] font-mono text-muted-foreground">
-												{post.coordinatesString}
-											</div>
+										<div class="relative z-10 w-full text-center">
+											<span class="text-[9px] sm:text-[10px] font-mono font-bold text-foreground uppercase tracking-wider block">
+												MAP
+											</span>
 										</div>
-									</button>
+									</a>
 								</div>
 							</div>
 						</div>
 
-						<!-- Severity & Safety Tags -->
-						<div class="px-4 sm:px-5 pb-3 space-y-2">
-							<div class="flex flex-wrap items-center gap-1.5">
-								<!-- Prominent VRU CRITICAL 8.8/10 squircle badge -->
-								<Badge variant="outline" class="text-xs font-mono font-bold {getVruBadgeClass(post.vruRisk)} px-2.5 py-0.5">
-									VRU {post.vruRisk} {post.severity.toFixed(1)}/10
-								</Badge>
-
-								<Badge variant="outline" class="text-[10px] font-mono border-border text-foreground">
-									{post.astmCode}
-								</Badge>
-
-								<!-- Commuter Safety Pills -->
-								{#each post.safetyTags as tag}
-									{#if !tag.startsWith('VRU')}
-										<span class="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary/80 border border-border text-foreground">
-											{#if tag.includes('Tricycle')}
-												<BikeIcon class="h-3 w-3 text-primary" />
-											{:else if tag.includes('Night')}
-												<MoonIcon class="h-3 w-3 text-amber-500" />
-											{:else if tag.includes('Flooding')}
-												<CloudRainIcon class="h-3 w-3 text-sky-500" />
-											{:else if tag.includes('Rim')}
-												<TriangleAlertIcon class="h-3 w-3 text-destructive" />
-											{/if}
-											<span>{tag}</span>
-										</span>
-									{/if}
-								{/each}
-
-								{#if post.escalatedToDpwh}
-									<span class="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 border border-primary text-primary font-bold">
-										<TruckIcon class="h-3 w-3" />
-										<span>DPWH Dispatched</span>
-									</span>
-								{/if}
-							</div>
-
-							<!-- Title & Detailed Road Context -->
-							<h3 class="text-base font-bold text-foreground">
+						<!-- Title & Detailed Road Context (Minimalist, Zero Badge Clutter) -->
+						<div class="px-4 sm:px-5 pb-3 space-y-1.5">
+							<h3 class="text-base sm:text-lg font-bold text-foreground tracking-tight leading-snug">
 								{post.title}
 							</h3>
 
-							<p class="text-xs text-muted-foreground leading-relaxed">
+							<p class="text-xs sm:text-sm text-muted-foreground leading-relaxed">
 								{post.description}
 							</p>
 
-							<div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-1">
-								<div class="flex items-center gap-1">
-									<MapPinIcon class="h-3.5 w-3.5 text-primary shrink-0" />
-									<span class="text-foreground font-medium">{post.location}</span>
-								</div>
-								<span>•</span>
-								<button
-									type="button"
-									class="font-mono text-[11px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 cursor-pointer"
-									onclick={() => focusHazard(post.id, true)}
+							<div class="flex items-center gap-1.5 text-xs text-muted-foreground pt-0.5">
+								<MapPinIcon class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+								<span class="font-medium text-foreground/85">{post.location}</span>
+								<span class="text-muted-foreground">•</span>
+								<a
+									href="/?incident={post.id}"
+									class="font-mono text-[11px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-0.5"
+									title="Open in Full GIS Map"
 								>
 									<span>{post.coordinatesString}</span>
-								</button>
-								{#if post.crewAssigned}
-									<span>•</span>
-									<span class="text-xs font-mono text-primary font-medium">{post.crewAssigned}</span>
+									<ArrowUpRightIcon class="h-3 w-3" />
+								</a>
+								{#if post.escalatedToDpwh}
+									<span class="text-muted-foreground">•</span>
+									<span class="text-xs font-mono text-primary font-medium">DPWH Dispatched</span>
 								{/if}
 							</div>
 						</div>
 
 						<Separator />
 
-						<!-- Social Action Bar -->
-						<div class="px-4 sm:px-5 py-2.5 bg-card/60 flex items-center justify-between gap-3 text-xs">
-							<div class="flex items-center gap-2">
-								<!-- Interactive '+1 Confirmed (43)' Upvote Button -->
-								<Button
-									variant={post.userConfirmed ? 'default' : 'outline'}
-									size="sm"
-									class="text-xs h-8 px-3 gap-1.5 shadow-none transition-all {post.userConfirmed ? 'bg-primary text-primary-foreground font-bold hover:bg-primary/90' : 'border-border hover:border-primary/50'}"
-									onclick={() => toggleConfirm(post.id)}
-								>
-									{#if post.userConfirmed}
-										<CheckIcon class="h-3.5 w-3.5" />
-										<span>Confirmed ({post.confirmations})</span>
-									{:else}
-										<ThumbsUpIcon class="h-3.5 w-3.5 text-primary" />
-										<span>+1 Confirmed ({post.confirmations})</span>
-									{/if}
-								</Button>
+						<!-- Minimalist Social Action Bar -->
+						<div class="px-4 sm:px-5 py-3 bg-card/60 flex items-center justify-between gap-3 text-xs">
+							<!-- Interactive Upvote Button (Matching '↑ 27 Confirmed' Pill) -->
+							<Button
+								variant="outline"
+								size="sm"
+								class="text-xs h-8 px-3.5 gap-1.5 rounded-full shadow-none transition-all {post.userConfirmed ? 'bg-foreground text-background font-bold border-foreground hover:bg-foreground/90' : 'border-border text-foreground hover:bg-secondary/70'}"
+								onclick={() => toggleConfirm(post.id)}
+							>
+								<ArrowUpIcon class="h-3.5 w-3.5 {post.userConfirmed ? 'text-background' : 'text-muted-foreground'}" />
+								<span>{post.confirmations} Confirmed</span>
+							</Button>
 
+							<div class="flex items-center gap-1">
 								<!-- Comments Toggle Button -->
 								<Button
 									variant={post.showComments ? 'secondary' : 'ghost'}
 									size="sm"
-									class="text-xs h-8 px-2.5 gap-1.5 text-muted-foreground hover:text-foreground"
+									class="text-xs h-8 px-2.5 gap-1.5 text-muted-foreground hover:text-foreground rounded-full"
 									onclick={() => toggleComments(post.id)}
+									title="View discussion thread"
 								>
-									<MessageSquareIcon class="h-3.5 w-3.5 text-primary" />
-									<span>Comments ({post.comments.length})</span>
+									<MessageSquareIcon class="h-3.5 w-3.5" />
+									<span class="font-mono">{post.comments.length}</span>
+								</Button>
+
+								<!-- Share Button -->
+								<Button
+									variant="ghost"
+									size="icon"
+									class="h-8 w-8 text-muted-foreground hover:text-foreground rounded-full"
+									onclick={() => copyPostShare(post.id)}
+									title="Share defect link"
+								>
+									{#if copiedPostId === post.id}
+										<CheckIcon class="h-3.5 w-3.5 text-primary" />
+									{:else}
+										<Share2Icon class="h-3.5 w-3.5" />
+									{/if}
 								</Button>
 							</div>
-
-							<!-- Share / Copy Link Button -->
-							<Button
-								variant="ghost"
-								size="sm"
-								class="text-xs h-8 px-2.5 gap-1.5 text-muted-foreground hover:text-foreground"
-								onclick={() => copyPostShare(post.id)}
-								title="Copy post link"
-							>
-								{#if copiedPostId === post.id}
-									<CheckIcon class="h-3.5 w-3.5 text-primary" />
-									<span class="text-primary font-medium">Copied!</span>
-								{:else}
-									<Share2Icon class="h-3.5 w-3.5" />
-									<span class="hidden sm:inline">Share</span>
-								{/if}
-							</Button>
 						</div>
 
 						<!-- Inline Community Comments Thread -->
@@ -1714,113 +1378,7 @@
 				{/each}
 			{/if}
 		</div>
-
-		<!-- RIGHT SIDE: Sticky Live Radar Map of Santa Cruz, Laguna (approx 40-42% width) -->
-		<div class="w-full lg:w-[42%] xl:w-[40%] lg:sticky lg:top-4 lg:h-[calc(100vh-3.5rem)] shrink-0">
-			<div class="w-full h-[450px] lg:h-full rounded-xl border border-border bg-card overflow-hidden flex flex-col shadow-none relative">
-				<!-- Radar Map Header Bar -->
-				<div class="h-12 px-3.5 border-b border-border bg-card/95 backdrop-blur flex items-center justify-between shrink-0">
-					<div class="flex items-center gap-2">
-						<span class="relative flex h-2.5 w-2.5">
-							<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-							<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-						</span>
-						<span class="font-bold text-xs tracking-tight text-foreground font-mono">
-							SANTA CRUZ GIS RADAR
-						</span>
-						<Badge variant="outline" class="text-[9px] font-mono border-border text-muted-foreground">
-							{filteredPosts.length} Pins
-						</Badge>
-					</div>
-
-					<div class="flex items-center gap-1.5">
-						<Button
-							variant="ghost"
-							size="sm"
-							class="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground gap-1"
-							onclick={resetRadarView}
-							title="Reset Radar View"
-						>
-							<RotateCcwIcon class="h-3 w-3" />
-							<span class="font-mono">Reset</span>
-						</Button>
-
-						<a
-							href="/?incident={activeHazardId || ''}"
-							class="inline-flex"
-							title="Open full interactive GIS map"
-						>
-							<Button variant="outline" size="sm" class="h-7 px-2 text-[11px] border-border gap-1 font-mono">
-								<span>Full View</span>
-								<ArrowUpRightIcon class="h-3 w-3 text-primary" />
-							</Button>
-						</a>
-					</div>
-				</div>
-
-				<!-- Leaflet Radar Canvas Container -->
-				<div
-					bind:this={mapContainer}
-					class="w-full flex-1 relative surios-radar-map {isDarkMode ? 'surios-dark-map is-osm' : 'surios-light-map is-osm'}"
-				></div>
-
-				<!-- Radar Bottom Inspection HUD Overlay -->
-				{#if activePost}
-					<div class="absolute bottom-3 left-3 right-3 z-[1000] bg-card/95 backdrop-blur border border-border rounded-xl p-3 shadow-md space-y-2 animate-in slide-in-from-bottom-2 duration-150">
-						<div class="flex items-start justify-between gap-2">
-							<div class="space-y-0.5">
-								<div class="flex items-center gap-2">
-									<span class="text-[10px] font-mono font-bold text-primary">{activePost.id}</span>
-									<Badge variant="outline" class="text-[9px] font-mono {getVruBadgeClass(activePost.vruRisk)}">
-										VRU {activePost.severity.toFixed(1)}/10
-									</Badge>
-									<span class="text-[10px] text-muted-foreground font-mono">{activePost.coordinatesString}</span>
-								</div>
-								<h4 class="text-xs font-bold text-foreground line-clamp-1">{activePost.title}</h4>
-								<p class="text-[11px] text-muted-foreground line-clamp-1">{activePost.location}</p>
-							</div>
-							<button
-								type="button"
-								class="text-muted-foreground hover:text-foreground p-1 cursor-pointer"
-								onclick={() => (activeHazardId = null)}
-								title="Dismiss inspector"
-							>
-								<XIcon class="h-3.5 w-3.5" />
-							</button>
-						</div>
-
-						<div class="flex items-center justify-between gap-2 pt-1 border-t border-border/50 text-[11px]">
-							<Button
-								variant="outline"
-								size="sm"
-								class="h-7 text-xs border-border gap-1 font-mono"
-								onclick={() => selectPostFromMap(activePost.id)}
-							>
-								<span>Scroll to Post</span>
-								<ChevronDownIcon class="h-3 w-3" />
-							</Button>
-							<a
-								href="/?incident={activePost.id}"
-								class="text-xs font-mono text-primary hover:underline flex items-center gap-1 font-medium"
-							>
-								<span>Open GIS Dispatch Canvas</span>
-								<ArrowUpRightIcon class="h-3 w-3" />
-							</a>
-						</div>
-					</div>
-				{:else}
-					<div class="absolute bottom-3 left-3 right-3 z-[1000] bg-card/90 backdrop-blur border border-border/80 rounded-xl px-3 py-2 shadow-sm flex items-center justify-between text-[11px] text-muted-foreground pointer-events-none">
-						<span class="flex items-center gap-1.5 font-mono">
-							<span class="h-2 w-2 rounded-full bg-primary animate-pulse"></span>
-							Radar Tracking Active
-						</span>
-						<span class="text-[10px]">Hover any post card to pan coordinates</span>
-					</div>
-				{/if}
-			</div>
-		</div>
 	</div>
-</div>
 
 <!-- Image Lightbox Modal -->
 {#if lightbox.isOpen}
@@ -1914,120 +1472,3 @@
 		<span>{toastMessage}</span>
 	</div>
 {/if}
-
-<style>
-	/* Light Mode Map Canvas */
-	:global(.surios-light-map.leaflet-container),
-	:global(.surios-light-map .leaflet-container) {
-		background-color: #f8fafc !important;
-		font-family: inherit;
-		outline: none;
-	}
-
-	:global(.surios-light-map.is-osm .leaflet-tile-pane) {
-		filter: contrast(100%) brightness(100%) saturate(85%);
-		-webkit-filter: contrast(100%) brightness(100%) saturate(85%);
-	}
-
-	/* Dark Mode Map Canvas */
-	:global(.surios-dark-map.leaflet-container),
-	:global(.surios-dark-map .leaflet-container) {
-		background-color: #0c0e14 !important;
-		font-family: inherit;
-		outline: none;
-	}
-
-	:global(.surios-dark-map.is-osm .leaflet-tile-pane) {
-		filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(125%) saturate(18%);
-		-webkit-filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(125%) saturate(18%);
-	}
-
-	/* Squircle Defect Marker Styling */
-	:global(.surios-radar-marker-container) {
-		background: transparent !important;
-		border: none !important;
-	}
-
-	:global(.radar-squircle-node) {
-		position: relative;
-		width: 32px;
-		height: 32px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		cursor: pointer;
-		transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-	}
-
-	:global(.radar-squircle-box) {
-		width: 28px;
-		height: 28px;
-		border-radius: 8px; /* Authentic Squircle */
-		color: #ffffff;
-		font-weight: 700;
-		font-size: 11px;
-		font-family: monospace;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border: 1.5px solid rgba(255, 255, 255, 0.95);
-		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-		transition: all 0.2s ease;
-	}
-
-	:global(.radar-squircle-node:hover .radar-squircle-box),
-	:global(.radar-squircle-node.is-active .radar-squircle-box) {
-		transform: scale(1.15);
-		border-color: #f59e0b; /* Safety Amber */
-		box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.45), 0 4px 8px rgba(0, 0, 0, 0.35);
-	}
-
-	:global(.radar-ping-ring) {
-		position: absolute;
-		width: 36px;
-		height: 36px;
-		border-radius: 10px;
-		background-color: rgba(239, 68, 68, 0.35);
-		animation: radar-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
-		pointer-events: none;
-	}
-
-	@keyframes radar-ping {
-		0% {
-			transform: scale(0.8);
-			opacity: 0.9;
-		}
-		100% {
-			transform: scale(2.2);
-			opacity: 0;
-		}
-	}
-
-	/* Leaflet Radar Custom Popup */
-	:global(.surios-radar-leaflet-popup .leaflet-popup-content-wrapper) {
-		background: var(--card, #18181b) !important;
-		color: var(--foreground, #fafafa) !important;
-		border: 1px solid var(--border, #27272a) !important;
-		border-radius: 10px !important;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
-		padding: 0 !important;
-	}
-
-	:global(.surios-radar-leaflet-popup .leaflet-popup-content) {
-		margin: 10px !important;
-		line-height: 1.4 !important;
-	}
-
-	:global(.surios-radar-leaflet-popup .leaflet-popup-tip) {
-		background: var(--card, #18181b) !important;
-	}
-
-	:global(.surios-radar-tooltip) {
-		background: var(--card, #18181b) !important;
-		color: var(--foreground, #fafafa) !important;
-		border: 1px solid var(--border, #27272a) !important;
-		border-radius: 6px !important;
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
-		padding: 4px 8px !important;
-	}
-</style>
