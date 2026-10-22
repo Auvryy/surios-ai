@@ -17,7 +17,7 @@ const loginSchema = z.object({
 });
 
 export const load: PageServerLoad = async ({ url }) => {
-	const redirectTo = url.searchParams.get('redirectTo') || '/dashboard';
+	const redirectTo = url.searchParams.get('redirectTo') || '';
 	return { redirectTo };
 };
 
@@ -26,13 +26,15 @@ export const actions: Actions = {
 		const formData = await event.request.formData();
 		const email = (formData.get('email') as string)?.trim()?.toLowerCase();
 		const password = formData.get('password') as string;
-		const redirectTo = (formData.get('redirectTo') as string) || '/dashboard';
+		const requestedRedirect = (formData.get('redirectTo') as string)?.trim();
 
 		const validation = loginSchema.safeParse({ email, password });
 		if (!validation.success) {
 			const error = validation.error.issues[0]?.message || 'Invalid input';
 			return fail(400, { email, error });
 		}
+
+		let destination = '/community';
 
 		try {
 			const [user] = await db
@@ -55,6 +57,14 @@ export const actions: Actions = {
 			});
 
 			setSessionTokenCookie(event, sessionToken, session.expiresAt);
+
+			const isGov = user.role === 'ENGINEER' || user.role === 'OFFICER' || user.role === 'ADMIN';
+			destination = isGov ? '/dashboard' : '/community';
+			if (requestedRedirect && requestedRedirect.startsWith('/')) {
+				if (isGov || !requestedRedirect.startsWith('/dashboard')) {
+					destination = requestedRedirect;
+				}
+			}
 		} catch (err) {
 			console.error('[Login Error]', err);
 			return fail(500, {
@@ -63,6 +73,6 @@ export const actions: Actions = {
 			});
 		}
 
-		throw redirect(303, redirectTo);
+		throw redirect(303, destination);
 	}
 };
