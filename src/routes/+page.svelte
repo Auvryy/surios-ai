@@ -171,19 +171,19 @@
 		if (!mapInstance || !leafletLib || !routeGroup) return;
 		routeGroup.clearLayers();
 
-		// 1. Minimalist sharp casing line
-		const casingColor = isDarkMode ? '#0369a1' : '#bae6fd';
+		// 1. Minimalist sharp casing line (Safety Amber / Road Warning Ochre Brand Palette)
+		const casingColor = isDarkMode ? '#78350f' : '#fde68a';
 		const casingPolyline = leafletLib.polyline(route.coordinates, {
 			color: casingColor,
 			weight: 4.5,
-			opacity: isDarkMode ? 0.6 : 0.75,
+			opacity: isDarkMode ? 0.75 : 0.85,
 			lineCap: 'butt',
 			lineJoin: 'miter'
 		});
 		casingPolyline.addTo(routeGroup);
 
-		// 2. High-precision minimalist animated line (clean 2.5px crisp line, not roundy)
-		const foregroundColor = isDarkMode ? '#38bdf8' : '#0284c7';
+		// 2. High-precision minimalist animated line (Civil Safety Amber, not generic blue)
+		const foregroundColor = isDarkMode ? '#fbbf24' : '#d97706';
 		const foregroundPolyline = leafletLib.polyline(route.coordinates, {
 			color: foregroundColor,
 			weight: 2.5,
@@ -1180,9 +1180,9 @@
 		width: 22px;
 		height: 22px;
 		border-radius: 5px; /* Minimalist squircle */
-		background: #0284c7;
+		background: #d97706; /* Safety Amber brand color */
 		color: #ffffff;
-		border: 1px solid rgba(255, 255, 255, 0.9);
+		border: 1px solid rgba(255, 255, 255, 0.95);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -1190,7 +1190,7 @@
 	}
 
 	:global(.surios-light-map .surios-depot-badge) {
-		background: #0369a1;
+		background: #b45309;
 		border: 1px solid #ffffff;
 	}
 
