@@ -2,6 +2,7 @@ import type { PageServerLoad } from './$types.js';
 import { db } from '$lib/server/db/index.js';
 import { reports } from '$lib/server/db/schema.js';
 import { desc } from 'drizzle-orm';
+import { isGeoapifyConfigured, getApiKey, SANTA_CRUZ_DEPOT } from '$lib/server/geoapify.js';
 
 export interface FeedIncident {
 	id: string;
@@ -137,7 +138,7 @@ export const load: PageServerLoad = async () => {
 				title: `${r.distressType} at Santa Cruz`,
 				distressType: r.distressType,
 				astmCode: `ASTM D6433 (${r.distressType})`,
-				locationName: `Corridor (${Number(r.latitude).toFixed(4)}° N, ${Number(r.longitude).toFixed(4)}° E)`,
+				locationName: (r.triagePayload as any)?.civicAddress || `Corridor (${Number(r.latitude).toFixed(4)}° N, ${Number(r.longitude).toFixed(4)}° E)`,
 				latitude: Number(r.latitude),
 				longitude: Number(r.longitude),
 				hazardSeverity: r.hazardSeverity,
@@ -153,7 +154,12 @@ export const load: PageServerLoad = async () => {
 			}));
 
 			return {
-				incidents: [...formatted, ...defaultIncidents]
+				incidents: [...formatted, ...defaultIncidents],
+				hasGeoapifyKey: isGeoapifyConfigured(),
+				depotLocation: SANTA_CRUZ_DEPOT,
+				geoapifyTileUrl: isGeoapifyConfigured()
+					? `https://maps.geoapify.com/v1/tile/dark-matter/{z}/{x}/{y}.png?apiKey=${getApiKey()}`
+					: null
 			};
 		}
 	} catch (e) {
@@ -161,6 +167,11 @@ export const load: PageServerLoad = async () => {
 	}
 
 	return {
-		incidents: defaultIncidents
+		incidents: defaultIncidents,
+		hasGeoapifyKey: isGeoapifyConfigured(),
+		depotLocation: SANTA_CRUZ_DEPOT,
+		geoapifyTileUrl: isGeoapifyConfigured()
+			? `https://maps.geoapify.com/v1/tile/dark-matter/{z}/{x}/{y}.png?apiKey=${getApiKey()}`
+			: null
 	};
 };

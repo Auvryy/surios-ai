@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageProps } from './$types.js';
 	import type { FeedIncident } from './+page.server.js';
+	import type { DispatchRoute } from '$lib/types/routing.js';
 
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
@@ -18,6 +19,13 @@
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import ClockIcon from '@lucide/svelte/icons/clock';
+	import TruckIcon from '@lucide/svelte/icons/truck';
+	import NavigationIcon from '@lucide/svelte/icons/navigation';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import ChevronUpIcon from '@lucide/svelte/icons/chevron-up';
+	import SparklesIcon from '@lucide/svelte/icons/sparkles';
+	import CompassIcon from '@lucide/svelte/icons/compass';
+	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
 
 	import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -167,12 +175,21 @@
 	let isSheetOpen = $state(false);
 	let mapContainer = $state<HTMLDivElement | null>(null);
 
+	// Road routing state
+	let activeRoute = $state<DispatchRoute | null>(null);
+	let isRouting = $state(false);
+	let showTurnByTurn = $state(false);
+	let activeTileStyle = $state<'matte-osm' | 'geoapify-dark'>('matte-osm');
+	let routeError = $state<string | null>(null);
+
 	// Leaflet instance pointers for dynamic updates
 	let mapInstance: any = null;
 	let leafletLib: any = null;
 	let tileLayerInstance: any = null;
 	let markersGroup: any = null;
 	let corridorsGroup: any = null;
+	let routeGroup: any = null;
+	let depotMarker: any = null;
 	let markerMap = new Map<string, any>();
 
 	const incidents = $derived(data.incidents || []);
@@ -184,6 +201,125 @@
 				? incidents.filter((i) => i.riskLevel === 'CRITICAL' || i.vruLethality === 'CRITICAL')
 				: incidents.filter((i) => i.status === filter)
 	);
+
+	function setTileStyle(style: 'matte-osm' | 'geoapify-dark') {
+		if (style === activeTileStyle || !mapInstance || !leafletLib) return;
+		activeTileStyle = style;
+
+		if (tileLayerInstance) {
+			mapInstance.removeLayer(tileLayerInstance);
+		}
+
+		if (style === 'geoapify-dark' && data.geoapifyTileUrl) {
+			tileLayerInstance = leafletLib.tileLayer(data.geoapifyTileUrl, {
+				attribution: '&copy; <a href="https://www.geoapify.com/" target="_blank">Geoapify</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+				maxZoom: 20
+			}).addTo(mapInstance);
+		} else {
+			tileLayerInstance = leafletLib.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+				maxZoom: 19,
+				subdomains: ['a', 'b', 'c']
+			}).addTo(mapInstance);
+		}
+	}
+
+	function clearRoute() {
+		activeRoute = null;
+		showTurnByTurn = false;
+		routeError = null;
+		if (routeGroup) {
+			routeGroup.clearLayers();
+		}
+		if (depotMarker && mapInstance) {
+			mapInstance.removeLayer(depotMarker);
+			depotMarker = null;
+		}
+	}
+
+	function renderRoute(route: DispatchRoute, incident: FeedIncident) {
+		if (!mapInstance || !leafletLib || !routeGroup) return;
+		routeGroup.clearLayers();
+
+		// 1. Blue casing polyline for contrast against dark tiles
+		const casingPolyline = leafletLib.polyline(route.coordinates, {
+			color: '#0284c7',
+			weight: 7,
+			opacity: 0.6,
+			lineCap: 'round',
+			lineJoin: 'round'
+		});
+		casingPolyline.addTo(routeGroup);
+
+		// 2. High-contrast foreground animated polyline
+		const foregroundPolyline = leafletLib.polyline(route.coordinates, {
+			color: '#38bdf8',
+			weight: 4,
+			opacity: 0.95,
+			lineCap: 'round',
+			lineJoin: 'round',
+			className: 'surios-animated-route'
+		});
+		foregroundPolyline.addTo(routeGroup);
+
+		// 3. Municipal Engineering Depot Origin Marker
+		const depotIcon = leafletLib.divIcon({
+			className: 'surios-depot-marker-container',
+			html: `
+				<div class="surios-depot-marker" title="Municipal Engineering Depot">
+					<div class="surios-depot-pulse"></div>
+					<div class="surios-depot-badge">
+						<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+					</div>
+				</div>
+			`,
+			iconSize: [32, 32],
+			iconAnchor: [16, 16]
+		});
+
+		const depot = data.depotLocation || { lat: 14.2818, lng: 121.4150, name: 'Santa Cruz Municipal Engineering Depot' };
+		if (depotMarker && mapInstance.hasLayer(depotMarker)) {
+			mapInstance.removeLayer(depotMarker);
+		}
+		depotMarker = leafletLib.marker([depot.lat, depot.lng], { icon: depotIcon });
+		depotMarker.bindPopup(`
+			<div class="p-2 text-xs space-y-1">
+				<div class="font-bold text-foreground">Municipal Depot HQ</div>
+				<div class="text-[10px] text-muted-foreground">Santa Cruz Public Works &amp; Engineering</div>
+				<div class="text-[10px] font-mono text-primary">GPS: ${depot.lat.toFixed(4)}° N, ${depot.lng.toFixed(4)}° E</div>
+			</div>
+		`, { className: 'surios-custom-popup', maxWidth: 220 });
+		depotMarker.addTo(routeGroup);
+
+		// Fit bounds around whole path
+		const bounds = leafletLib.latLngBounds(route.coordinates);
+		mapInstance.fitBounds(bounds, { padding: [60, 60], maxZoom: 16, duration: 0.75 });
+	}
+
+	async function calculateDispatchRoute(incident: FeedIncident) {
+		if (isRouting) return;
+		isRouting = true;
+		routeError = null;
+		selectedIncident = incident;
+		selectedCorridor = null;
+
+		try {
+			const res = await fetch(
+				`/api/route?destLat=${incident.latitude}&destLng=${incident.longitude}&name=${encodeURIComponent(incident.title)}`
+			);
+			const json = await res.json();
+			if (json.success && json.route) {
+				activeRoute = json.route;
+				renderRoute(json.route, incident);
+			} else {
+				routeError = json.error || 'Failed to calculate dispatch route.';
+			}
+		} catch (err: any) {
+			routeError = err?.message || 'Network error connecting to routing service.';
+		} finally {
+			isRouting = false;
+		}
+	}
 
 	function openInspect(incident: FeedIncident, e?: Event) {
 		if (e) e.stopPropagation();
@@ -219,6 +355,7 @@
 		}
 		selectedIncident = null;
 		selectedCorridor = null;
+		clearRoute();
 	}
 
 	function renderMarkers(items: FeedIncident[]) {
@@ -285,6 +422,10 @@
 						<div class="surios-card-astm">${item.astmCode}</div>
 						<div class="surios-card-gps">GPS: +${item.latitude.toFixed(5)}, ${item.longitude.toFixed(5)}</div>
 						<div class="surios-card-actions">
+							<button class="surios-card-route-btn surios-route-btn" data-id="${item.id}" title="Trace Road Route">
+								<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+								<span>Route Crew</span>
+							</button>
 							<button class="surios-card-inspect-btn surios-inspect-btn" data-id="${item.id}">
 								Inspect Specs &rarr;
 							</button>
@@ -295,7 +436,7 @@
 
 			marker.bindPopup(popupHtml, {
 				className: 'surios-custom-popup',
-				maxWidth: 260,
+				maxWidth: 280,
 				offset: [0, -16],
 				closeButton: false
 			});
@@ -372,15 +513,23 @@
 
 			L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 
-			// Fast, high-density detailed street tiles (OpenStreetMap global CDN)
-			tileLayerInstance = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-				maxZoom: 19,
-				subdomains: ['a', 'b', 'c']
-			}).addTo(mapInstance);
+			// Tile Layer initialization (Matte OSM vs Geoapify Dark Matter)
+			if (activeTileStyle === 'geoapify-dark' && data.geoapifyTileUrl) {
+				tileLayerInstance = L.tileLayer(data.geoapifyTileUrl, {
+					attribution: '&copy; <a href="https://www.geoapify.com/" target="_blank">Geoapify</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+					maxZoom: 20
+				}).addTo(mapInstance);
+			} else {
+				tileLayerInstance = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+					attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+					maxZoom: 19,
+					subdomains: ['a', 'b', 'c']
+				}).addTo(mapInstance);
+			}
 
 			// Setup Layer Groups
 			corridorsGroup = L.featureGroup().addTo(mapInstance);
+			routeGroup = L.featureGroup().addTo(mapInstance);
 			markersGroup = L.featureGroup().addTo(mapInstance);
 
 			// Initial Render
@@ -399,6 +548,16 @@
 						if (found) {
 							selectedIncident = found;
 							isSheetOpen = true;
+						}
+					});
+				}
+				const routeBtn = popupEl.querySelector('.surios-route-btn');
+				if (routeBtn) {
+					routeBtn.addEventListener('click', () => {
+						const incidentId = routeBtn.getAttribute('data-id');
+						const found = incidents.find((i) => i.id === incidentId);
+						if (found) {
+							calculateDispatchRoute(found);
 						}
 					});
 				}
@@ -507,7 +666,7 @@
 	<div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden min-h-[calc(100vh-8.5rem)]">
 		<!-- Left: Interactive GIS Map Canvas with Floating Matte HUD -->
 		<div class="lg:col-span-7 xl:col-span-8 relative border-b lg:border-b-0 lg:border-r border-border h-96 lg:h-full min-h-[360px]">
-			<div bind:this={mapContainer} class="w-full h-full bg-[#0c0e14] surios-matte-map"></div>
+			<div bind:this={mapContainer} class="w-full h-full bg-[#0c0e14] {activeTileStyle === 'geoapify-dark' ? 'surios-geoapify-map' : 'surios-matte-map'}"></div>
 
 			<!-- Floating Top-Left Matte HUD Bar -->
 			<div class="absolute top-3 left-3 z-[1000] flex flex-wrap items-center gap-2 max-w-[calc(100%-1.5rem)] pointer-events-auto">
@@ -520,6 +679,29 @@
 						<span class="font-mono text-muted-foreground">Network PCI: <strong class="text-destructive font-bold">49</strong></span>
 					</div>
 				</div>
+
+				<!-- Basemap Style Toggle (Matte OSM vs Geoapify Dark Matter) -->
+				{#if data.hasGeoapifyKey}
+					<div class="flex items-center gap-1 p-1 rounded-lg border border-border bg-card/90 backdrop-blur-md shadow-md text-xs">
+						<button
+							type="button"
+							onclick={() => setTileStyle('matte-osm')}
+							class="px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer {activeTileStyle === 'matte-osm' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+							title="Custom Inverted Matte Dark Tiles"
+						>
+							<span>Matte OSM</span>
+						</button>
+						<button
+							type="button"
+							onclick={() => setTileStyle('geoapify-dark')}
+							class="px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer {activeTileStyle === 'geoapify-dark' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+							title="Geoapify Dark Matter Vector Basemap"
+						>
+							<SparklesIcon class="h-3 w-3 text-amber-400" />
+							<span>Geoapify Dark</span>
+						</button>
+					</div>
+				{/if}
 
 				<!-- Layer Controls Pill -->
 				<div class="flex items-center gap-1 p-1 rounded-lg border border-border bg-card/90 backdrop-blur-md shadow-md">
@@ -544,9 +726,115 @@
 				</div>
 			</div>
 
-			<!-- Floating Bottom-Left Matte Corridor Telemetry Card / HUD Legend -->
+			<!-- Floating Bottom-Left Matte Corridor Telemetry Card / Dispatch HUD / HUD Legend -->
 			<div class="absolute bottom-3 left-3 z-[1000] max-w-sm w-full sm:w-auto pointer-events-auto">
-				{#if selectedCorridor}
+				{#if activeRoute}
+					<!-- Active Municipal Dispatch Routing HUD Overlay -->
+					<div class="p-3.5 rounded-lg border border-primary/30 bg-card/95 backdrop-blur-md shadow-xl space-y-2.5 text-xs animate-in fade-in duration-200">
+						<div class="flex items-start justify-between gap-3">
+							<div class="space-y-0.5">
+								<div class="flex items-center gap-1.5">
+									<Badge variant="outline" class="text-[9px] font-mono px-1.5 py-0 border-primary/40 text-primary">
+										CIVIL DISPATCH
+									</Badge>
+									<span class="font-bold text-foreground text-xs">Road Transit Snapped</span>
+								</div>
+								<div class="text-[11px] text-muted-foreground truncate max-w-[240px]">
+									{activeRoute.originName} &rarr; {activeRoute.destinationName}
+								</div>
+							</div>
+							<button
+								type="button"
+								onclick={clearRoute}
+								class="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-muted cursor-pointer"
+								title="Dismiss Route"
+							>
+								<XIcon class="h-3.5 w-3.5" />
+							</button>
+						</div>
+
+						<div class="grid grid-cols-2 gap-2 pt-1 border-t border-border">
+							<div class="p-2 rounded bg-muted/40 border border-border">
+								<div class="text-[10px] text-muted-foreground uppercase font-mono">Distance (Road)</div>
+								<div class="text-sm font-bold font-mono mt-0.5 text-foreground flex items-center gap-1.5">
+									<RouteIcon class="h-3.5 w-3.5 text-primary" />
+									<span>{activeRoute.distanceFormatted}</span>
+								</div>
+							</div>
+							<div class="p-2 rounded bg-muted/40 border border-border">
+								<div class="text-[10px] text-muted-foreground uppercase font-mono">Est. Transit Time</div>
+								<div class="text-sm font-bold font-mono mt-0.5 text-foreground flex items-center gap-1.5">
+									<ClockIcon class="h-3.5 w-3.5 text-primary" />
+									<span>{activeRoute.durationFormatted}</span>
+								</div>
+							</div>
+						</div>
+
+						{#if activeRoute.steps && activeRoute.steps.length > 0}
+							<div class="border-t border-border pt-1.5">
+								<button
+									type="button"
+									onclick={() => (showTurnByTurn = !showTurnByTurn)}
+									class="w-full flex items-center justify-between py-1 text-[11px] text-muted-foreground hover:text-foreground font-medium transition-colors cursor-pointer"
+								>
+									<span class="flex items-center gap-1.5">
+										<NavigationIcon class="h-3 w-3 text-primary" />
+										<span>Turn-by-turn Directions ({activeRoute.steps.length})</span>
+									</span>
+									{#if showTurnByTurn}
+										<ChevronUpIcon class="h-3.5 w-3.5" />
+									{:else}
+										<ChevronDownIcon class="h-3.5 w-3.5" />
+									{/if}
+								</button>
+
+								{#if showTurnByTurn}
+									<div class="mt-1.5 max-h-40 overflow-y-auto space-y-1 pr-1 border border-border/60 rounded-md p-1.5 bg-background/50">
+										{#each activeRoute.steps as step, idx}
+											<div class="flex items-start gap-2 p-1.5 rounded hover:bg-muted/40 text-[11px] leading-tight">
+												<span class="font-mono text-[9px] text-muted-foreground h-4 w-4 rounded bg-muted flex items-center justify-center shrink-0 mt-0.5">
+													{idx + 1}
+												</span>
+												<div class="flex-1">
+													<span class="text-foreground">{step.instruction}</span>
+													{#if step.distanceMeters > 0}
+														<span class="text-muted-foreground font-mono text-[10px] ml-1">
+															({step.distanceMeters < 1000 ? `${Math.round(step.distanceMeters)}m` : `${(step.distanceMeters / 1000).toFixed(1)}km`})
+														</span>
+													{/if}
+												</div>
+											</div>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						{/if}
+
+						<div class="flex items-center justify-between gap-2 pt-1 border-t border-border">
+							<button
+								type="button"
+								onclick={() => {
+									if (mapInstance && leafletLib && activeRoute) {
+										const bounds = leafletLib.latLngBounds(activeRoute.coordinates);
+										mapInstance.fitBounds(bounds, { padding: [60, 60], maxZoom: 16, duration: 0.5 });
+									}
+								}}
+								class="px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground rounded hover:bg-muted transition-colors flex items-center gap-1 cursor-pointer"
+							>
+								<CompassIcon class="h-3 w-3" />
+								<span>Center Route</span>
+							</button>
+							<Button
+								variant="outline"
+								size="sm"
+								class="h-6 text-[10px] px-2"
+								onclick={clearRoute}
+							>
+								Dismiss
+							</Button>
+						</div>
+					</div>
+				{:else if selectedCorridor}
 					<!-- Active Corridor Telemetry Card -->
 					<div class="p-3.5 rounded-lg border border-border bg-card/95 backdrop-blur-md shadow-lg space-y-2 text-xs">
 						<div class="flex items-start justify-between gap-3">
@@ -734,14 +1022,23 @@
 
 										<div class="flex items-center gap-1.5">
 											<Button
-												href="/dashboard"
 												size="sm"
 												variant="outline"
 												class="h-6 text-[10px] px-2 border-border gap-1"
-												onclick={(e) => e.stopPropagation()}
+												onclick={(e) => {
+													e.stopPropagation();
+													calculateDispatchRoute(item);
+												}}
+												disabled={isRouting}
+												title="Calculate Road Route from Depot"
 											>
-												<WrenchIcon class="h-2.5 w-2.5" />
-												<span>Dispatch</span>
+												{#if isRouting && selectedIncident?.id === item.id}
+													<LoaderCircleIcon class="h-2.5 w-2.5 animate-spin text-primary" />
+													<span>Routing...</span>
+												{:else}
+													<TruckIcon class="h-2.5 w-2.5 text-primary" />
+													<span>Route</span>
+												{/if}
 											</Button>
 											<Button
 												size="sm"
@@ -861,9 +1158,24 @@
 				<Button variant="outline" size="sm" class="text-xs h-8" onclick={() => (isSheetOpen = false)}>
 					Close
 				</Button>
-				<Button href="/dashboard" size="sm" class="text-xs h-8 gap-1.5">
-					<WrenchIcon class="h-3.5 w-3.5" />
-					<span>Route Dispatch Crew</span>
+				<Button
+					size="sm"
+					class="text-xs h-8 gap-1.5"
+					onclick={() => {
+						if (selectedIncident) {
+							calculateDispatchRoute(selectedIncident);
+							isSheetOpen = false;
+						}
+					}}
+					disabled={isRouting}
+				>
+					{#if isRouting}
+						<LoaderCircleIcon class="h-3.5 w-3.5 animate-spin" />
+						<span>Routing Road Path...</span>
+					{:else}
+						<TruckIcon class="h-3.5 w-3.5" />
+						<span>Route Dispatch Crew</span>
+					{/if}
 				</Button>
 			</SheetFooter>
 		{/if}
@@ -883,6 +1195,74 @@
 	:global(.surios-matte-map .leaflet-tile-pane) {
 		filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(125%) saturate(18%);
 		-webkit-filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(125%) saturate(18%);
+	}
+
+	/* Geoapify Native Dark Matter Mode (No Inversion Needed) */
+	:global(.surios-geoapify-map.leaflet-container),
+	:global(.surios-geoapify-map .leaflet-container) {
+		background-color: #12141a !important;
+		font-family: inherit;
+		outline: none;
+	}
+
+	:global(.surios-geoapify-map .leaflet-tile-pane) {
+		filter: none !important;
+		-webkit-filter: none !important;
+	}
+
+	/* Dynamic Road Transit Route Animation */
+	:global(.surios-animated-route) {
+		stroke-dasharray: 8, 8;
+		animation: surios-route-flow 1.2s linear infinite;
+	}
+
+	@keyframes surios-route-flow {
+		from {
+			stroke-dashoffset: 32;
+		}
+		to {
+			stroke-dashoffset: 0;
+		}
+	}
+
+	/* Municipal Depot Marker */
+	:global(.surios-depot-marker-container) {
+		background: transparent !important;
+		border: none !important;
+	}
+
+	:global(.surios-depot-marker) {
+		position: relative;
+		width: 32px;
+		height: 32px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+	}
+
+	:global(.surios-depot-pulse) {
+		position: absolute;
+		inset: 0;
+		border-radius: 9999px;
+		background: rgba(56, 189, 248, 0.3);
+		border: 1.5px solid rgba(56, 189, 248, 0.8);
+		animation: surios-radar-pulse 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+	}
+
+	:global(.surios-depot-badge) {
+		position: relative;
+		z-index: 2;
+		width: 24px;
+		height: 24px;
+		border-radius: 9999px;
+		background: #0284c7;
+		color: #ffffff;
+		border: 2px solid #ffffff;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 	}
 
 	:global(.surios-dot-bomb-container) {
@@ -1084,9 +1464,37 @@
 		margin-bottom: 10px;
 	}
 
+	:global(.surios-card-actions) {
+		display: flex;
+		gap: 6px;
+		align-items: center;
+		margin-top: 4px;
+	}
+
+	:global(.surios-card-route-btn) {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+		padding: 6px 8px;
+		border-radius: 6px;
+		background-color: var(--secondary);
+		color: var(--secondary-foreground);
+		font-weight: 600;
+		font-size: 11px;
+		border: 1px solid var(--border);
+		cursor: pointer;
+		transition: background-color 0.15s ease;
+	}
+
+	:global(.surios-card-route-btn:hover) {
+		background-color: var(--muted);
+	}
+
 	:global(.surios-card-inspect-btn) {
-		width: 100%;
-		padding: 6px 10px;
+		flex: 1;
+		padding: 6px 8px;
 		border-radius: 6px;
 		background-color: var(--primary);
 		color: var(--primary-foreground);
@@ -1094,6 +1502,7 @@
 		font-size: 11px;
 		border: none;
 		cursor: pointer;
+		text-align: center;
 		transition: opacity 0.15s ease;
 	}
 
