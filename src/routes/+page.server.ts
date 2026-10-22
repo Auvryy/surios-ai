@@ -157,8 +157,11 @@ export const load: PageServerLoad = async () => {
 				incidents: [...formatted, ...defaultIncidents],
 				hasGeoapifyKey: isGeoapifyConfigured(),
 				depotLocation: SANTA_CRUZ_DEPOT,
-				geoapifyTileUrl: isGeoapifyConfigured()
+				geoapifyDarkTileUrl: isGeoapifyConfigured()
 					? `https://maps.geoapify.com/v1/tile/dark-matter/{z}/{x}/{y}.png?apiKey=${getApiKey()}`
+					: null,
+				geoapifyLightTileUrl: isGeoapifyConfigured()
+					? `https://maps.geoapify.com/v1/tile/positron/{z}/{x}/{y}.png?apiKey=${getApiKey()}`
 					: null
 			};
 		}
@@ -170,8 +173,11 @@ export const load: PageServerLoad = async () => {
 		incidents: defaultIncidents,
 		hasGeoapifyKey: isGeoapifyConfigured(),
 		depotLocation: SANTA_CRUZ_DEPOT,
-		geoapifyTileUrl: isGeoapifyConfigured()
+		geoapifyDarkTileUrl: isGeoapifyConfigured()
 			? `https://maps.geoapify.com/v1/tile/dark-matter/{z}/{x}/{y}.png?apiKey=${getApiKey()}`
+			: null,
+		geoapifyLightTileUrl: isGeoapifyConfigured()
+			? `https://maps.geoapify.com/v1/tile/positron/{z}/{x}/{y}.png?apiKey=${getApiKey()}`
 			: null
 	};
 };

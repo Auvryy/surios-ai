@@ -51,11 +51,14 @@
 	let isSheetOpen = $state(false);
 	let mapContainer = $state<HTMLDivElement | null>(null);
 
+	// Theme tracking for map rendering
+	let isDarkMode = $state(false);
+
 	// Road routing state
 	let activeRoute = $state<DispatchRoute | null>(null);
 	let isRouting = $state(false);
 	let showTurnByTurn = $state(false);
-	let activeTileStyle = $state<'matte-osm' | 'geoapify-dark'>('matte-osm');
+	let activeTileSource = $state<'osm' | 'geoapify'>('osm');
 	let routeError = $state<string | null>(null);
 
 	// Leaflet instance pointers for dynamic updates
@@ -78,26 +81,77 @@
 				: incidents.filter((i) => i.status === filter)
 	);
 
-	function setTileStyle(style: 'matte-osm' | 'geoapify-dark') {
-		if (style === activeTileStyle || !mapInstance || !leafletLib) return;
-		activeTileStyle = style;
+	// Sync theme changes dynamically with Leaflet map
+	$effect(() => {
+		if (typeof document === 'undefined') return;
+		isDarkMode = document.documentElement.classList.contains('dark');
+
+		const observer = new MutationObserver(() => {
+			const dark = document.documentElement.classList.contains('dark');
+			if (dark !== isDarkMode) {
+				isDarkMode = dark;
+				updateTileLayer();
+				renderMarkers(filteredIncidents);
+				renderCorridors();
+				if (activeRoute && selectedIncident) {
+					renderRoute(activeRoute, selectedIncident);
+				}
+			}
+		});
+
+		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+		const handleThemeEvent = (e: any) => {
+			const dark = e.detail?.theme === 'dark' || document.documentElement.classList.contains('dark');
+			if (dark !== isDarkMode) {
+				isDarkMode = dark;
+				updateTileLayer();
+				renderMarkers(filteredIncidents);
+				renderCorridors();
+				if (activeRoute && selectedIncident) {
+					renderRoute(activeRoute, selectedIncident);
+				}
+			}
+		};
+		window.addEventListener('theme-change', handleThemeEvent);
+
+		return () => {
+			observer.disconnect();
+			window.removeEventListener('theme-change', handleThemeEvent);
+		};
+	});
+
+	function updateTileLayer() {
+		if (!mapInstance || !leafletLib) return;
 
 		if (tileLayerInstance) {
 			mapInstance.removeLayer(tileLayerInstance);
+			tileLayerInstance = null;
 		}
 
-		if (style === 'geoapify-dark' && data.geoapifyTileUrl) {
-			tileLayerInstance = leafletLib.tileLayer(data.geoapifyTileUrl, {
-				attribution: '&copy; <a href="https://www.geoapify.com/" target="_blank">Geoapify</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-				maxZoom: 20
-			}).addTo(mapInstance);
-		} else {
-			tileLayerInstance = leafletLib.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-				maxZoom: 19,
-				subdomains: ['a', 'b', 'c']
-			}).addTo(mapInstance);
+		if (activeTileSource === 'geoapify' && data.hasGeoapifyKey) {
+			const tileUrl = isDarkMode ? data.geoapifyDarkTileUrl : data.geoapifyLightTileUrl;
+			if (tileUrl) {
+				tileLayerInstance = leafletLib.tileLayer(tileUrl, {
+					attribution: '&copy; <a href="https://www.geoapify.com/" target="_blank">Geoapify</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+					maxZoom: 20
+				}).addTo(mapInstance);
+				return;
+			}
 		}
+
+		// OSM default (Clean paper in light mode, deep matte inversion in dark mode)
+		tileLayerInstance = leafletLib.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+			maxZoom: 19,
+			subdomains: ['a', 'b', 'c']
+		}).addTo(mapInstance);
+	}
+
+	function setTileSource(source: 'osm' | 'geoapify') {
+		if (source === activeTileSource) return;
+		activeTileSource = source;
+		updateTileLayer();
 	}
 
 	function clearRoute() {
@@ -117,40 +171,41 @@
 		if (!mapInstance || !leafletLib || !routeGroup) return;
 		routeGroup.clearLayers();
 
-		// 1. Blue casing polyline for contrast against dark tiles
+		// 1. Minimalist sharp casing line
+		const casingColor = isDarkMode ? '#0369a1' : '#bae6fd';
 		const casingPolyline = leafletLib.polyline(route.coordinates, {
-			color: '#0284c7',
-			weight: 7,
-			opacity: 0.6,
-			lineCap: 'round',
-			lineJoin: 'round'
+			color: casingColor,
+			weight: 4.5,
+			opacity: isDarkMode ? 0.6 : 0.75,
+			lineCap: 'butt',
+			lineJoin: 'miter'
 		});
 		casingPolyline.addTo(routeGroup);
 
-		// 2. High-contrast foreground animated polyline
+		// 2. High-precision minimalist animated line (clean 2.5px crisp line, not roundy)
+		const foregroundColor = isDarkMode ? '#38bdf8' : '#0284c7';
 		const foregroundPolyline = leafletLib.polyline(route.coordinates, {
-			color: '#38bdf8',
-			weight: 4,
-			opacity: 0.95,
-			lineCap: 'round',
-			lineJoin: 'round',
+			color: foregroundColor,
+			weight: 2.5,
+			opacity: 1,
+			lineCap: 'butt',
+			lineJoin: 'miter',
 			className: 'surios-animated-route'
 		});
 		foregroundPolyline.addTo(routeGroup);
 
-		// 3. Municipal Engineering Depot Origin Marker
+		// 3. Minimalist Municipal Depot Marker (clean squircle badge, not too roundy)
 		const depotIcon = leafletLib.divIcon({
 			className: 'surios-depot-marker-container',
 			html: `
 				<div class="surios-depot-marker" title="Municipal Engineering Depot">
-					<div class="surios-depot-pulse"></div>
 					<div class="surios-depot-badge">
-						<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+						<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="butt" stroke-linejoin="miter"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
 					</div>
 				</div>
 			`,
-			iconSize: [32, 32],
-			iconAnchor: [16, 16]
+			iconSize: [26, 26],
+			iconAnchor: [13, 13]
 		});
 
 		const depot = data.depotLocation || { lat: 14.2818, lng: 121.4150, name: 'Santa Cruz Municipal Engineering Depot' };
@@ -245,17 +300,10 @@
 			const severityColor = isCritical ? '#ef4444' : isModerate ? '#f59e0b' : '#64748b';
 
 			let badgeClass = 'badge-low';
-			let ringsHtml = '';
-
 			if (isCritical) {
 				badgeClass = 'badge-critical';
-				ringsHtml = `
-					<span class="surios-pulse-ring ring-1"></span>
-					<span class="surios-pulse-ring ring-2"></span>
-				`;
 			} else if (isModerate) {
 				badgeClass = 'badge-moderate';
-				ringsHtml = `<span class="surios-pulse-ring ring-moderate"></span>`;
 			}
 
 			const isSelected = selectedIncident?.id === item.id;
@@ -263,14 +311,14 @@
 				className: 'surios-dot-bomb-container',
 				html: `
 					<div class="surios-dot-bomb-wrapper ${isSelected ? 'is-selected' : ''}" data-id="${item.id}" title="${item.title}">
-						${ringsHtml}
+						${isCritical ? '<span class="surios-minimal-ping"></span>' : ''}
 						<div class="surios-badge ${badgeClass}">
 							<span>${item.hazardSeverity}</span>
 						</div>
 					</div>
 				`,
-				iconSize: [36, 36],
-				iconAnchor: [18, 18]
+				iconSize: [28, 28],
+				iconAnchor: [14, 14]
 			});
 
 			const marker = leafletLib.marker([item.latitude, item.longitude], { icon: customIcon });
@@ -299,7 +347,7 @@
 						<div class="surios-card-gps">GPS: +${item.latitude.toFixed(5)}, ${item.longitude.toFixed(5)}</div>
 						<div class="surios-card-actions">
 							<button class="surios-card-route-btn surios-route-btn" data-id="${item.id}" title="Trace Road Route">
-								<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+								<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="butt" stroke-linejoin="miter"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
 								<span>Route Crew</span>
 							</button>
 							<button class="surios-card-inspect-btn surios-inspect-btn" data-id="${item.id}">
@@ -313,7 +361,7 @@
 			marker.bindPopup(popupHtml, {
 				className: 'surios-custom-popup',
 				maxWidth: 280,
-				offset: [0, -16],
+				offset: [0, -14],
 				closeButton: false
 			});
 
@@ -335,11 +383,11 @@
 			const isSelected = selectedCorridor?.id === corridor.id;
 			const polyline = leafletLib.polyline(corridor.coordinates, {
 				color: corridor.color,
-				weight: isSelected ? corridor.weight + 3 : corridor.weight,
-				opacity: isSelected ? 1.0 : 0.85,
+				weight: isSelected ? 4.5 : 2.75,
+				opacity: isSelected ? 1.0 : (isDarkMode ? 0.85 : 0.8),
 				dashArray: corridor.dashArray,
-				lineCap: 'round',
-				lineJoin: 'round'
+				lineCap: 'butt',
+				lineJoin: 'miter'
 			});
 
 			polyline.bindTooltip(`
@@ -354,12 +402,12 @@
 			`, { sticky: true, className: 'surios-tooltip' });
 
 			polyline.on('mouseover', () => {
-				polyline.setStyle({ weight: corridor.weight + 3, opacity: 1 });
+				polyline.setStyle({ weight: 4.5, opacity: 1 });
 			});
 
 			polyline.on('mouseout', () => {
 				if (selectedCorridor?.id !== corridor.id) {
-					polyline.setStyle({ weight: corridor.weight, opacity: 0.85 });
+					polyline.setStyle({ weight: 2.75, opacity: isDarkMode ? 0.85 : 0.8 });
 				}
 			});
 
@@ -389,19 +437,8 @@
 
 			L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 
-			// Tile Layer initialization (Matte OSM vs Geoapify Dark Matter)
-			if (activeTileStyle === 'geoapify-dark' && data.geoapifyTileUrl) {
-				tileLayerInstance = L.tileLayer(data.geoapifyTileUrl, {
-					attribution: '&copy; <a href="https://www.geoapify.com/" target="_blank">Geoapify</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-					maxZoom: 20
-				}).addTo(mapInstance);
-			} else {
-				tileLayerInstance = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-					attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-					maxZoom: 19,
-					subdomains: ['a', 'b', 'c']
-				}).addTo(mapInstance);
-			}
+			// Tile Layer initialization
+			updateTileLayer();
 
 			// Setup Layer Groups
 			corridorsGroup = L.featureGroup().addTo(mapInstance);
@@ -550,13 +587,16 @@
 	<div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden min-h-0 h-full">
 		<!-- Left: Interactive GIS Map Canvas with Floating Matte HUD -->
 		<div class="lg:col-span-7 xl:col-span-8 relative border-b lg:border-b-0 lg:border-r border-border h-full min-h-0 overflow-hidden">
-			<div bind:this={mapContainer} class="w-full h-full bg-[#0c0e14] {activeTileStyle === 'geoapify-dark' ? 'surios-geoapify-map' : 'surios-matte-map'}"></div>
+			<div
+				bind:this={mapContainer}
+				class="w-full h-full {isDarkMode ? 'surios-dark-map bg-[#0c0e14]' : 'surios-light-map bg-[#f8fafc]'} {activeTileSource === 'geoapify' ? 'is-geoapify' : 'is-osm'}"
+			></div>
 
-			<!-- Floating Top-Left Matte HUD Bar -->
+			<!-- Floating Top-Left Command HUD Bar -->
 			<div class="absolute top-3 left-3 z-[1000] flex flex-wrap items-center gap-2 max-w-[calc(100%-1.5rem)] pointer-events-auto">
 				<!-- District PCI Badge -->
 				<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-card/90 backdrop-blur-md shadow-md text-xs">
-					<span class="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+					<span class="flex h-2 w-2 rounded-[2px] bg-red-500 animate-pulse"></span>
 					<div class="flex items-center gap-1.5">
 						<span class="font-semibold text-foreground">Santa Cruz Corridor</span>
 						<span class="text-muted-foreground">&bull;</span>
@@ -564,25 +604,25 @@
 					</div>
 				</div>
 
-				<!-- Basemap Style Toggle (Matte OSM vs Geoapify Dark Matter) -->
+				<!-- Basemap Style Toggle (OSM Paper vs Geoapify Positron in Light Mode, OSM Matte vs Geoapify Dark in Dark Mode) -->
 				{#if data.hasGeoapifyKey}
 					<div class="flex items-center gap-1 p-1 rounded-lg border border-border bg-card/90 backdrop-blur-md shadow-md text-xs">
 						<button
 							type="button"
-							onclick={() => setTileStyle('matte-osm')}
-							class="px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer {activeTileStyle === 'matte-osm' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
-							title="Custom Inverted Matte Dark Tiles"
+							onclick={() => setTileSource('osm')}
+							class="px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer {activeTileSource === 'osm' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+							title={isDarkMode ? 'Custom Inverted Matte Dark Tiles' : 'Standard Clean Paper OSM Tiles'}
 						>
-							<span>Matte OSM</span>
+							<span>{isDarkMode ? 'Matte OSM' : 'Paper OSM'}</span>
 						</button>
 						<button
 							type="button"
-							onclick={() => setTileStyle('geoapify-dark')}
-							class="px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer {activeTileStyle === 'geoapify-dark' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
-							title="Geoapify Dark Matter Vector Basemap"
+							onclick={() => setTileSource('geoapify')}
+							class="px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer {activeTileSource === 'geoapify' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+							title={isDarkMode ? 'Geoapify Dark Matter Vector Basemap' : 'Geoapify Positron Light Vector Basemap'}
 						>
-							<SparklesIcon class="h-3 w-3 text-amber-400" />
-							<span>Geoapify Dark</span>
+							<SparklesIcon class="h-3 w-3 text-amber-500" />
+							<span>{isDarkMode ? 'Geoapify Dark' : 'Positron Light'}</span>
 						</button>
 					</div>
 				{/if}
@@ -750,7 +790,7 @@
 							<div class="p-2 rounded bg-muted/40 border border-border">
 								<div class="text-[10px] text-muted-foreground uppercase font-mono">Pavement Condition</div>
 								<div class="text-sm font-bold font-mono mt-0.5 flex items-center gap-1.5">
-									<span class="inline-block w-2.5 h-2.5 rounded-full" style="background-color: {selectedCorridor.color}"></span>
+									<span class="inline-block w-2.5 h-2.5 rounded-[2px]" style="background-color: {selectedCorridor.color}"></span>
 									<span>PCI {selectedCorridor.pci} / 100</span>
 								</div>
 							</div>
@@ -780,32 +820,32 @@
 						<div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
 							<!-- Critical Marker -->
 							<div class="flex items-center gap-2">
-								<span class="h-4 w-4 rounded-full bg-red-600 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">9</span>
+								<span class="h-4 w-4 rounded-[3px] bg-red-600 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">9</span>
 								<span class="text-muted-foreground">Critical Dot Bomb (8–10)</span>
 							</div>
 							<!-- Critical Road Line -->
 							<div class="flex items-center gap-2">
-								<span class="h-1.5 w-5 rounded bg-red-500 shrink-0"></span>
+								<span class="h-1.5 w-5 rounded-[2px] bg-red-500 shrink-0"></span>
 								<span class="text-muted-foreground">Critical Line (PCI &lt; 50)</span>
 							</div>
 							<!-- Moderate Marker -->
 							<div class="flex items-center gap-2">
-								<span class="h-4 w-4 rounded-full bg-amber-500 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">6</span>
+								<span class="h-4 w-4 rounded-[3px] bg-amber-500 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">6</span>
 								<span class="text-muted-foreground">Moderate Hazard (5–7)</span>
 							</div>
 							<!-- Moderate Road Line -->
 							<div class="flex items-center gap-2">
-								<span class="h-1.5 w-5 rounded bg-amber-500 shrink-0"></span>
+								<span class="h-1.5 w-5 rounded-[2px] bg-amber-500 shrink-0"></span>
 								<span class="text-muted-foreground">Warning Line (50–70)</span>
 							</div>
 							<!-- Low Marker -->
 							<div class="flex items-center gap-2">
-								<span class="h-4 w-4 rounded-full bg-slate-500 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">2</span>
+								<span class="h-4 w-4 rounded-[3px] bg-slate-500 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">2</span>
 								<span class="text-muted-foreground">Minor Distress (1–4)</span>
 							</div>
 							<!-- Good Road Line -->
 							<div class="flex items-center gap-2">
-								<span class="h-1.5 w-5 rounded bg-emerald-500 shrink-0"></span>
+								<span class="h-1.5 w-5 rounded-[2px] bg-emerald-500 shrink-0"></span>
 								<span class="text-muted-foreground">Stable Line (PCI &gt; 70)</span>
 							</div>
 						</div>
@@ -846,7 +886,7 @@
 							<div class="relative">
 								<!-- Timeline Node Indicator -->
 								<span
-									class="absolute -left-[17px] top-4 h-2.5 w-2.5 rounded-full border-2 border-background {isCritical
+									class="absolute -left-[17px] top-4 h-2.5 w-2.5 rounded-[2.5px] border-2 border-background {isCritical
 										? 'bg-destructive ring-2 ring-destructive/20'
 										: isModerate
 											? 'bg-amber-500 ring-2 ring-amber-500/20'
@@ -1067,49 +1107,58 @@
 </Sheet>
 
 <style>
-	/* Dedicated Deep Matte Command Center Canvas */
-	:global(.surios-matte-map.leaflet-container),
-	:global(.surios-matte-map .leaflet-container) {
+	/* Light Mode Map Canvas */
+	:global(.surios-light-map.leaflet-container),
+	:global(.surios-light-map .leaflet-container) {
+		background-color: #f8fafc !important;
+		font-family: inherit;
+		outline: none;
+	}
+
+	:global(.surios-light-map.is-osm .leaflet-tile-pane) {
+		filter: contrast(100%) brightness(100%) saturate(85%);
+		-webkit-filter: contrast(100%) brightness(100%) saturate(85%);
+	}
+
+	:global(.surios-light-map.is-geoapify .leaflet-tile-pane) {
+		filter: none !important;
+		-webkit-filter: none !important;
+	}
+
+	/* Dark Mode Map Canvas */
+	:global(.surios-dark-map.leaflet-container),
+	:global(.surios-dark-map .leaflet-container) {
 		background-color: #0c0e14 !important;
 		font-family: inherit;
 		outline: none;
 	}
 
-	/* Deep Matte Dark Mode for OpenStreetMap Base Tiles across all zooms (12-19) */
-	:global(.surios-matte-map .leaflet-tile-pane) {
+	:global(.surios-dark-map.is-osm .leaflet-tile-pane) {
 		filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(125%) saturate(18%);
 		-webkit-filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(125%) saturate(18%);
 	}
 
-	/* Geoapify Native Dark Matter Mode (No Inversion Needed) */
-	:global(.surios-geoapify-map.leaflet-container),
-	:global(.surios-geoapify-map .leaflet-container) {
-		background-color: #12141a !important;
-		font-family: inherit;
-		outline: none;
-	}
-
-	:global(.surios-geoapify-map .leaflet-tile-pane) {
+	:global(.surios-dark-map.is-geoapify .leaflet-tile-pane) {
 		filter: none !important;
 		-webkit-filter: none !important;
 	}
 
-	/* Dynamic Road Transit Route Animation */
+	/* Dynamic Minimalist Road Route Animation (Not bulbous or roundy) */
 	:global(.surios-animated-route) {
-		stroke-dasharray: 8, 8;
+		stroke-dasharray: 6, 4;
 		animation: surios-route-flow 1.2s linear infinite;
 	}
 
 	@keyframes surios-route-flow {
 		from {
-			stroke-dashoffset: 32;
+			stroke-dashoffset: 20;
 		}
 		to {
 			stroke-dashoffset: 0;
 		}
 	}
 
-	/* Municipal Depot Marker */
+	/* Minimalist Municipal Depot Marker (Clean squircle badge, not too roundy) */
 	:global(.surios-depot-marker-container) {
 		background: transparent !important;
 		border: none !important;
@@ -1117,38 +1166,35 @@
 
 	:global(.surios-depot-marker) {
 		position: relative;
-		width: 32px;
-		height: 32px;
+		width: 26px;
+		height: 26px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		cursor: pointer;
 	}
 
-	:global(.surios-depot-pulse) {
-		position: absolute;
-		inset: 0;
-		border-radius: 9999px;
-		background: rgba(56, 189, 248, 0.3);
-		border: 1.5px solid rgba(56, 189, 248, 0.8);
-		animation: surios-radar-pulse 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
-	}
-
 	:global(.surios-depot-badge) {
 		position: relative;
 		z-index: 2;
-		width: 24px;
-		height: 24px;
-		border-radius: 9999px;
+		width: 22px;
+		height: 22px;
+		border-radius: 5px; /* Minimalist squircle */
 		background: #0284c7;
 		color: #ffffff;
-		border: 2px solid #ffffff;
+		border: 1px solid rgba(255, 255, 255, 0.9);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 	}
 
+	:global(.surios-light-map .surios-depot-badge) {
+		background: #0369a1;
+		border: 1px solid #ffffff;
+	}
+
+	/* Minimalist Geometric Dot Bomb Badges (Crisp, modern, not too roundy) */
 	:global(.surios-dot-bomb-container) {
 		background: transparent !important;
 		border: none !important;
@@ -1156,52 +1202,12 @@
 
 	:global(.surios-dot-bomb-wrapper) {
 		position: relative;
-		width: 36px;
-		height: 36px;
+		width: 28px;
+		height: 28px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		cursor: pointer;
-	}
-
-	:global(.surios-pulse-ring) {
-		position: absolute;
-		inset: 0;
-		border-radius: 9999px;
-		pointer-events: none;
-	}
-
-	:global(.surios-pulse-ring.ring-1) {
-		background: rgba(239, 68, 68, 0.45);
-		border: 1.5px solid rgba(239, 68, 68, 0.9);
-		animation: surios-radar-pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-	}
-
-	:global(.surios-pulse-ring.ring-2) {
-		background: rgba(239, 68, 68, 0.2);
-		border: 1px solid rgba(239, 68, 68, 0.6);
-		animation: surios-radar-pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite 0.7s;
-	}
-
-	:global(.surios-pulse-ring.ring-moderate) {
-		background: rgba(245, 158, 11, 0.25);
-		border: 1px solid rgba(245, 158, 11, 0.7);
-		animation: surios-radar-pulse 3s cubic-bezier(0, 0, 0.2, 1) infinite;
-	}
-
-	@keyframes surios-radar-pulse {
-		0% {
-			transform: scale(0.65);
-			opacity: 0.95;
-		}
-		65% {
-			transform: scale(2.1);
-			opacity: 0.2;
-		}
-		100% {
-			transform: scale(2.6);
-			opacity: 0;
-		}
 	}
 
 	:global(.surios-badge) {
@@ -1210,49 +1216,73 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: 9999px;
+		border-radius: 5px; /* Minimalist squircle, not too roundy */
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 		font-weight: 700;
-		box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
-		transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+		font-size: 11px;
+		transition: transform 0.15s ease, box-shadow 0.15s ease;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 	}
 
 	:global(.surios-badge.badge-critical) {
-		width: 26px;
-		height: 26px;
+		width: 22px;
+		height: 22px;
 		background: #ef4444;
 		color: #ffffff;
-		border: 2px solid #ffffff;
-		font-size: 11px;
+		border: 1px solid rgba(255, 255, 255, 0.95);
 	}
 
 	:global(.surios-badge.badge-moderate) {
-		width: 24px;
-		height: 24px;
+		width: 20px;
+		height: 20px;
 		background: #f59e0b;
 		color: #ffffff;
-		border: 2px solid #ffffff;
+		border: 1px solid rgba(255, 255, 255, 0.95);
 		font-size: 10px;
 	}
 
 	:global(.surios-badge.badge-low) {
-		width: 22px;
-		height: 22px;
+		width: 18px;
+		height: 18px;
 		background: #64748b;
 		color: #ffffff;
-		border: 1.5px solid #ffffff;
+		border: 1px solid rgba(255, 255, 255, 0.95);
 		font-size: 9px;
 	}
 
+	:global(.surios-minimal-ping) {
+		position: absolute;
+		inset: -2px;
+		border-radius: 7px;
+		border: 1.5px solid #ef4444;
+		animation: surios-clean-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+		pointer-events: none;
+	}
+
+	@keyframes surios-clean-ping {
+		0% {
+			transform: scale(0.9);
+			opacity: 0.9;
+		}
+		70% {
+			transform: scale(1.35);
+			opacity: 0;
+		}
+		100% {
+			transform: scale(1.45);
+			opacity: 0;
+		}
+	}
+
 	:global(.surios-dot-bomb-wrapper:hover .surios-badge) {
-		transform: scale(1.25);
-		box-shadow: 0 6px 14px rgba(0, 0, 0, 0.5);
+		transform: scale(1.15);
+		box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
 	}
 
 	:global(.surios-dot-bomb-wrapper.is-selected .surios-badge) {
-		outline: 3px solid #38bdf8;
-		outline-offset: 2px;
-		transform: scale(1.2);
+		outline: 2px solid var(--primary);
+		outline-offset: 1.5px;
+		transform: scale(1.15);
 	}
 
 	/* Custom Floating Popover Card (Choice 1 Mockup) */

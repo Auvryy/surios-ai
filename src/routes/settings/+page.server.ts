@@ -36,7 +36,7 @@ export const actions: Actions = {
 	saveSettings: async ({ request, locals }) => {
 		const formData = await request.formData();
 
-		const theme = (formData.get('theme') as 'dark' | 'light') || 'dark';
+		const theme = (formData.get('theme') as 'dark' | 'light') || 'light';
 		const vruAlerts = formData.get('vruAlerts') === 'on' || formData.get('vruAlerts') === 'true';
 		const dailyDigest = formData.get('dailyDigest') === 'on' || formData.get('dailyDigest') === 'true';
 		const dpwhForwarding = formData.get('dpwhForwarding') === 'on' || formData.get('dpwhForwarding') === 'true';
