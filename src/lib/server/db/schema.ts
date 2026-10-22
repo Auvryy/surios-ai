@@ -1,5 +1,29 @@
 import { pgTable, text, integer, numeric, timestamp, jsonb, uuid } from 'drizzle-orm/pg-core';
 
+export interface UserSettings {
+	theme?: 'dark' | 'light' | 'system';
+	vruAlerts: boolean;
+	dailyDigest: boolean;
+	dpwhForwarding: boolean;
+	potholeThreshold: number; // in mm, default 50
+	vruWeightMultiplier: number; // default 1.5
+	autoSnapCorridors: boolean;
+	defaultMapView: 'split' | 'full';
+	preferredCorridor: string;
+}
+
+export const defaultUserSettings: UserSettings = {
+	theme: 'dark',
+	vruAlerts: true,
+	dailyDigest: true,
+	dpwhForwarding: false,
+	potholeThreshold: 50,
+	vruWeightMultiplier: 1.5,
+	autoSnapCorridors: true,
+	defaultMapView: 'split',
+	preferredCorridor: 'ALL'
+};
+
 export const users = pgTable('users', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	email: text('email').notNull().unique(),
@@ -8,6 +32,7 @@ export const users = pgTable('users', {
 	role: text('role').notNull().default('CITIZEN'), // 'CITIZEN' | 'OFFICER' | 'ENGINEER' | 'ADMIN'
 	department: text('department'),
 	badgeNumber: text('badge_number'),
+	settings: jsonb('settings').$type<UserSettings>().default(defaultUserSettings),
 	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 	updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 });
