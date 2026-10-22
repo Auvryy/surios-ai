@@ -48,12 +48,12 @@
 			]
 		},
 		{
-			title: 'Municipal Modules (Upcoming)',
+			title: 'Municipal Engineering & Field Ops',
 			items: [
-				{ name: 'Proof of Patch', href: '/verification', icon: CheckCheckIcon, badge: 'Planned' },
-				{ name: 'Road Analytics', href: '/analytics', icon: TrendingUpIcon, badge: 'Planned' },
-				{ name: 'Contractors & Crews', href: '/crews', icon: TruckIcon, badge: 'Planned' },
-				{ name: 'Community Hub', href: '/community', icon: AwardIcon, badge: 'Planned' }
+				{ name: 'Proof of Patch', href: '/verification', icon: CheckCheckIcon, badge: 'DPWH' },
+				{ name: 'Road Analytics', href: '/analytics', icon: TrendingUpIcon, badge: 'PCI' },
+				{ name: 'Contractors & Crews', href: '/crews', icon: TruckIcon, badge: 'Active' },
+				{ name: 'Community Hub', href: '/community', icon: AwardIcon, badge: 'Live' }
 			]
 		},
 		{
