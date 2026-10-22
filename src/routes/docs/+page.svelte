@@ -731,46 +731,56 @@
 
 			<Separator />
 
-			<!-- 7.3 Multi-Image Gallery Thumbnail Stack & Geodetic Card -->
+			<!-- 7.3 Swiss Architectural Minimalist Card & Vertical Inset Dock Inside Hero Photo -->
 			<div class="space-y-3">
 				<div class="flex items-center gap-2">
-					<Badge variant="secondary" class="text-[10px] font-mono border-border">7.3 EVIDENCE PIPELINE</Badge>
-					<h3 class="text-sm font-semibold text-foreground">Multi-Image Gallery Thumbnail Stack &amp; Embedded Micro-GIS Card</h3>
+					<Badge variant="secondary" class="text-[10px] font-mono border-border">7.3 MINIMALIST ARCHITECTURE</Badge>
+					<h3 class="text-sm font-semibold text-foreground">Swiss Architectural Minimalist Card &amp; Vertical Inset Dock Inside Hero Photo</h3>
 				</div>
 				<p>
-					Single-photo submissions fail ASTM civil auditing because road distress requires multi-dimensional evaluation: surface aperture, vertical shear depth, approaching vehicle sightlines, and environmental moisture accumulation.
+					Traditional civic apps suffer from "badge creep"—overloading report cards with 6+ conflicting colored pills, label chips, and distracting text tags that obstruct the pavement distress photo. SuriOS adopts a rigorous **Swiss Architectural Minimalist Standard** (inspired by Linear and Apple Pro interface design):
 				</p>
 
 				<div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
 					<div class="p-3 rounded-lg border border-border bg-card space-y-1">
 						<div class="flex items-center gap-1.5 text-foreground font-semibold text-[11px]">
 							<ImageIcon class="h-3.5 w-3.5 text-primary" />
-							<span>1. Primary Hero Defect Frame</span>
+							<span>1. Full-Span Unobstructed Hero Photo</span>
 						</div>
 						<p class="text-[10px] text-muted-foreground">
-							16:9 civil aspect ratio showing the primary defect aperture with AI bounding box overlays, depth watermark, and ASTM D6433 severity classification.
+							The primary defect photograph expands across 100% of the media container width. Zero black tags or text overlays obscure the road asphalt, ensuring engineers and citizens inspect the authentic defect aperture without visual interference.
 						</p>
 					</div>
 
 					<div class="p-3 rounded-lg border border-border bg-card space-y-1">
 						<div class="flex items-center gap-1.5 text-foreground font-semibold text-[11px]">
 							<ImagesIcon class="h-3.5 w-3.5 text-primary" />
-							<span>2. Secondary Thumbnail Rail</span>
+							<span>2. Vertical Inset Dock (Top-Right)</span>
 						</div>
 						<p class="text-[10px] text-muted-foreground">
-							Compact thumbnail stack featuring scale calibration (ruler gauge), corridor traffic context (approaching blind spots), and rain ponding hazards with a "+X more" overlay.
+							Docked seamlessly inside the top-right corner of the photo with a frosted-glass backdrop (<code class="text-[9px] font-mono text-primary">backdrop-blur-md bg-black/45 border border-white/20</code>). Houses a secondary inspection photo, dark-tinted "+X more" count tile, and a vector mini-map.
 						</p>
 					</div>
 
 					<div class="p-3 rounded-lg border border-border bg-card space-y-1">
 						<div class="flex items-center gap-1.5 text-foreground font-semibold text-[11px]">
 							<MapPinIcon class="h-3.5 w-3.5 text-primary" />
-							<span>3. Embedded Micro-GIS Card</span>
+							<span>3. Embedded Micro-GIS Radar Tile</span>
 						</div>
 						<p class="text-[10px] text-muted-foreground">
-							Integrated 120px micro-map widget displaying exact corridor stationing (e.g., Sta 84+210), nearest municipal landmark, and provincial shoulder geometry.
+							An integrated square vector map tile with a red GPS location pin. Clicking instantly flies the desktop 45% radar map directly to the corridor coordinate (<code class="text-[9px] font-mono text-primary">map.flyTo([lat, lng], 16)</code>) and highlights the corresponding polyline.
 						</p>
 					</div>
+				</div>
+
+				<div class="p-3 rounded-lg bg-secondary/20 border border-border space-y-1.5 text-[11px]">
+					<div class="flex items-center justify-between">
+						<span class="font-semibold text-foreground">Noise Elimination &amp; Single-Severity Hierarchy:</span>
+						<Badge variant="outline" class="text-[9px] font-mono text-primary border-primary/30">ZERO CLUTTER</Badge>
+					</div>
+					<p class="text-muted-foreground leading-relaxed">
+						Consolidated 6 legacy pill badges down to a single header chip (<code class="font-mono text-destructive">[ 8.9 CRITICAL ]</code>) paired with the citizen author avatar and timestamp. Replaced chunky rectangular action blocks with refined rounded pills (<code class="font-mono text-foreground">↑ 27 Confirmed</code>) that provide immediate tactile feedback.
+					</p>
 				</div>
 			</div>
 

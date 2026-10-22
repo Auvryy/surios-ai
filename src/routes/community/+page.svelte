@@ -15,6 +15,7 @@
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import NavigationIcon from '@lucide/svelte/icons/navigation';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
+	import ArrowUpIcon from '@lucide/svelte/icons/arrow-up';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import CameraIcon from '@lucide/svelte/icons/camera';
 	import CheckCircleIcon from '@lucide/svelte/icons/circle-check';
@@ -251,6 +252,56 @@
 	// Civic Social Hazard Posts Stream (Santa Cruz, Laguna)
 	let posts = $state<SocialHazardPost[]>([
 		{
+			id: 'REP-9032',
+			title: 'Sunken Crosswalk Utility Trench',
+			location: 'Quezon Ave cor. EDSA, Diliman',
+			corridorName: 'Quezon Avenue Corridor',
+			corridorId: 'CORR-03',
+			coordinatesString: '14.6507° N, 121.0345° E',
+			latitude: 14.6507,
+			longitude: 121.0345,
+			severity: 8.9,
+			vruRisk: 'CRITICAL',
+			astmCode: 'ASTM D6433 (Utility Cut Depression)',
+			depthEstimate: '52mm transverse trench',
+			safetyTags: ['VRU CRITICAL 8.9/10', 'School Zone Danger', 'Tricycle Alert', 'Rim Catch Hazard'],
+			description: 'Depression across eastbound pedestrian crosswalk causing wheel entrapment and trip hazards for pedestrians and cyclists.',
+			author: {
+				name: 'Ria Santos',
+				handle: '@ria_commutes',
+				roleTag: 'Student Mobility Coordinator',
+				avatarInitials: 'RS',
+				isVerified: true
+			},
+			timeAgo: '1h ago',
+			mainImage: '/uploads/pothole-pre-repair.jpg',
+			secondaryImages: [
+				{ src: '/uploads/patch-post-repair.jpg', label: 'Crosswalk Alignment' },
+				{ src: '/samples/pothole-severe.jpg', label: 'Trench Depth Lip' }
+			],
+			totalPhotosCount: 5,
+			confirmations: 27,
+			userConfirmed: true,
+			isTricycleCorridor: true,
+			escalatedToDpwh: true,
+			dpwhTicket: 'DPWH-IV-A-2026-9032',
+			crewAssigned: 'Laguna Water Utility Ops',
+			showComments: false,
+			comments: [
+				{
+					id: 'c6',
+					author: 'Engr. Mateo Cruz',
+					handle: '@cruz_civil',
+					role: 'LSPU Civil Engineering Faculty Volunteer',
+					avatarInitials: 'MC',
+					isOfficial: true,
+					officialBadge: 'Civil Inspector Volunteer',
+					timeAgo: '55m ago',
+					text: 'Subgrade moisture settling is evident beneath the asphalt skin. Requires full gravel re-compaction prior to hot asphalt resurfacing.'
+				}
+			]
+		},
+		{
 			id: 'REP-9041',
 			title: 'Deep 68mm Rim-Strike Crater & Submerged Ponding Hole',
 			location: 'Pedro Guevara Ave (Near LSPU Main Gate 2), Santa Cruz',
@@ -286,7 +337,7 @@
 			escalatedToDpwh: true,
 			dpwhTicket: 'DPWH-IV-A-2026-9041',
 			crewAssigned: 'Crew Alpha (Cold-Patch Squad)',
-			showComments: true,
+			showComments: false,
 			comments: [
 				{
 					id: 'c1',
@@ -376,56 +427,6 @@
 					avatarInitials: 'CD',
 					timeAgo: '35m ago',
 					text: 'Commuter cyclists have to take the center lane here to avoid tire wedge. Glad this is confirmed for DPWH edge reconstitution.'
-				}
-			]
-		},
-		{
-			id: 'REP-9032',
-			title: 'Sunken Crosswalk Utility Trench near Elementary School',
-			location: 'Quezon Ave – Bubukal Student Corridor, Santa Cruz',
-			corridorName: 'Quezon Avenue Corridor',
-			corridorId: 'CORR-03',
-			coordinatesString: '14.2690° N, 121.4021° E',
-			latitude: 14.2690,
-			longitude: 121.4021,
-			severity: 8.9,
-			vruRisk: 'CRITICAL',
-			astmCode: 'ASTM D6433 (Utility Cut Depression)',
-			depthEstimate: '52mm transverse trench',
-			safetyTags: ['VRU CRITICAL 8.9/10', 'School Zone Danger', 'Tricycle Alert', 'Rim Catch Hazard'],
-			description: 'Uncompacted transverse water utility trench intersecting the pedestrian school crosswalk. Causes sudden steering jerk for e-trikes and scooters carrying elementary students during morning peak.',
-			author: {
-				name: 'Ria Santos',
-				handle: '@ria_commutes',
-				roleTag: 'Student Mobility Coordinator',
-				avatarInitials: 'RS',
-				isVerified: true
-			},
-			timeAgo: '1h 10m ago',
-			mainImage: '/uploads/pothole-pre-repair.jpg',
-			secondaryImages: [
-				{ src: '/uploads/patch-post-repair.jpg', label: 'Crosswalk Alignment' },
-				{ src: '/samples/pothole-severe.jpg', label: 'Trench Depth Lip' }
-			],
-			totalPhotosCount: 3,
-			confirmations: 27,
-			userConfirmed: true,
-			isTricycleCorridor: true,
-			escalatedToDpwh: true,
-			dpwhTicket: 'DPWH-IV-A-2026-9032',
-			crewAssigned: 'Laguna Water Utility Ops',
-			showComments: false,
-			comments: [
-				{
-					id: 'c6',
-					author: 'Engr. Mateo Cruz',
-					handle: '@cruz_civil',
-					role: 'LSPU Civil Engineering Faculty Volunteer',
-					avatarInitials: 'MC',
-					isOfficial: true,
-					officialBadge: 'Civil Inspector Volunteer',
-					timeAgo: '55m ago',
-					text: 'Subgrade moisture settling is evident beneath the asphalt skin. Requires full gravel re-compaction prior to hot asphalt resurfacing.'
 				}
 			]
 		},
@@ -1319,48 +1320,33 @@
 					>
 						<!-- Post Header -->
 						<div class="p-4 sm:p-5 pb-3">
-							<div class="flex items-start justify-between gap-3">
-								<div class="flex items-center gap-3">
-									<!-- Author Avatar Squircle -->
-									<div class="w-10 h-10 rounded-lg bg-secondary border border-border flex items-center justify-center font-bold text-xs text-foreground font-mono shrink-0 shadow-none">
+							<div class="flex items-center justify-between gap-3">
+								<div class="flex items-center gap-2.5">
+									<!-- Author Avatar Circle -->
+									<div class="w-9 h-9 rounded-full bg-secondary border border-border flex items-center justify-center font-bold text-xs text-foreground font-mono shrink-0 shadow-none">
 										{post.author.avatarInitials}
 									</div>
 
-									<div class="space-y-0.5">
-										<div class="flex items-center gap-2">
-											<span class="text-sm font-bold text-foreground">{post.author.name}</span>
-											{#if post.author.isVerified}
-												<span title="Verified Laguna Road Guardian" class="text-primary flex items-center">
-													<CheckCircleIcon class="h-3.5 w-3.5 fill-primary/20" />
-												</span>
-											{/if}
-										</div>
-
-										<div class="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-											<span class="text-primary font-medium">{post.author.roleTag}</span>
-											<span>•</span>
-											<span class="font-mono">{post.timeAgo}</span>
-										</div>
+									<div class="flex items-center gap-1.5 text-xs">
+										<span class="text-sm font-bold text-foreground leading-none">{post.author.name}</span>
+										<span class="text-muted-foreground leading-none">•</span>
+										<span class="text-muted-foreground font-mono leading-none">{post.timeAgo}</span>
 									</div>
 								</div>
 
-								<!-- Header Actions & Three-Dots Menu -->
-								<div class="relative shrink-0 flex items-center gap-1.5">
-									<Button
-										variant="ghost"
-										size="sm"
-										class="h-8 text-xs text-muted-foreground hover:text-foreground gap-1 px-2"
-										onclick={() => focusHazard(post.id, true)}
-										title="Focus on right-side live radar map"
+								<!-- Header Actions: Minimalist Severity Badge & Three-Dots Menu -->
+								<div class="relative shrink-0 flex items-center gap-2">
+									<Badge
+										variant="outline"
+										class="text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full {getVruBadgeClass(post.vruRisk)} shadow-none"
 									>
-										<NavigationIcon class="h-3.5 w-3.5 text-primary" />
-										<span class="hidden sm:inline font-mono">Map Pin</span>
-									</Button>
+										{post.severity.toFixed(1)} {post.vruRisk}
+									</Badge>
 
 									<Button
 										variant="ghost"
 										size="icon"
-										class="h-8 w-8 text-muted-foreground hover:text-foreground"
+										class="h-8 w-8 text-muted-foreground hover:text-foreground rounded-full"
 										title="Options"
 										onclick={(e) => {
 											e.stopPropagation();
@@ -1417,237 +1403,159 @@
 							</div>
 						</div>
 
-						<!-- Media Gallery with Thumbnail Stack & Mini-Map Slot (Matching User Mockup) -->
+						<!-- Media Gallery with Inset Vertical Dock (Choice A Vertical Minimalist) -->
 						<div class="px-4 sm:px-5 pb-3">
-							<!-- Desktop / Tablet 2-Column Split for Media -->
-							<div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
-								<!-- Main Prominent Header Image (approx 68% / 8 cols) -->
+							<div class="relative w-full h-64 sm:h-72 md:h-80 rounded-lg overflow-hidden border border-border bg-muted group">
+								<!-- Primary Defect Photo -->
 								<button
 									type="button"
-									class="sm:col-span-8 relative rounded-lg overflow-hidden border border-border bg-muted cursor-pointer group text-left p-0"
+									class="w-full h-full block p-0 cursor-pointer text-left focus:outline-none"
 									onclick={() => openLightbox(post, 0)}
-									title="Click to view full photo"
+									title="Click to view full photo in lightbox"
 								>
 									<img
 										src={post.mainImage}
 										alt={post.title}
-										class="w-full h-56 sm:h-64 object-cover group-hover:scale-102 transition-transform duration-300"
+										class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
 									/>
-									<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2.5">
-										<span class="text-[11px] font-mono text-white flex items-center gap-1">
+									<div class="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 pointer-events-none">
+										<span class="text-[11px] font-mono text-white flex items-center gap-1.5 bg-black/50 px-2.5 py-1 rounded-md backdrop-blur-xs">
 											<Maximize2Icon class="h-3.5 w-3.5" />
 											Inspect Full Defect Photo
 										</span>
 									</div>
-									<div class="absolute top-2 left-2 flex items-center gap-1.5">
-										<Badge variant="outline" class="text-[10px] font-mono bg-black/70 text-white border-white/20">
-											{post.astmCode}
-										</Badge>
-									</div>
-									<div class="absolute bottom-2 right-2">
-										<Badge variant="outline" class="text-[10px] font-mono bg-black/70 text-amber-400 border-amber-500/40">
-											{post.depthEstimate}
-										</Badge>
-									</div>
 								</button>
 
-								<!-- Secondary Thumbnail Stack & 3rd Slot Mini-Map (approx 32% / 4 cols) -->
-								<div class="sm:col-span-4 grid grid-cols-3 sm:grid-cols-1 gap-2">
-									<!-- Slot 1: Secondary angle / ruler measurement photo -->
+								<!-- Inset Vertical Column Dock (Inside Top-Right Corner of Main Image) -->
+								<div class="absolute top-2.5 right-2.5 z-20 flex flex-col gap-1.5 p-1 rounded-lg bg-black/45 backdrop-blur-md border border-white/20 shadow-lg">
+									<!-- Slot 1: Secondary Photo Thumbnail -->
 									<button
 										type="button"
-										class="relative h-20 rounded-lg overflow-hidden border border-border bg-muted cursor-pointer group text-left p-0"
-										onclick={() => openLightbox(post, 1)}
-										title="Secondary Angle / Measurement"
+										class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden border border-white/20 bg-black/60 shadow-xs group/thumb cursor-pointer hover:ring-2 hover:ring-primary transition-all p-0"
+										onclick={(e) => { e.stopPropagation(); openLightbox(post, 1); }}
+										title="Secondary Angle: {post.secondaryImages[0]?.label || 'Detail'}"
 									>
 										<img
 											src={post.secondaryImages[0]?.src || post.mainImage}
-											alt="Secondary Angle"
-											class="w-full h-full object-cover group-hover:scale-105 transition-transform"
+											alt="Secondary angle"
+											class="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform"
 										/>
-										<div class="absolute bottom-1 left-1.5 text-[9px] font-mono px-1 py-0.5 rounded bg-black/75 text-white truncate max-w-[90%]">
-											{post.secondaryImages[0]?.label || 'Profile'}
-										</div>
 									</button>
 
-									<!-- Slot 2: Multi-image thumbnail with darker overlay (+3 more) -->
+									<!-- Slot 2: Multi-image thumbnail (+X more) -->
 									<button
 										type="button"
-										class="relative h-20 rounded-lg overflow-hidden border border-border bg-muted cursor-pointer group text-left p-0"
-										onclick={() => openLightbox(post, 2)}
+										class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden border border-white/20 bg-black/80 shadow-xs group/thumb cursor-pointer hover:ring-2 hover:ring-primary transition-all p-0"
+										onclick={(e) => { e.stopPropagation(); openLightbox(post, 2); }}
 										title="View all {post.totalPhotosCount} photos"
 									>
 										<img
 											src={post.secondaryImages[1]?.src || post.mainImage}
-											alt="Additional angle"
-											class="w-full h-full object-cover"
+											alt="More angles"
+											class="w-full h-full object-cover opacity-35 group-hover/thumb:opacity-50 transition-opacity"
 										/>
-										<div class="absolute inset-0 bg-black/65 group-hover:bg-black/55 transition-colors flex flex-col items-center justify-center text-white font-mono">
-											<span class="text-xs font-bold">+{post.totalPhotosCount - 2} more</span>
-											<span class="text-[9px] text-white/80">photos</span>
+										<div class="absolute inset-0 flex flex-col items-center justify-center text-white font-mono leading-none">
+											<span class="text-xs sm:text-sm font-bold">+{Math.max(post.totalPhotosCount - 2, 1)}</span>
+											<span class="text-[8px] sm:text-[9px] uppercase tracking-wider text-white/80 mt-0.5">more</span>
 										</div>
 									</button>
 
 									<!-- Slot 3: Compact embedded vector Mini-Map card -->
 									<button
 										type="button"
-										class="relative h-20 rounded-lg border border-border bg-secondary/30 hover:border-primary hover:bg-primary/5 p-2 flex flex-col justify-between text-left transition-all group overflow-hidden cursor-pointer"
-										onclick={() => focusHazard(post.id, true)}
+										class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden border border-white/30 bg-background/95 hover:bg-background shadow-xs group/map cursor-pointer flex flex-col items-center justify-between p-1 transition-all hover:ring-2 hover:ring-primary text-foreground"
+										onclick={(e) => { e.stopPropagation(); focusHazard(post.id, true); }}
 										title="Focus Santa Cruz Live Radar Map on this defect"
 									>
-										<!-- Background stylized road grid vector -->
-										<svg class="absolute inset-0 w-full h-full opacity-20 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+										<!-- Stylized Vector Road Grid -->
+										<svg class="absolute inset-0 w-full h-full opacity-25 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
 											<defs>
-												<pattern id="road-grid-{post.id}" width="16" height="16" patternUnits="userSpaceOnUse">
-													<path d="M 16 0 L 0 0 0 16" fill="none" stroke="currentColor" stroke-width="0.5" />
+												<pattern id="road-grid-inset-{post.id}" width="10" height="10" patternUnits="userSpaceOnUse">
+													<path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" stroke-width="0.5" />
 												</pattern>
 											</defs>
-											<rect width="100%" height="100%" fill="url(#road-grid-{post.id})" />
-											<line x1="0" y1="50" x2="160" y2="20" stroke="currentColor" stroke-width="6" stroke-linecap="round" />
-											<line x1="0" y1="50" x2="160" y2="20" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="3,3" />
-											<circle cx="70" cy="35" r="4" fill="#ef4444" />
-											<circle cx="70" cy="35" r="8" fill="none" stroke="#ef4444" stroke-width="1" class="animate-ping" opacity="0.6" />
+											<rect width="100%" height="100%" fill="url(#road-grid-inset-{post.id})" />
+											<line x1="0" y1="45" x2="65" y2="15" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+											<line x1="0" y1="45" x2="65" y2="15" stroke="#f59e0b" stroke-width="1" stroke-dasharray="2,2" />
 										</svg>
 
-										<div class="relative z-10 flex items-center justify-between">
-											<span class="text-[10px] font-mono font-bold uppercase tracking-wider text-primary flex items-center gap-1">
-												<NavigationIcon class="h-2.5 w-2.5" />
-												Radar Pin
-											</span>
-											<span class="text-[9px] font-mono text-muted-foreground group-hover:text-primary transition-colors flex items-center gap-0.5">
-												Focus &rarr;
-											</span>
+										<div class="relative z-10 w-full flex items-center justify-center pt-1">
+											<MapPinIcon class="h-4 w-4 sm:h-5 sm:h-5 text-destructive fill-destructive drop-shadow" />
 										</div>
 
-										<div class="relative z-10 space-y-0.5">
-											<div class="text-[10px] font-semibold text-foreground truncate max-w-[130px]">
-												{post.corridorName}
-											</div>
-											<div class="text-[9px] font-mono text-muted-foreground">
-												{post.coordinatesString}
-											</div>
+										<div class="relative z-10 w-full text-center">
+											<span class="text-[9px] sm:text-[10px] font-mono font-bold text-foreground uppercase tracking-wider block">
+												MAP
+											</span>
 										</div>
 									</button>
 								</div>
 							</div>
 						</div>
 
-						<!-- Severity & Safety Tags -->
-						<div class="px-4 sm:px-5 pb-3 space-y-2">
-							<div class="flex flex-wrap items-center gap-1.5">
-								<!-- Prominent VRU CRITICAL 8.8/10 squircle badge -->
-								<Badge variant="outline" class="text-xs font-mono font-bold {getVruBadgeClass(post.vruRisk)} px-2.5 py-0.5">
-									VRU {post.vruRisk} {post.severity.toFixed(1)}/10
-								</Badge>
-
-								<Badge variant="outline" class="text-[10px] font-mono border-border text-foreground">
-									{post.astmCode}
-								</Badge>
-
-								<!-- Commuter Safety Pills -->
-								{#each post.safetyTags as tag}
-									{#if !tag.startsWith('VRU')}
-										<span class="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary/80 border border-border text-foreground">
-											{#if tag.includes('Tricycle')}
-												<BikeIcon class="h-3 w-3 text-primary" />
-											{:else if tag.includes('Night')}
-												<MoonIcon class="h-3 w-3 text-amber-500" />
-											{:else if tag.includes('Flooding')}
-												<CloudRainIcon class="h-3 w-3 text-sky-500" />
-											{:else if tag.includes('Rim')}
-												<TriangleAlertIcon class="h-3 w-3 text-destructive" />
-											{/if}
-											<span>{tag}</span>
-										</span>
-									{/if}
-								{/each}
-
-								{#if post.escalatedToDpwh}
-									<span class="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 border border-primary text-primary font-bold">
-										<TruckIcon class="h-3 w-3" />
-										<span>DPWH Dispatched</span>
-									</span>
-								{/if}
-							</div>
-
-							<!-- Title & Detailed Road Context -->
-							<h3 class="text-base font-bold text-foreground">
+						<!-- Title & Detailed Road Context (Minimalist, Zero Badge Clutter) -->
+						<div class="px-4 sm:px-5 pb-3 space-y-1.5">
+							<h3 class="text-base sm:text-lg font-bold text-foreground tracking-tight leading-snug">
 								{post.title}
 							</h3>
 
-							<p class="text-xs text-muted-foreground leading-relaxed">
+							<p class="text-xs sm:text-sm text-muted-foreground leading-relaxed">
 								{post.description}
 							</p>
 
-							<div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-1">
-								<div class="flex items-center gap-1">
-									<MapPinIcon class="h-3.5 w-3.5 text-primary shrink-0" />
-									<span class="text-foreground font-medium">{post.location}</span>
-								</div>
-								<span>•</span>
-								<button
-									type="button"
-									class="font-mono text-[11px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 cursor-pointer"
-									onclick={() => focusHazard(post.id, true)}
-								>
-									<span>{post.coordinatesString}</span>
-								</button>
-								{#if post.crewAssigned}
-									<span>•</span>
-									<span class="text-xs font-mono text-primary font-medium">{post.crewAssigned}</span>
+							<div class="flex items-center gap-1.5 text-xs text-muted-foreground pt-0.5">
+								<MapPinIcon class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+								<span class="font-medium text-foreground/85">{post.location}</span>
+								{#if post.escalatedToDpwh}
+									<span class="text-muted-foreground">•</span>
+									<span class="text-xs font-mono text-primary font-medium">DPWH Dispatched</span>
 								{/if}
 							</div>
 						</div>
 
 						<Separator />
 
-						<!-- Social Action Bar -->
-						<div class="px-4 sm:px-5 py-2.5 bg-card/60 flex items-center justify-between gap-3 text-xs">
-							<div class="flex items-center gap-2">
-								<!-- Interactive '+1 Confirmed (43)' Upvote Button -->
-								<Button
-									variant={post.userConfirmed ? 'default' : 'outline'}
-									size="sm"
-									class="text-xs h-8 px-3 gap-1.5 shadow-none transition-all {post.userConfirmed ? 'bg-primary text-primary-foreground font-bold hover:bg-primary/90' : 'border-border hover:border-primary/50'}"
-									onclick={() => toggleConfirm(post.id)}
-								>
-									{#if post.userConfirmed}
-										<CheckIcon class="h-3.5 w-3.5" />
-										<span>Confirmed ({post.confirmations})</span>
-									{:else}
-										<ThumbsUpIcon class="h-3.5 w-3.5 text-primary" />
-										<span>+1 Confirmed ({post.confirmations})</span>
-									{/if}
-								</Button>
+						<!-- Minimalist Social Action Bar -->
+						<div class="px-4 sm:px-5 py-3 bg-card/60 flex items-center justify-between gap-3 text-xs">
+							<!-- Interactive Upvote Button (Matching '↑ 27 Confirmed' Pill) -->
+							<Button
+								variant="outline"
+								size="sm"
+								class="text-xs h-8 px-3.5 gap-1.5 rounded-full shadow-none transition-all {post.userConfirmed ? 'bg-foreground text-background font-bold border-foreground hover:bg-foreground/90' : 'border-border text-foreground hover:bg-secondary/70'}"
+								onclick={() => toggleConfirm(post.id)}
+							>
+								<ArrowUpIcon class="h-3.5 w-3.5 {post.userConfirmed ? 'text-background' : 'text-muted-foreground'}" />
+								<span>{post.confirmations} Confirmed</span>
+							</Button>
 
+							<div class="flex items-center gap-1">
 								<!-- Comments Toggle Button -->
 								<Button
 									variant={post.showComments ? 'secondary' : 'ghost'}
 									size="sm"
-									class="text-xs h-8 px-2.5 gap-1.5 text-muted-foreground hover:text-foreground"
+									class="text-xs h-8 px-2.5 gap-1.5 text-muted-foreground hover:text-foreground rounded-full"
 									onclick={() => toggleComments(post.id)}
+									title="View discussion thread"
 								>
-									<MessageSquareIcon class="h-3.5 w-3.5 text-primary" />
-									<span>Comments ({post.comments.length})</span>
+									<MessageSquareIcon class="h-3.5 w-3.5" />
+									<span class="font-mono">{post.comments.length}</span>
+								</Button>
+
+								<!-- Share Button -->
+								<Button
+									variant="ghost"
+									size="icon"
+									class="h-8 w-8 text-muted-foreground hover:text-foreground rounded-full"
+									onclick={() => copyPostShare(post.id)}
+									title="Share defect link"
+								>
+									{#if copiedPostId === post.id}
+										<CheckIcon class="h-3.5 w-3.5 text-primary" />
+									{:else}
+										<Share2Icon class="h-3.5 w-3.5" />
+									{/if}
 								</Button>
 							</div>
-
-							<!-- Share / Copy Link Button -->
-							<Button
-								variant="ghost"
-								size="sm"
-								class="text-xs h-8 px-2.5 gap-1.5 text-muted-foreground hover:text-foreground"
-								onclick={() => copyPostShare(post.id)}
-								title="Copy post link"
-							>
-								{#if copiedPostId === post.id}
-									<CheckIcon class="h-3.5 w-3.5 text-primary" />
-									<span class="text-primary font-medium">Copied!</span>
-								{:else}
-									<Share2Icon class="h-3.5 w-3.5" />
-									<span class="hidden sm:inline">Share</span>
-								{/if}
-							</Button>
 						</div>
 
 						<!-- Inline Community Comments Thread -->
