@@ -13,7 +13,7 @@ export interface UserSettings {
 }
 
 export const defaultUserSettings: UserSettings = {
-	theme: 'dark',
+	theme: 'light',
 	vruAlerts: true,
 	dailyDigest: true,
 	dpwhForwarding: false,

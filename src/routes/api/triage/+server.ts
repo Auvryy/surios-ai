@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { analyzeRoadDistress } from '$lib/server/gemini.js';
+import { snapToRoad } from '$lib/server/geoapify.js';
 import { db, reports } from '$lib/server/db/index.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -76,6 +77,22 @@ export const POST: RequestHandler = async ({ request }) => {
 			);
 		}
 
+		// Snap GPS coordinates to nearest road centerline via Geoapify / OSM
+		let finalLat = latitude;
+		let finalLng = longitude;
+		let streetAddress: string | undefined;
+
+		try {
+			const snapped = await snapToRoad(latitude, longitude);
+			if (snapped.snapped) {
+				finalLat = snapped.latitude;
+				finalLng = snapped.longitude;
+				streetAddress = snapped.formattedAddress;
+			}
+		} catch (snapErr) {
+			console.warn('[Triage API] Snap-to-road fallback:', snapErr);
+		}
+
 		// Insert report into PostgreSQL
 		let reportId: string | undefined;
 		let rawId: string | undefined;
@@ -84,8 +101,8 @@ export const POST: RequestHandler = async ({ request }) => {
 				.insert(reports)
 				.values({
 					imagePath: relativeImagePath,
-					latitude: latitude.toFixed(8),
-					longitude: longitude.toFixed(8),
+					latitude: finalLat.toFixed(8),
+					longitude: finalLng.toFixed(8),
 					distressType: analysis.distressType,
 					hazardSeverity: analysis.hazardSeverity,
 					riskLevel: analysis.riskLevel,
@@ -95,7 +112,10 @@ export const POST: RequestHandler = async ({ request }) => {
 					materialsChecklist: analysis.materialsChecklist,
 					status: 'REPORTED',
 					communityConfirmations: 1,
-					triagePayload: analysis
+					triagePayload: {
+						...analysis,
+						civicAddress: streetAddress
+					}
 				})
 				.returning({ id: reports.id });
 
@@ -114,8 +134,9 @@ export const POST: RequestHandler = async ({ request }) => {
 				reportId: reportId || 'TKT-PENDING',
 				rawId,
 				imageUrl: relativeImagePath,
-				latitude,
-				longitude,
+				latitude: finalLat,
+				longitude: finalLng,
+				streetAddress,
 				analysis,
 				createdAt: new Date().toISOString()
 			}

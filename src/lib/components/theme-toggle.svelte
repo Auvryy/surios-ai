@@ -3,7 +3,7 @@
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import { Button } from '$lib/components/ui/button/index.js';
 
-	let isDark = $state(true);
+	let isDark = $state(false);
 
 	$effect(() => {
 		if (typeof document !== 'undefined') {
@@ -17,10 +17,12 @@
 			document.documentElement.classList.remove('dark');
 			localStorage.setItem('surios-theme', 'light');
 			isDark = false;
+			window.dispatchEvent(new CustomEvent('theme-change', { detail: { theme: 'light' } }));
 		} else {
 			document.documentElement.classList.add('dark');
 			localStorage.setItem('surios-theme', 'dark');
 			isDark = true;
+			window.dispatchEvent(new CustomEvent('theme-change', { detail: { theme: 'dark' } }));
 		}
 	}
 </script>

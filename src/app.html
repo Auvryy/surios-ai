@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,11 +8,11 @@
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 		<script>
 			try {
-				const theme = localStorage.getItem('surios-theme') || 'dark';
-				if (theme === 'light') {
-					document.documentElement.classList.remove('dark');
-				} else {
+				const theme = localStorage.getItem('surios-theme') || 'light';
+				if (theme === 'dark') {
 					document.documentElement.classList.add('dark');
+				} else {
+					document.documentElement.classList.remove('dark');
 				}
 			} catch (_) {}
 		</script>

@@ -304,27 +304,29 @@
 		</div>
 
 		<!-- Main Workspace Area -->
-		<main class="flex-1 min-w-0 flex flex-col bg-background">
-			<div class="flex-1">
+		<main class="flex-1 min-w-0 flex flex-col bg-background {page.url.pathname === '/' ? 'h-screen overflow-hidden' : ''}">
+			<div class="flex-1 {page.url.pathname === '/' ? 'h-full min-h-0 overflow-hidden' : ''}">
 				{@render children()}
 			</div>
 
-			<!-- Minimalist shadcn Footer -->
-			<footer class="border-t border-border bg-card/30 py-4 text-xs text-muted-foreground px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-				<div class="flex items-center gap-2 text-center sm:text-left">
-					<ShieldCheckIcon class="h-3.5 w-3.5 text-primary shrink-0" />
-					<span>
-						<strong class="font-semibold text-foreground">SuriOS</strong> — Municipal Civil Defect Triage &amp; VRU Safety.
-					</span>
-				</div>
-				<div class="flex items-center gap-3 text-[11px] text-muted-foreground">
-					<span>Santa Cruz, Laguna</span>
-					<span>•</span>
-					<span>ASTM D6433 Standard</span>
-					<span>•</span>
-					<span>Gemini Vision</span>
-				</div>
-			</footer>
+			<!-- Minimalist shadcn Footer (shown on non-map pages) -->
+			{#if page.url.pathname !== '/'}
+				<footer class="border-t border-border bg-card/30 py-4 text-xs text-muted-foreground px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+					<div class="flex items-center gap-2 text-center sm:text-left">
+						<ShieldCheckIcon class="h-3.5 w-3.5 text-primary shrink-0" />
+						<span>
+							<strong class="font-semibold text-foreground">SuriOS</strong> — Municipal Civil Defect Triage &amp; VRU Safety.
+						</span>
+					</div>
+					<div class="flex items-center gap-3 text-[11px] text-muted-foreground">
+						<span>Santa Cruz, Laguna</span>
+						<span>•</span>
+						<span>ASTM D6433 Standard</span>
+						<span>•</span>
+						<span>Gemini Vision</span>
+					</div>
+				</footer>
+			{/if}
 		</main>
 	</div>
 {/if}

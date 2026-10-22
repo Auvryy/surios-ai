@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageProps } from './$types.js';
 	import type { FeedIncident } from './+page.server.js';
+	import type { DispatchRoute } from '$lib/types/routing.js';
 
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
@@ -18,6 +19,13 @@
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import ClockIcon from '@lucide/svelte/icons/clock';
+	import TruckIcon from '@lucide/svelte/icons/truck';
+	import NavigationIcon from '@lucide/svelte/icons/navigation';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import ChevronUpIcon from '@lucide/svelte/icons/chevron-up';
+	import SparklesIcon from '@lucide/svelte/icons/sparkles';
+	import CompassIcon from '@lucide/svelte/icons/compass';
+	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
 
 	import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -32,131 +40,7 @@
 		SheetFooter
 	} from '$lib/components/ui/sheet/index.js';
 
-	interface RoadCorridor {
-		id: string;
-		name: string;
-		classification: string;
-		coordinates: [number, number][];
-		pci: number;
-		status: 'CRITICAL' | 'MODERATE' | 'GOOD';
-		color: string;
-		weight: number;
-		dashArray?: string;
-		distressCount: number;
-		surfaceType: string;
-		vruNote: string;
-		lengthKm: string;
-	}
-
-	const SANTA_CRUZ_CORRIDORS: RoadCorridor[] = [
-		{
-			id: 'CORR-01',
-			name: 'Manila East Rd / National Highway',
-			classification: 'Primary National Arterial',
-			coordinates: [
-				[14.2842, 121.4172],
-				[14.2835, 121.4188],
-				[14.2828, 121.4205],
-				[14.2815, 121.4230],
-				[14.2800, 121.4260],
-				[14.2785, 121.4290],
-				[14.2768, 121.4330],
-				[14.2750, 121.4380],
-				[14.2735, 121.4430]
-			],
-			pci: 38,
-			status: 'CRITICAL',
-			color: '#ef4444',
-			weight: 5,
-			distressCount: 2,
-			surfaceType: 'Asphalt Concrete over Jointed PCCP',
-			vruNote: 'High risk of rim strike & loss-of-control for tricycles/motorcycles during monsoon pooling.',
-			lengthKm: '3.4 km'
-		},
-		{
-			id: 'CORR-02',
-			name: 'Pedro Guevara Avenue (Poblacion)',
-			classification: 'Downtown Commercial Corridor',
-			coordinates: [
-				[14.2842, 121.4172],
-				[14.2830, 121.4182],
-				[14.2815, 121.4190],
-				[14.2790, 121.4198],
-				[14.2760, 121.4202],
-				[14.2730, 121.4205]
-			],
-			pci: 62,
-			status: 'MODERATE',
-			color: '#f59e0b',
-			weight: 5,
-			distressCount: 1,
-			surfaceType: 'Dense Bituminous Surface Course',
-			vruNote: 'Transverse cracking across pedestrian crossings and passenger drop-off zones.',
-			lengthKm: '1.2 km'
-		},
-		{
-			id: 'CORR-03',
-			name: 'Quezon Ave – Bubukal Student Corridor',
-			classification: 'University Access / High-VRU Belt',
-			coordinates: [
-				[14.2838, 121.4165],
-				[14.2818, 121.4148],
-				[14.2790, 121.4125],
-				[14.2750, 121.4090],
-				[14.2715, 121.4050],
-				[14.2690, 121.4021]
-			],
-			pci: 48,
-			status: 'CRITICAL',
-			color: '#e11d48',
-			weight: 5,
-			dashArray: '8, 6',
-			distressCount: 2,
-			surfaceType: 'Subgraded Asphalt with Unpaved Shoulders',
-			vruNote: 'Unprotected shoulder erosion creating sudden 75mm grade step-offs for student scooters.',
-			lengthKm: '2.1 km'
-		},
-		{
-			id: 'CORR-04',
-			name: 'Gatid – Bagumbayan Bypass Road',
-			classification: 'Municipal Bypass Arterial',
-			coordinates: [
-				[14.2930, 121.4280],
-				[14.2915, 121.4250],
-				[14.2890, 121.4225],
-				[14.2865, 121.4190],
-				[14.2845, 121.4170]
-			],
-			pci: 84,
-			status: 'GOOD',
-			color: '#10b981',
-			weight: 4,
-			distressCount: 0,
-			surfaceType: 'Reinforced Concrete Pavement (Rigid)',
-			vruNote: 'Uniform grade with minimal longitudinal cracking; safe multi-modal throughput.',
-			lengthKm: '2.6 km'
-		},
-		{
-			id: 'CORR-05',
-			name: 'Aguinaldo St / Public Market Feeder',
-			classification: 'Commercial Feeder / High Axle Load',
-			coordinates: [
-				[14.2820, 121.4170],
-				[14.2790, 121.4162],
-				[14.2760, 121.4155],
-				[14.2730, 121.4150],
-				[14.2710, 121.4145]
-			],
-			pci: 42,
-			status: 'CRITICAL',
-			color: '#ef4444',
-			weight: 5,
-			distressCount: 1,
-			surfaceType: 'Asphalt Wearing Course with Base Failure',
-			vruNote: 'Deep pothole clusters obscured by market wash runoff; extreme rollover hazard.',
-			lengthKm: '1.1 km'
-		}
-	];
+	import { SANTA_CRUZ_CORRIDORS, type RoadCorridor } from '$lib/data/corridors.js';
 
 	let { data }: PageProps = $props();
 
@@ -167,12 +51,24 @@
 	let isSheetOpen = $state(false);
 	let mapContainer = $state<HTMLDivElement | null>(null);
 
+	// Theme tracking for map rendering
+	let isDarkMode = $state(false);
+
+	// Road routing state
+	let activeRoute = $state<DispatchRoute | null>(null);
+	let isRouting = $state(false);
+	let showTurnByTurn = $state(false);
+	let activeTileSource = $state<'osm' | 'geoapify'>('osm');
+	let routeError = $state<string | null>(null);
+
 	// Leaflet instance pointers for dynamic updates
 	let mapInstance: any = null;
 	let leafletLib: any = null;
 	let tileLayerInstance: any = null;
 	let markersGroup: any = null;
 	let corridorsGroup: any = null;
+	let routeGroup: any = null;
+	let depotMarker: any = null;
 	let markerMap = new Map<string, any>();
 
 	const incidents = $derived(data.incidents || []);
@@ -184,6 +80,177 @@
 				? incidents.filter((i) => i.riskLevel === 'CRITICAL' || i.vruLethality === 'CRITICAL')
 				: incidents.filter((i) => i.status === filter)
 	);
+
+	// Sync theme changes dynamically with Leaflet map
+	$effect(() => {
+		if (typeof document === 'undefined') return;
+		isDarkMode = document.documentElement.classList.contains('dark');
+
+		const observer = new MutationObserver(() => {
+			const dark = document.documentElement.classList.contains('dark');
+			if (dark !== isDarkMode) {
+				isDarkMode = dark;
+				updateTileLayer();
+				renderMarkers(filteredIncidents);
+				renderCorridors();
+				if (activeRoute && selectedIncident) {
+					renderRoute(activeRoute, selectedIncident);
+				}
+			}
+		});
+
+		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+		const handleThemeEvent = (e: any) => {
+			const dark = e.detail?.theme === 'dark' || document.documentElement.classList.contains('dark');
+			if (dark !== isDarkMode) {
+				isDarkMode = dark;
+				updateTileLayer();
+				renderMarkers(filteredIncidents);
+				renderCorridors();
+				if (activeRoute && selectedIncident) {
+					renderRoute(activeRoute, selectedIncident);
+				}
+			}
+		};
+		window.addEventListener('theme-change', handleThemeEvent);
+
+		return () => {
+			observer.disconnect();
+			window.removeEventListener('theme-change', handleThemeEvent);
+		};
+	});
+
+	function updateTileLayer() {
+		if (!mapInstance || !leafletLib) return;
+
+		if (tileLayerInstance) {
+			mapInstance.removeLayer(tileLayerInstance);
+			tileLayerInstance = null;
+		}
+
+		if (activeTileSource === 'geoapify' && data.hasGeoapifyKey) {
+			const tileUrl = isDarkMode ? data.geoapifyDarkTileUrl : data.geoapifyLightTileUrl;
+			if (tileUrl) {
+				tileLayerInstance = leafletLib.tileLayer(tileUrl, {
+					attribution: '&copy; <a href="https://www.geoapify.com/" target="_blank">Geoapify</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+					maxZoom: 20
+				}).addTo(mapInstance);
+				return;
+			}
+		}
+
+		// OSM default (Clean paper in light mode, deep matte inversion in dark mode)
+		tileLayerInstance = leafletLib.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+			maxZoom: 19,
+			subdomains: ['a', 'b', 'c']
+		}).addTo(mapInstance);
+	}
+
+	function setTileSource(source: 'osm' | 'geoapify') {
+		if (source === activeTileSource) return;
+		activeTileSource = source;
+		updateTileLayer();
+	}
+
+	function clearRoute() {
+		activeRoute = null;
+		showTurnByTurn = false;
+		routeError = null;
+		if (routeGroup) {
+			routeGroup.clearLayers();
+		}
+		if (depotMarker && mapInstance) {
+			mapInstance.removeLayer(depotMarker);
+			depotMarker = null;
+		}
+	}
+
+	function renderRoute(route: DispatchRoute, incident: FeedIncident) {
+		if (!mapInstance || !leafletLib || !routeGroup) return;
+		routeGroup.clearLayers();
+
+		// 1. Minimalist sharp casing line
+		const casingColor = isDarkMode ? '#0369a1' : '#bae6fd';
+		const casingPolyline = leafletLib.polyline(route.coordinates, {
+			color: casingColor,
+			weight: 4.5,
+			opacity: isDarkMode ? 0.6 : 0.75,
+			lineCap: 'butt',
+			lineJoin: 'miter'
+		});
+		casingPolyline.addTo(routeGroup);
+
+		// 2. High-precision minimalist animated line (clean 2.5px crisp line, not roundy)
+		const foregroundColor = isDarkMode ? '#38bdf8' : '#0284c7';
+		const foregroundPolyline = leafletLib.polyline(route.coordinates, {
+			color: foregroundColor,
+			weight: 2.5,
+			opacity: 1,
+			lineCap: 'butt',
+			lineJoin: 'miter',
+			className: 'surios-animated-route'
+		});
+		foregroundPolyline.addTo(routeGroup);
+
+		// 3. Minimalist Municipal Depot Marker (clean squircle badge, not too roundy)
+		const depotIcon = leafletLib.divIcon({
+			className: 'surios-depot-marker-container',
+			html: `
+				<div class="surios-depot-marker" title="Municipal Engineering Depot">
+					<div class="surios-depot-badge">
+						<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="butt" stroke-linejoin="miter"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+					</div>
+				</div>
+			`,
+			iconSize: [26, 26],
+			iconAnchor: [13, 13]
+		});
+
+		const depot = data.depotLocation || { lat: 14.2818, lng: 121.4150, name: 'Santa Cruz Municipal Engineering Depot' };
+		if (depotMarker && mapInstance.hasLayer(depotMarker)) {
+			mapInstance.removeLayer(depotMarker);
+		}
+		depotMarker = leafletLib.marker([depot.lat, depot.lng], { icon: depotIcon });
+		depotMarker.bindPopup(`
+			<div class="p-2 text-xs space-y-1">
+				<div class="font-bold text-foreground">Municipal Depot HQ</div>
+				<div class="text-[10px] text-muted-foreground">Santa Cruz Public Works &amp; Engineering</div>
+				<div class="text-[10px] font-mono text-primary">GPS: ${depot.lat.toFixed(4)}° N, ${depot.lng.toFixed(4)}° E</div>
+			</div>
+		`, { className: 'surios-custom-popup', maxWidth: 220 });
+		depotMarker.addTo(routeGroup);
+
+		// Fit bounds around whole path
+		const bounds = leafletLib.latLngBounds(route.coordinates);
+		mapInstance.fitBounds(bounds, { padding: [60, 60], maxZoom: 16, duration: 0.75 });
+	}
+
+	async function calculateDispatchRoute(incident: FeedIncident) {
+		if (isRouting) return;
+		isRouting = true;
+		routeError = null;
+		selectedIncident = incident;
+		selectedCorridor = null;
+
+		try {
+			const res = await fetch(
+				`/api/route?destLat=${incident.latitude}&destLng=${incident.longitude}&name=${encodeURIComponent(incident.title)}`
+			);
+			const json = await res.json();
+			if (json.success && json.route) {
+				activeRoute = json.route;
+				renderRoute(json.route, incident);
+			} else {
+				routeError = json.error || 'Failed to calculate dispatch route.';
+			}
+		} catch (err: any) {
+			routeError = err?.message || 'Network error connecting to routing service.';
+		} finally {
+			isRouting = false;
+		}
+	}
 
 	function openInspect(incident: FeedIncident, e?: Event) {
 		if (e) e.stopPropagation();
@@ -219,6 +286,7 @@
 		}
 		selectedIncident = null;
 		selectedCorridor = null;
+		clearRoute();
 	}
 
 	function renderMarkers(items: FeedIncident[]) {
@@ -232,17 +300,10 @@
 			const severityColor = isCritical ? '#ef4444' : isModerate ? '#f59e0b' : '#64748b';
 
 			let badgeClass = 'badge-low';
-			let ringsHtml = '';
-
 			if (isCritical) {
 				badgeClass = 'badge-critical';
-				ringsHtml = `
-					<span class="surios-pulse-ring ring-1"></span>
-					<span class="surios-pulse-ring ring-2"></span>
-				`;
 			} else if (isModerate) {
 				badgeClass = 'badge-moderate';
-				ringsHtml = `<span class="surios-pulse-ring ring-moderate"></span>`;
 			}
 
 			const isSelected = selectedIncident?.id === item.id;
@@ -250,14 +311,14 @@
 				className: 'surios-dot-bomb-container',
 				html: `
 					<div class="surios-dot-bomb-wrapper ${isSelected ? 'is-selected' : ''}" data-id="${item.id}" title="${item.title}">
-						${ringsHtml}
+						${isCritical ? '<span class="surios-minimal-ping"></span>' : ''}
 						<div class="surios-badge ${badgeClass}">
 							<span>${item.hazardSeverity}</span>
 						</div>
 					</div>
 				`,
-				iconSize: [36, 36],
-				iconAnchor: [18, 18]
+				iconSize: [28, 28],
+				iconAnchor: [14, 14]
 			});
 
 			const marker = leafletLib.marker([item.latitude, item.longitude], { icon: customIcon });
@@ -285,6 +346,10 @@
 						<div class="surios-card-astm">${item.astmCode}</div>
 						<div class="surios-card-gps">GPS: +${item.latitude.toFixed(5)}, ${item.longitude.toFixed(5)}</div>
 						<div class="surios-card-actions">
+							<button class="surios-card-route-btn surios-route-btn" data-id="${item.id}" title="Trace Road Route">
+								<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="butt" stroke-linejoin="miter"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+								<span>Route Crew</span>
+							</button>
 							<button class="surios-card-inspect-btn surios-inspect-btn" data-id="${item.id}">
 								Inspect Specs &rarr;
 							</button>
@@ -295,8 +360,8 @@
 
 			marker.bindPopup(popupHtml, {
 				className: 'surios-custom-popup',
-				maxWidth: 260,
-				offset: [0, -16],
+				maxWidth: 280,
+				offset: [0, -14],
 				closeButton: false
 			});
 
@@ -318,11 +383,11 @@
 			const isSelected = selectedCorridor?.id === corridor.id;
 			const polyline = leafletLib.polyline(corridor.coordinates, {
 				color: corridor.color,
-				weight: isSelected ? corridor.weight + 3 : corridor.weight,
-				opacity: isSelected ? 1.0 : 0.85,
+				weight: isSelected ? 4.5 : 2.75,
+				opacity: isSelected ? 1.0 : (isDarkMode ? 0.85 : 0.8),
 				dashArray: corridor.dashArray,
-				lineCap: 'round',
-				lineJoin: 'round'
+				lineCap: 'butt',
+				lineJoin: 'miter'
 			});
 
 			polyline.bindTooltip(`
@@ -337,12 +402,12 @@
 			`, { sticky: true, className: 'surios-tooltip' });
 
 			polyline.on('mouseover', () => {
-				polyline.setStyle({ weight: corridor.weight + 3, opacity: 1 });
+				polyline.setStyle({ weight: 4.5, opacity: 1 });
 			});
 
 			polyline.on('mouseout', () => {
 				if (selectedCorridor?.id !== corridor.id) {
-					polyline.setStyle({ weight: corridor.weight, opacity: 0.85 });
+					polyline.setStyle({ weight: 2.75, opacity: isDarkMode ? 0.85 : 0.8 });
 				}
 			});
 
@@ -372,20 +437,25 @@
 
 			L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 
-			// Fast, high-density detailed street tiles (OpenStreetMap global CDN)
-			tileLayerInstance = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-				maxZoom: 19,
-				subdomains: ['a', 'b', 'c']
-			}).addTo(mapInstance);
+			// Tile Layer initialization
+			updateTileLayer();
 
 			// Setup Layer Groups
 			corridorsGroup = L.featureGroup().addTo(mapInstance);
+			routeGroup = L.featureGroup().addTo(mapInstance);
 			markersGroup = L.featureGroup().addTo(mapInstance);
 
 			// Initial Render
 			renderCorridors();
 			renderMarkers(filteredIncidents);
+
+			// Automatically trace the road dispatch route from Depot to the top critical defect on initial view
+			const topDefect = filteredIncidents.find((i) => i.hazardSeverity >= 8) || filteredIncidents[0];
+			if (topDefect) {
+				setTimeout(() => {
+					calculateDispatchRoute(topDefect);
+				}, 250);
+			}
 
 			// Delegate clicks from inside Leaflet custom popups to Svelte
 			mapInstance.on('popupopen', (e: any) => {
@@ -399,6 +469,16 @@
 						if (found) {
 							selectedIncident = found;
 							isSheetOpen = true;
+						}
+					});
+				}
+				const routeBtn = popupEl.querySelector('.surios-route-btn');
+				if (routeBtn) {
+					routeBtn.addEventListener('click', () => {
+						const incidentId = routeBtn.getAttribute('data-id');
+						const found = incidents.find((i) => i.id === incidentId);
+						if (found) {
+							calculateDispatchRoute(found);
 						}
 					});
 				}
@@ -469,9 +549,9 @@
 	<title>Map Feed — SuriOS Municipal Civil Infrastructure</title>
 </svelte:head>
 
-<div class="h-full flex flex-col">
+<div class="h-full flex flex-col overflow-hidden">
 	<!-- Feed Controls & Stats Strip -->
-	<div class="px-4 py-3 border-b border-border bg-card/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+	<div class="px-4 py-3 border-b border-border bg-card/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
 		<div class="flex items-center gap-2">
 			<Badge variant="outline" class="text-[10px] font-mono border-border">
 				Laguna Corridor GIS
@@ -504,22 +584,48 @@
 	</div>
 
 	<!-- Main Map Feed Grid: Matte Split Screen -->
-	<div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden min-h-[calc(100vh-8.5rem)]">
+	<div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden min-h-0 h-full">
 		<!-- Left: Interactive GIS Map Canvas with Floating Matte HUD -->
-		<div class="lg:col-span-7 xl:col-span-8 relative border-b lg:border-b-0 lg:border-r border-border h-96 lg:h-full min-h-[360px]">
-			<div bind:this={mapContainer} class="w-full h-full bg-[#0c0e14] surios-matte-map"></div>
+		<div class="lg:col-span-7 xl:col-span-8 relative border-b lg:border-b-0 lg:border-r border-border h-full min-h-0 overflow-hidden">
+			<div
+				bind:this={mapContainer}
+				class="w-full h-full {isDarkMode ? 'surios-dark-map bg-[#0c0e14]' : 'surios-light-map bg-[#f8fafc]'} {activeTileSource === 'geoapify' ? 'is-geoapify' : 'is-osm'}"
+			></div>
 
-			<!-- Floating Top-Left Matte HUD Bar -->
+			<!-- Floating Top-Left Command HUD Bar -->
 			<div class="absolute top-3 left-3 z-[1000] flex flex-wrap items-center gap-2 max-w-[calc(100%-1.5rem)] pointer-events-auto">
 				<!-- District PCI Badge -->
 				<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-card/90 backdrop-blur-md shadow-md text-xs">
-					<span class="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+					<span class="flex h-2 w-2 rounded-[2px] bg-red-500 animate-pulse"></span>
 					<div class="flex items-center gap-1.5">
 						<span class="font-semibold text-foreground">Santa Cruz Corridor</span>
 						<span class="text-muted-foreground">&bull;</span>
 						<span class="font-mono text-muted-foreground">Network PCI: <strong class="text-destructive font-bold">49</strong></span>
 					</div>
 				</div>
+
+				<!-- Basemap Style Toggle (OSM Paper vs Geoapify Positron in Light Mode, OSM Matte vs Geoapify Dark in Dark Mode) -->
+				{#if data.hasGeoapifyKey}
+					<div class="flex items-center gap-1 p-1 rounded-lg border border-border bg-card/90 backdrop-blur-md shadow-md text-xs">
+						<button
+							type="button"
+							onclick={() => setTileSource('osm')}
+							class="px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer {activeTileSource === 'osm' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+							title={isDarkMode ? 'Custom Inverted Matte Dark Tiles' : 'Standard Clean Paper OSM Tiles'}
+						>
+							<span>{isDarkMode ? 'Matte OSM' : 'Paper OSM'}</span>
+						</button>
+						<button
+							type="button"
+							onclick={() => setTileSource('geoapify')}
+							class="px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer {activeTileSource === 'geoapify' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+							title={isDarkMode ? 'Geoapify Dark Matter Vector Basemap' : 'Geoapify Positron Light Vector Basemap'}
+						>
+							<SparklesIcon class="h-3 w-3 text-amber-500" />
+							<span>{isDarkMode ? 'Geoapify Dark' : 'Positron Light'}</span>
+						</button>
+					</div>
+				{/if}
 
 				<!-- Layer Controls Pill -->
 				<div class="flex items-center gap-1 p-1 rounded-lg border border-border bg-card/90 backdrop-blur-md shadow-md">
@@ -544,9 +650,115 @@
 				</div>
 			</div>
 
-			<!-- Floating Bottom-Left Matte Corridor Telemetry Card / HUD Legend -->
+			<!-- Floating Bottom-Left Matte Corridor Telemetry Card / Dispatch HUD / HUD Legend -->
 			<div class="absolute bottom-3 left-3 z-[1000] max-w-sm w-full sm:w-auto pointer-events-auto">
-				{#if selectedCorridor}
+				{#if activeRoute}
+					<!-- Active Municipal Dispatch Routing HUD Overlay -->
+					<div class="p-3.5 rounded-lg border border-primary/30 bg-card/95 backdrop-blur-md shadow-xl space-y-2.5 text-xs animate-in fade-in duration-200">
+						<div class="flex items-start justify-between gap-3">
+							<div class="space-y-0.5">
+								<div class="flex items-center gap-1.5">
+									<Badge variant="outline" class="text-[9px] font-mono px-1.5 py-0 border-primary/40 text-primary">
+										CIVIL DISPATCH
+									</Badge>
+									<span class="font-bold text-foreground text-xs">Road Transit Snapped</span>
+								</div>
+								<div class="text-[11px] text-muted-foreground truncate max-w-[240px]">
+									{activeRoute.originName} &rarr; {activeRoute.destinationName}
+								</div>
+							</div>
+							<button
+								type="button"
+								onclick={clearRoute}
+								class="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-muted cursor-pointer"
+								title="Dismiss Route"
+							>
+								<XIcon class="h-3.5 w-3.5" />
+							</button>
+						</div>
+
+						<div class="grid grid-cols-2 gap-2 pt-1 border-t border-border">
+							<div class="p-2 rounded bg-muted/40 border border-border">
+								<div class="text-[10px] text-muted-foreground uppercase font-mono">Distance (Road)</div>
+								<div class="text-sm font-bold font-mono mt-0.5 text-foreground flex items-center gap-1.5">
+									<RouteIcon class="h-3.5 w-3.5 text-primary" />
+									<span>{activeRoute.distanceFormatted}</span>
+								</div>
+							</div>
+							<div class="p-2 rounded bg-muted/40 border border-border">
+								<div class="text-[10px] text-muted-foreground uppercase font-mono">Est. Transit Time</div>
+								<div class="text-sm font-bold font-mono mt-0.5 text-foreground flex items-center gap-1.5">
+									<ClockIcon class="h-3.5 w-3.5 text-primary" />
+									<span>{activeRoute.durationFormatted}</span>
+								</div>
+							</div>
+						</div>
+
+						{#if activeRoute.steps && activeRoute.steps.length > 0}
+							<div class="border-t border-border pt-1.5">
+								<button
+									type="button"
+									onclick={() => (showTurnByTurn = !showTurnByTurn)}
+									class="w-full flex items-center justify-between py-1 text-[11px] text-muted-foreground hover:text-foreground font-medium transition-colors cursor-pointer"
+								>
+									<span class="flex items-center gap-1.5">
+										<NavigationIcon class="h-3 w-3 text-primary" />
+										<span>Turn-by-turn Directions ({activeRoute.steps.length})</span>
+									</span>
+									{#if showTurnByTurn}
+										<ChevronUpIcon class="h-3.5 w-3.5" />
+									{:else}
+										<ChevronDownIcon class="h-3.5 w-3.5" />
+									{/if}
+								</button>
+
+								{#if showTurnByTurn}
+									<div class="mt-1.5 max-h-40 overflow-y-auto space-y-1 pr-1 border border-border/60 rounded-md p-1.5 bg-background/50">
+										{#each activeRoute.steps as step, idx}
+											<div class="flex items-start gap-2 p-1.5 rounded hover:bg-muted/40 text-[11px] leading-tight">
+												<span class="font-mono text-[9px] text-muted-foreground h-4 w-4 rounded bg-muted flex items-center justify-center shrink-0 mt-0.5">
+													{idx + 1}
+												</span>
+												<div class="flex-1">
+													<span class="text-foreground">{step.instruction}</span>
+													{#if step.distanceMeters > 0}
+														<span class="text-muted-foreground font-mono text-[10px] ml-1">
+															({step.distanceMeters < 1000 ? `${Math.round(step.distanceMeters)}m` : `${(step.distanceMeters / 1000).toFixed(1)}km`})
+														</span>
+													{/if}
+												</div>
+											</div>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						{/if}
+
+						<div class="flex items-center justify-between gap-2 pt-1 border-t border-border">
+							<button
+								type="button"
+								onclick={() => {
+									if (mapInstance && leafletLib && activeRoute) {
+										const bounds = leafletLib.latLngBounds(activeRoute.coordinates);
+										mapInstance.fitBounds(bounds, { padding: [60, 60], maxZoom: 16, duration: 0.5 });
+									}
+								}}
+								class="px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground rounded hover:bg-muted transition-colors flex items-center gap-1 cursor-pointer"
+							>
+								<CompassIcon class="h-3 w-3" />
+								<span>Center Route</span>
+							</button>
+							<Button
+								variant="outline"
+								size="sm"
+								class="h-6 text-[10px] px-2"
+								onclick={clearRoute}
+							>
+								Dismiss
+							</Button>
+						</div>
+					</div>
+				{:else if selectedCorridor}
 					<!-- Active Corridor Telemetry Card -->
 					<div class="p-3.5 rounded-lg border border-border bg-card/95 backdrop-blur-md shadow-lg space-y-2 text-xs">
 						<div class="flex items-start justify-between gap-3">
@@ -578,7 +790,7 @@
 							<div class="p-2 rounded bg-muted/40 border border-border">
 								<div class="text-[10px] text-muted-foreground uppercase font-mono">Pavement Condition</div>
 								<div class="text-sm font-bold font-mono mt-0.5 flex items-center gap-1.5">
-									<span class="inline-block w-2.5 h-2.5 rounded-full" style="background-color: {selectedCorridor.color}"></span>
+									<span class="inline-block w-2.5 h-2.5 rounded-[2px]" style="background-color: {selectedCorridor.color}"></span>
 									<span>PCI {selectedCorridor.pci} / 100</span>
 								</div>
 							</div>
@@ -608,32 +820,32 @@
 						<div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
 							<!-- Critical Marker -->
 							<div class="flex items-center gap-2">
-								<span class="h-4 w-4 rounded-full bg-red-600 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">9</span>
+								<span class="h-4 w-4 rounded-[3px] bg-red-600 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">9</span>
 								<span class="text-muted-foreground">Critical Dot Bomb (8–10)</span>
 							</div>
 							<!-- Critical Road Line -->
 							<div class="flex items-center gap-2">
-								<span class="h-1.5 w-5 rounded bg-red-500 shrink-0"></span>
+								<span class="h-1.5 w-5 rounded-[2px] bg-red-500 shrink-0"></span>
 								<span class="text-muted-foreground">Critical Line (PCI &lt; 50)</span>
 							</div>
 							<!-- Moderate Marker -->
 							<div class="flex items-center gap-2">
-								<span class="h-4 w-4 rounded-full bg-amber-500 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">6</span>
+								<span class="h-4 w-4 rounded-[3px] bg-amber-500 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">6</span>
 								<span class="text-muted-foreground">Moderate Hazard (5–7)</span>
 							</div>
 							<!-- Moderate Road Line -->
 							<div class="flex items-center gap-2">
-								<span class="h-1.5 w-5 rounded bg-amber-500 shrink-0"></span>
+								<span class="h-1.5 w-5 rounded-[2px] bg-amber-500 shrink-0"></span>
 								<span class="text-muted-foreground">Warning Line (50–70)</span>
 							</div>
 							<!-- Low Marker -->
 							<div class="flex items-center gap-2">
-								<span class="h-4 w-4 rounded-full bg-slate-500 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">2</span>
+								<span class="h-4 w-4 rounded-[3px] bg-slate-500 text-white font-mono text-[9px] font-bold flex items-center justify-center shrink-0">2</span>
 								<span class="text-muted-foreground">Minor Distress (1–4)</span>
 							</div>
 							<!-- Good Road Line -->
 							<div class="flex items-center gap-2">
-								<span class="h-1.5 w-5 rounded bg-emerald-500 shrink-0"></span>
+								<span class="h-1.5 w-5 rounded-[2px] bg-emerald-500 shrink-0"></span>
 								<span class="text-muted-foreground">Stable Line (PCI &gt; 70)</span>
 							</div>
 						</div>
@@ -643,7 +855,7 @@
 		</div>
 
 		<!-- Right: Live Civil Defect Stream with Vertical Timeline (Matching Mockup Choice 1) -->
-		<div class="lg:col-span-5 xl:col-span-4 flex flex-col h-full bg-card/20 overflow-hidden">
+		<div class="lg:col-span-5 xl:col-span-4 flex flex-col h-full min-h-0 bg-card/20 overflow-hidden">
 			<!-- Stream Header -->
 			<div class="p-3.5 border-b border-border flex items-center justify-between bg-card/60">
 				<div class="flex items-center gap-2">
@@ -674,7 +886,7 @@
 							<div class="relative">
 								<!-- Timeline Node Indicator -->
 								<span
-									class="absolute -left-[17px] top-4 h-2.5 w-2.5 rounded-full border-2 border-background {isCritical
+									class="absolute -left-[17px] top-4 h-2.5 w-2.5 rounded-[2.5px] border-2 border-background {isCritical
 										? 'bg-destructive ring-2 ring-destructive/20'
 										: isModerate
 											? 'bg-amber-500 ring-2 ring-amber-500/20'
@@ -734,14 +946,23 @@
 
 										<div class="flex items-center gap-1.5">
 											<Button
-												href="/dashboard"
 												size="sm"
 												variant="outline"
 												class="h-6 text-[10px] px-2 border-border gap-1"
-												onclick={(e) => e.stopPropagation()}
+												onclick={(e) => {
+													e.stopPropagation();
+													calculateDispatchRoute(item);
+												}}
+												disabled={isRouting}
+												title="Calculate Road Route from Depot"
 											>
-												<WrenchIcon class="h-2.5 w-2.5" />
-												<span>Dispatch</span>
+												{#if isRouting && selectedIncident?.id === item.id}
+													<LoaderCircleIcon class="h-2.5 w-2.5 animate-spin text-primary" />
+													<span>Routing...</span>
+												{:else}
+													<TruckIcon class="h-2.5 w-2.5 text-primary" />
+													<span>Route</span>
+												{/if}
 											</Button>
 											<Button
 												size="sm"
@@ -861,9 +1082,24 @@
 				<Button variant="outline" size="sm" class="text-xs h-8" onclick={() => (isSheetOpen = false)}>
 					Close
 				</Button>
-				<Button href="/dashboard" size="sm" class="text-xs h-8 gap-1.5">
-					<WrenchIcon class="h-3.5 w-3.5" />
-					<span>Route Dispatch Crew</span>
+				<Button
+					size="sm"
+					class="text-xs h-8 gap-1.5"
+					onclick={() => {
+						if (selectedIncident) {
+							calculateDispatchRoute(selectedIncident);
+							isSheetOpen = false;
+						}
+					}}
+					disabled={isRouting}
+				>
+					{#if isRouting}
+						<LoaderCircleIcon class="h-3.5 w-3.5 animate-spin" />
+						<span>Routing Road Path...</span>
+					{:else}
+						<TruckIcon class="h-3.5 w-3.5" />
+						<span>Route Dispatch Crew</span>
+					{/if}
 				</Button>
 			</SheetFooter>
 		{/if}
@@ -871,20 +1107,94 @@
 </Sheet>
 
 <style>
-	/* Dedicated Deep Matte Command Center Canvas */
-	:global(.surios-matte-map.leaflet-container),
-	:global(.surios-matte-map .leaflet-container) {
+	/* Light Mode Map Canvas */
+	:global(.surios-light-map.leaflet-container),
+	:global(.surios-light-map .leaflet-container) {
+		background-color: #f8fafc !important;
+		font-family: inherit;
+		outline: none;
+	}
+
+	:global(.surios-light-map.is-osm .leaflet-tile-pane) {
+		filter: contrast(100%) brightness(100%) saturate(85%);
+		-webkit-filter: contrast(100%) brightness(100%) saturate(85%);
+	}
+
+	:global(.surios-light-map.is-geoapify .leaflet-tile-pane) {
+		filter: none !important;
+		-webkit-filter: none !important;
+	}
+
+	/* Dark Mode Map Canvas */
+	:global(.surios-dark-map.leaflet-container),
+	:global(.surios-dark-map .leaflet-container) {
 		background-color: #0c0e14 !important;
 		font-family: inherit;
 		outline: none;
 	}
 
-	/* Deep Matte Dark Mode for OpenStreetMap Base Tiles across all zooms (12-19) */
-	:global(.surios-matte-map .leaflet-tile-pane) {
+	:global(.surios-dark-map.is-osm .leaflet-tile-pane) {
 		filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(125%) saturate(18%);
 		-webkit-filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(125%) saturate(18%);
 	}
 
+	:global(.surios-dark-map.is-geoapify .leaflet-tile-pane) {
+		filter: none !important;
+		-webkit-filter: none !important;
+	}
+
+	/* Dynamic Minimalist Road Route Animation (Not bulbous or roundy) */
+	:global(.surios-animated-route) {
+		stroke-dasharray: 6, 4;
+		animation: surios-route-flow 1.2s linear infinite;
+	}
+
+	@keyframes surios-route-flow {
+		from {
+			stroke-dashoffset: 20;
+		}
+		to {
+			stroke-dashoffset: 0;
+		}
+	}
+
+	/* Minimalist Municipal Depot Marker (Clean squircle badge, not too roundy) */
+	:global(.surios-depot-marker-container) {
+		background: transparent !important;
+		border: none !important;
+	}
+
+	:global(.surios-depot-marker) {
+		position: relative;
+		width: 26px;
+		height: 26px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+	}
+
+	:global(.surios-depot-badge) {
+		position: relative;
+		z-index: 2;
+		width: 22px;
+		height: 22px;
+		border-radius: 5px; /* Minimalist squircle */
+		background: #0284c7;
+		color: #ffffff;
+		border: 1px solid rgba(255, 255, 255, 0.9);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+	}
+
+	:global(.surios-light-map .surios-depot-badge) {
+		background: #0369a1;
+		border: 1px solid #ffffff;
+	}
+
+	/* Minimalist Geometric Dot Bomb Badges (Crisp, modern, not too roundy) */
 	:global(.surios-dot-bomb-container) {
 		background: transparent !important;
 		border: none !important;
@@ -892,52 +1202,12 @@
 
 	:global(.surios-dot-bomb-wrapper) {
 		position: relative;
-		width: 36px;
-		height: 36px;
+		width: 28px;
+		height: 28px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		cursor: pointer;
-	}
-
-	:global(.surios-pulse-ring) {
-		position: absolute;
-		inset: 0;
-		border-radius: 9999px;
-		pointer-events: none;
-	}
-
-	:global(.surios-pulse-ring.ring-1) {
-		background: rgba(239, 68, 68, 0.45);
-		border: 1.5px solid rgba(239, 68, 68, 0.9);
-		animation: surios-radar-pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-	}
-
-	:global(.surios-pulse-ring.ring-2) {
-		background: rgba(239, 68, 68, 0.2);
-		border: 1px solid rgba(239, 68, 68, 0.6);
-		animation: surios-radar-pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite 0.7s;
-	}
-
-	:global(.surios-pulse-ring.ring-moderate) {
-		background: rgba(245, 158, 11, 0.25);
-		border: 1px solid rgba(245, 158, 11, 0.7);
-		animation: surios-radar-pulse 3s cubic-bezier(0, 0, 0.2, 1) infinite;
-	}
-
-	@keyframes surios-radar-pulse {
-		0% {
-			transform: scale(0.65);
-			opacity: 0.95;
-		}
-		65% {
-			transform: scale(2.1);
-			opacity: 0.2;
-		}
-		100% {
-			transform: scale(2.6);
-			opacity: 0;
-		}
 	}
 
 	:global(.surios-badge) {
@@ -946,49 +1216,73 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: 9999px;
+		border-radius: 5px; /* Minimalist squircle, not too roundy */
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 		font-weight: 700;
-		box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
-		transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+		font-size: 11px;
+		transition: transform 0.15s ease, box-shadow 0.15s ease;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 	}
 
 	:global(.surios-badge.badge-critical) {
-		width: 26px;
-		height: 26px;
+		width: 22px;
+		height: 22px;
 		background: #ef4444;
 		color: #ffffff;
-		border: 2px solid #ffffff;
-		font-size: 11px;
+		border: 1px solid rgba(255, 255, 255, 0.95);
 	}
 
 	:global(.surios-badge.badge-moderate) {
-		width: 24px;
-		height: 24px;
+		width: 20px;
+		height: 20px;
 		background: #f59e0b;
 		color: #ffffff;
-		border: 2px solid #ffffff;
+		border: 1px solid rgba(255, 255, 255, 0.95);
 		font-size: 10px;
 	}
 
 	:global(.surios-badge.badge-low) {
-		width: 22px;
-		height: 22px;
+		width: 18px;
+		height: 18px;
 		background: #64748b;
 		color: #ffffff;
-		border: 1.5px solid #ffffff;
+		border: 1px solid rgba(255, 255, 255, 0.95);
 		font-size: 9px;
 	}
 
+	:global(.surios-minimal-ping) {
+		position: absolute;
+		inset: -2px;
+		border-radius: 7px;
+		border: 1.5px solid #ef4444;
+		animation: surios-clean-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+		pointer-events: none;
+	}
+
+	@keyframes surios-clean-ping {
+		0% {
+			transform: scale(0.9);
+			opacity: 0.9;
+		}
+		70% {
+			transform: scale(1.35);
+			opacity: 0;
+		}
+		100% {
+			transform: scale(1.45);
+			opacity: 0;
+		}
+	}
+
 	:global(.surios-dot-bomb-wrapper:hover .surios-badge) {
-		transform: scale(1.25);
-		box-shadow: 0 6px 14px rgba(0, 0, 0, 0.5);
+		transform: scale(1.15);
+		box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
 	}
 
 	:global(.surios-dot-bomb-wrapper.is-selected .surios-badge) {
-		outline: 3px solid #38bdf8;
-		outline-offset: 2px;
-		transform: scale(1.2);
+		outline: 2px solid var(--primary);
+		outline-offset: 1.5px;
+		transform: scale(1.15);
 	}
 
 	/* Custom Floating Popover Card (Choice 1 Mockup) */
@@ -1084,9 +1378,37 @@
 		margin-bottom: 10px;
 	}
 
+	:global(.surios-card-actions) {
+		display: flex;
+		gap: 6px;
+		align-items: center;
+		margin-top: 4px;
+	}
+
+	:global(.surios-card-route-btn) {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+		padding: 6px 8px;
+		border-radius: 6px;
+		background-color: var(--secondary);
+		color: var(--secondary-foreground);
+		font-weight: 600;
+		font-size: 11px;
+		border: 1px solid var(--border);
+		cursor: pointer;
+		transition: background-color 0.15s ease;
+	}
+
+	:global(.surios-card-route-btn:hover) {
+		background-color: var(--muted);
+	}
+
 	:global(.surios-card-inspect-btn) {
-		width: 100%;
-		padding: 6px 10px;
+		flex: 1;
+		padding: 6px 8px;
 		border-radius: 6px;
 		background-color: var(--primary);
 		color: var(--primary-foreground);
@@ -1094,6 +1416,7 @@
 		font-size: 11px;
 		border: none;
 		cursor: pointer;
+		text-align: center;
 		transition: opacity 0.15s ease;
 	}
 
