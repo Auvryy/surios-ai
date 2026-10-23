@@ -21,8 +21,8 @@ export interface CommunityPost {
 	reportId: string;
 	grouping?: MatchDecision | null;
 	createdAt: string;
-	author: { id: string; name: string; role: string };
+	author: { id: string; name: string; avatarUrl: string | null; role: string };
 	confirmations: number;
 	userConfirmed: boolean;
-	comments: { id: string; body: string; createdAt: string; author: { id: string; name: string } }[];
+	comments: { id: string; parentId: string | null; body: string; createdAt: string; author: { id: string; name: string; avatarUrl: string | null } }[];
 }

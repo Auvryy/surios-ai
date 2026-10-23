@@ -1,96 +1,13 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types.js';
-import { eq, or, sql, count, sum } from 'drizzle-orm';
-import { db } from '$lib/server/db/index.js';
-import { users, reports } from '$lib/server/db/schema.js';
-import {
-	hashPassword,
-	verifyPassword,
-	generateSessionToken,
-	createSession,
-	setSessionTokenCookie
-} from '$lib/server/auth.js';
+import { eq } from 'drizzle-orm';
+import { db, users } from '$lib/server/db';
+import { loadProfile } from '$lib/server/profiles';
+import { hashPassword, verifyPassword, generateSessionToken, createSession, setSessionTokenCookie } from '$lib/server/auth';
 
-export const load: PageServerLoad = async ({ locals }) => {
-	if (!locals.user) {
-		throw redirect(303, '/login?redirectTo=/profile');
-	}
-
-	const rolePrivileges = {
-		ADMIN: ['Full Municipal Authority', 'User Management', 'Dispatch Assignment', 'ASTM Tolerance Tuning'],
-		ENGINEER: ['Chief Civil Engineer', 'Work Order Authorization', 'Proof of Patch Sign-Off', 'Material Estimation'],
-		OFFICER: ['Field Safety Inspector', 'ASTM Distress Validation', 'Hazard Severity Escalation', 'Direct Crew Routing'],
-		CITIZEN: ['Community Reporter', 'Defect Photo Capture', 'Repair Verification', 'Hazard Upvoting']
-	};
-
-	const userRole = (locals.user.role as keyof typeof rolePrivileges) || 'CITIZEN';
-
-	// Real database metrics from reports table
-	let totalSubmissions = 0;
-	let criticalHazards = 0;
-	let dispatchesAuthorized = 0;
-	let communityUpvotes = 0;
-
-	try {
-		const [totalResult] = await db.select({ val: count() }).from(reports);
-		totalSubmissions = totalResult?.val ?? 0;
-
-		const [critResult] = await db
-			.select({ val: count() })
-			.from(reports)
-			.where(
-				or(
-					eq(reports.riskLevel, 'CRITICAL'),
-					eq(reports.vruLethality, 'CRITICAL'),
-					sql`${reports.hazardSeverity} >= 8`
-				)
-			);
-		criticalHazards = critResult?.val ?? 0;
-
-		const [dispatchResult] = await db
-			.select({ val: count() })
-			.from(reports)
-			.where(or(eq(reports.status, 'DISPATCHED'), eq(reports.status, 'IN_REPAIR')));
-		dispatchesAuthorized = dispatchResult?.val ?? 0;
-
-		const [upvotesResult] = await db
-			.select({ val: sum(reports.communityConfirmations) })
-			.from(reports);
-		communityUpvotes = Number(upvotesResult?.val ?? 0);
-	} catch (e) {
-		console.warn('[Profile Load] Could not load live reports stats:', e);
-	}
-
-	// Fetch available demo personas for easy presentation switching
-	const personas = await db
-		.select({
-			id: users.id,
-			email: users.email,
-			name: users.name,
-			role: users.role,
-			department: users.department,
-			badgeNumber: users.badgeNumber
-		})
-		.from(users)
-		.where(
-			or(
-				eq(users.email, 'engineer@surios.gov'),
-				eq(users.email, 'inspector@surios.gov'),
-				eq(users.email, 'citizen@surios.gov')
-			)
-		);
-
-	return {
-		user: locals.user,
-		personas,
-		privileges: rolePrivileges[userRole] || rolePrivileges.CITIZEN,
-		stats: {
-			totalSubmissions,
-			criticalHazards,
-			dispatchesAuthorized: userRole === 'ENGINEER' || userRole === 'OFFICER' ? dispatchesAuthorized : Math.min(dispatchesAuthorized, 2),
-			communityUpvotes: communityUpvotes || 24
-		}
-	};
+export const load: PageServerLoad = async ({ locals, url }) => {
+	if (!locals.user) redirect(303, '/login?redirectTo=/profile');
+	return loadProfile(locals.user.id, locals.user.id, url);
 };
 
 export const actions: Actions = {

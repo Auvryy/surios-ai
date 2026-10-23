@@ -35,7 +35,7 @@ export async function loadCommunityPosts(userId?: string, filters: CommunityFilt
 	const where = and(...clauses);
 	const limit = filters.currentPage * 20;
 	const [rows, [count]] = await Promise.all([
-		db.select({ post: communityPosts, grouping: reportObservations.match, author: { id: users.id, name: users.name, role: users.role } }).from(communityPosts)
+		db.select({ post: communityPosts, grouping: reportObservations.match, author: { id: users.id, name: users.name, avatarUrl: users.avatarUrl, role: users.role } }).from(communityPosts)
 			.innerJoin(users, eq(users.id, communityPosts.userId)).leftJoin(reportObservations, eq(reportObservations.sourceId, communityPosts.draftId)).where(where).orderBy(desc(communityPosts.createdAt), desc(communityPosts.id)).limit(limit),
 		db.select({ total: sql<number>`count(*)::int` }).from(communityPosts).innerJoin(users, eq(users.id, communityPosts.userId)).where(where)
 	]);
@@ -44,7 +44,7 @@ export async function loadCommunityPosts(userId?: string, filters: CommunityFilt
 	const ids = rows.map(({ post }) => post.id);
 	const [confirmations, comments] = await Promise.all([
 		db.select().from(communityConfirmations).where(inArray(communityConfirmations.postId, ids)),
-		db.select({ comment: communityComments, author: { id: users.id, name: users.name } }).from(communityComments)
+		db.select({ comment: communityComments, author: { id: users.id, name: users.name, avatarUrl: users.avatarUrl } }).from(communityComments)
 			.innerJoin(users, eq(users.id, communityComments.userId)).where(inArray(communityComments.postId, ids)).orderBy(communityComments.createdAt)
 	]);
 	result.posts = rows.map(({ post, author, grouping }) => ({
@@ -54,7 +54,7 @@ export async function loadCommunityPosts(userId?: string, filters: CommunityFilt
 		analysis: post.analysis, reportId: post.reportId, createdAt: post.createdAt.toISOString(), author,
 		confirmations: confirmations.filter((confirmation) => confirmation.postId === post.id).length,
 		userConfirmed: confirmations.some((confirmation) => confirmation.postId === post.id && confirmation.userId === userId),
-		comments: comments.filter(({ comment }) => comment.postId === post.id).map(({ comment, author }) => ({ id: comment.id, body: comment.body, createdAt: comment.createdAt.toISOString(), author }))
+		comments: comments.filter(({ comment }) => comment.postId === post.id).map(({ comment, author }) => ({ id: comment.id, parentId: comment.parentId, body: comment.body, createdAt: comment.createdAt.toISOString(), author }))
 	}));
 	return result;
 }
