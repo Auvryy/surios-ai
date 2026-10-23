@@ -4,6 +4,7 @@
 	import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import Avatar from './avatar.svelte';
 	import LocationPicker from './location-picker.svelte';
 	import ImageIcon from '@lucide/svelte/icons/image';
 	import VideoIcon from '@lucide/svelte/icons/video';
@@ -13,7 +14,7 @@
 	import LoaderIcon from '@lucide/svelte/icons/loader-circle';
 	import type { PostMedia } from '$lib/types/community';
 	import type { TriageAnalysis } from '$lib/types/triage';
-	let { open = $bindable(false), user, onpublished }: { open?: boolean; user: { name: string } | null; onpublished: (id: string, grouped?: boolean) => void } = $props();
+	let { open = $bindable(false), user, onpublished }: { open?: boolean; user: { name: string; avatarUrl?: string | null } | null; onpublished: (id: string, grouped?: boolean) => void } = $props();
 	type Attachment = { id: string; file: File; url: string; kind: 'photo' | 'video' };
 	let attachments = $state<Attachment[]>([]);
 	let cover = $state('');
@@ -87,7 +88,7 @@
 		{#if !user}<div class="rounded-xl border border-border bg-muted p-4 text-center"><p class="text-sm">Sign in to share a road update with your community.</p><Button href="/login?redirectTo=/community" class="mt-3">Sign in to post</Button></div>
 		{:else}
 		<form class="space-y-5" onsubmit={(event) => { event.preventDefault(); void publish(); }}>
-			<div class="flex items-center gap-2.5"><span class="flex size-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{user.name.charAt(0)}</span><div><p class="text-sm font-semibold">{user.name}</p><p class="text-xs text-muted-foreground">Public road safety update</p></div></div>
+			<div class="flex items-center gap-2.5"><Avatar name={user.name} src={user.avatarUrl} /><div><p class="text-sm font-semibold">{user.name}</p><p class="text-xs text-muted-foreground">Public road safety update</p></div></div>
 			<fieldset disabled={!!busy} class="space-y-4">
 				<div class="space-y-1"><label for="post-title" class="text-sm font-medium">Headline</label><Input id="post-title" placeholder="What should other road users know?" bind:value={title} minlength={3} maxlength={120} required class="h-11" /></div>
 				<div class="space-y-1"><label for="post-body" class="text-sm font-medium">What happened?</label><textarea id="post-body" bind:value={body} placeholder="Describe the hazard, lane, or nearby landmark…" rows="3" maxlength={2000} class="w-full rounded-lg border border-input bg-background p-3 text-base focus-visible:outline-2 focus-visible:outline-ring sm:text-sm"></textarea></div>
