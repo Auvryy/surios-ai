@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import ProfileView from '$lib/components/community/profile-view.svelte';
 	import PostCard from '$lib/components/community/post-card.svelte';
+	import RepostCard from '$lib/components/community/repost-card.svelte';
 	import Avatar from '$lib/components/community/avatar.svelte';
 	import { page } from '$app/state';
 	import type { PageProps } from './$types';
@@ -72,8 +73,8 @@
 			{#if searching}<div class="flex items-center justify-between gap-2 text-xs text-muted-foreground"><span role="status" class="min-w-0 [overflow-wrap:anywhere]">{searchPending ? 'Searching…' : `${data.total} ${data.total === 1 ? 'result' : 'results'}${data.filters.q ? ` for “${data.filters.q}”` : ' by this contributor'}`}</span><Button variant="ghost" size="sm" class="shrink-0" disabled={searchPending} onclick={clearSearch}>Clear search<XIcon class="size-3.5" /></Button></div>{/if}
 			{#if message}<div role="status" class="flex items-start justify-between gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2 text-sm"><span>{message}</span><button class="flex size-8 shrink-0 items-center justify-center" aria-label="Dismiss notification" onclick={() => message = ''}><XIcon class="size-4" /></button></div>{/if}
 			<div aria-live="polite" class="sr-only">{searchPending ? 'Searching posts' : `${data.total} posts found`}</div>
-			{#each data.posts as post (post.id)}
-				<PostCard {post} user={data.user} />
+			{#each data.feed as item (`${item.kind}:${item.id}`)}
+				{#if item.kind === 'post'}<PostCard post={item.post} user={data.user} />{:else}<RepostCard repost={item.repost} user={data.user} />{/if}
 			{:else}<div class="rounded-xl border border-border bg-card px-5 py-10 text-center"><span class="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary"><MapPinIcon class="size-6" /></span><h2 class="mt-3 font-semibold">{data.filters.q || data.filters.tab || data.filters.media || data.filters.author ? 'No matching road updates' : 'Safer roads start with a report'}</h2><p class="mx-auto mt-2 max-w-xs text-sm leading-6 text-muted-foreground">{data.filters.q || data.filters.tab || data.filters.media || data.filters.author ? 'Try another name, road, or media filter.' : 'Share photos or a short video. AI will help assess the hazard before you post.'}</p><Button class="mt-4" onclick={() => data.filters.q || data.filters.tab || data.filters.media || data.filters.author ? goto('/community') : openComposer()}>{data.filters.q || data.filters.tab || data.filters.media || data.filters.author ? 'Clear filters' : 'Share a road update'}</Button></div>{/each}
 			{#if data.hasMore}<Button variant="outline" class="h-11 w-full" onclick={() => filter('page', String(data.currentPage + 1))} disabled={searchPending}>Load more updates</Button>{/if}
 		</section>
