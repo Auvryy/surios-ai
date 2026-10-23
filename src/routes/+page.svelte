@@ -58,8 +58,17 @@
 			<article class="feature">
 				<p class="feature-label">Municipal work</p>
 				<h2>Track the repair.</h2>
-				<p>Teams can assign work orders, submit repair evidence, and review each job.</p>
+				<p>Approved government accounts publish progress and resolution updates with evidence and optional budget details.</p>
 			</article>
+		</section>
+
+		<section class="about-section" aria-labelledby="about-infrastructure">
+			<div class="feature"><p class="feature-label">What SuriOS is about</p><h2 id="about-infrastructure">More than a road report.</h2><p>SuriOS connects community observations with public infrastructure care. Aligned with SDG 9, it helps people document the assets and access routes their community relies on.</p></div>
+			<ul class="about-list" aria-label="Infrastructure you can report"><li>Roads & public access</li><li>Bridges & footbridges</li><li>Drainage & flood canals</li><li>Streetlights & utility poles</li><li>Water pipes & hydrants</li><li>Telecom & fiber cables</li><li>Other public facilities</li></ul>
+		</section>
+		<section class="about-section" aria-labelledby="about-response">
+			<div class="feature"><p class="feature-label">How we work together</p><h2 id="about-response">One concern. A visible response.</h2><p>Follow the evidence from the first report to the official update. Posts linked to the same physical issue share its resolution, with a direct link to the government's explanation.</p></div>
+			<ol class="about-steps"><li><span>01</span><div><strong>Citizens document</strong><p>Add photos, describe the concern, and mark its location.</p></div></li><li><span>02</span><div><strong>AI supports review</strong><p>Assess visible evidence with your description as context. Human review confirms conditions.</p></div></li><li><span>03</span><div><strong>Government responds</strong><p>Approved offices publish progress, evidence, and resolution updates the community can follow.</p></div></li></ol>
 		</section>
 	</main>
 
@@ -143,6 +152,15 @@
 	.feature-label { margin: 0 0 10px; color: var(--orange); font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
 	.feature h2 { margin: 0 0 8px; font-size: clamp(18px, 2.2vw, 22px); font-weight: 680; letter-spacing: -.045em; }
 	.feature > p:last-child { max-width: 390px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+	.about-section { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(26px, 6vw, 72px); padding: 36px 0; border-top: 1px solid var(--line); }
+	.about-list, .about-steps { margin: 0; padding: 0; list-style: none; }
+	.about-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 0 20px; }
+	.about-list li { padding: 10px 0; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.6; }
+	.about-steps { display: grid; gap: 18px; }
+	.about-steps li { display: flex; align-items: baseline; gap: 14px; }
+	.about-steps li > span { color: var(--orange); font-size: 11px; font-weight: 700; }
+	.about-steps strong { font-size: 13px; font-weight: 650; }
+	.about-steps p { margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
 	.site-footer { display: flex; min-height: 80px; align-items: center; justify-content: space-between; gap: 18px; border-top: 1px solid var(--line); }
 	.footer-brand { gap: 7px; font-size: 13px; }
 	.footer-note { color: #958d84; font-size: 10px; }
@@ -169,6 +187,7 @@
 		.feature + .feature { padding: 20px 0 0; border-top: 1px solid var(--line); border-left: 0; }
 		.feature h2 { font-size: 19px; }
 		.feature > p:last-child { font-size: 11px; }
+		.about-section { grid-template-columns: 1fr; gap: 20px; padding-block: 26px; }
 		.site-footer { min-height: 75px; flex-wrap: wrap; gap: 9px 16px; padding-block: 15px; }
 		.footer-note { order: 3; width: 100%; font-size: 9px; }
 	}
