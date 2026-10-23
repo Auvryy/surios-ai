@@ -24,5 +24,29 @@ export interface CommunityPost {
 	author: { id: string; name: string; avatarUrl: string | null; role: string };
 	confirmations: number;
 	userConfirmed: boolean;
-	comments: { id: string; parentId: string | null; body: string; createdAt: string; author: { id: string; name: string; avatarUrl: string | null } }[];
+	reposts: number;
+	userReposted: boolean;
+	comments: CommunityComment[];
 }
+
+export interface CommunityComment {
+	id: string;
+	parentId: string | null;
+	body: string;
+	createdAt: string;
+	likes: number;
+	userLiked: boolean;
+	replies: number;
+	author: { id: string; name: string; avatarUrl: string | null };
+}
+
+export interface CommunityRepost {
+	id: string;
+	body: string;
+	media: PostMedia[];
+	createdAt: string;
+	author: CommunityPost['author'];
+	post: CommunityPost;
+}
+
+export type CommunityFeedItem = { kind: 'post'; id: string; post: CommunityPost } | { kind: 'repost'; id: string; repost: CommunityRepost };

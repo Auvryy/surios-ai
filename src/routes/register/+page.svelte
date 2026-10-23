@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ActionData, PageProps } from './$types.js';
 	import { enhance } from '$app/forms';
+	import { dev } from '$app/env';
 	import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -17,6 +18,7 @@
 	let role = $state<'CITIZEN' | 'OFFICER' | 'ENGINEER'>('CITIZEN');
 	let department = $state('');
 	let isSubmitting = $state(false);
+	const availableRoles = dev ? ['CITIZEN', 'OFFICER', 'ENGINEER'] as const : ['CITIZEN'] as const;
 
 	$effect(() => {
 		if (form) {
@@ -86,7 +88,7 @@
 							Account Type & Municipal Role
 						</label>
 						<div class="grid grid-cols-3 gap-2">
-							{#each ['CITIZEN', 'OFFICER', 'ENGINEER'] as const as r}
+							{#each availableRoles as r}
 								<button
 									type="button"
 									onclick={() => (role = r)}

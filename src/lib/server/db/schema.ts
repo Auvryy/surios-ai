@@ -1,6 +1,7 @@
 import type { MatchDecision } from '$lib/types/hazards';
 import type { PostMedia } from '$lib/types/community';
 import type { TriageAnalysis } from '$lib/types/triage';
+import type { MaterialEstimate } from '$lib/types/work-orders';
 import { type AnyPgColumn, pgTable, text, integer, numeric, timestamp, jsonb, uuid, primaryKey, index } from 'drizzle-orm/pg-core';
 
 export interface UserSettings {
@@ -80,6 +81,28 @@ export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
 export type Report = typeof reports.$inferSelect;
 export type NewReport = typeof reports.$inferInsert;
+
+// Government operations extend the shared report; status and repair image remain
+// on reports so citizen map/report views use the same lifecycle record.
+export const workOrders = pgTable('work_orders', {
+	reportId: uuid('report_id').primaryKey().references(() => reports.id, { onDelete: 'cascade' }),
+	assignedCrew: text('assigned_crew'),
+	repairNotes: text('repair_notes'),
+	estimate: jsonb('estimate').$type<MaterialEstimate>(),
+	submittedAt: timestamp('submitted_at', { withTimezone: true }),
+	reviewedBy: uuid('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
+	updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
+});
+
+export const workOrderEvents = pgTable('work_order_events', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	reportId: uuid('report_id').notNull().references(() => reports.id, { onDelete: 'cascade' }),
+	actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+	event: text('event').notNull(),
+	description: text('description').notNull(),
+	imagePath: text('image_path'),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => [index('work_order_events_report_idx').on(table.reportId, table.createdAt)]);
 
 
 export const communityDrafts = pgTable('community_drafts', {

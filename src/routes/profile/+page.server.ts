@@ -1,5 +1,7 @@
 import { changePasswordAction } from '$lib/server/password-security';
+import { dev } from '$app/env';
 import { fail, redirect } from '@sveltejs/kit';
+import { workspaceRedirect } from '$lib/server/workspace';
 import type { Actions, PageServerLoad } from './$types.js';
 import { eq } from 'drizzle-orm';
 import { db, users } from '$lib/server/db';
@@ -72,6 +74,7 @@ export const actions: Actions = {
 	changePassword: changePasswordAction,
 
 	switchPersona: async (event) => {
+		if (!dev) return fail(403, { error: 'Demo persona switching is available in development only.' });
 		const formData = await event.request.formData();
 		const targetEmail = (formData.get('email') as string)?.trim().toLowerCase();
 		const redirectTo = (formData.get('redirectTo') as string)?.trim();
@@ -112,8 +115,7 @@ export const actions: Actions = {
 		}
 
 		if (redirectTo) {
-			const isGov = targetRole === 'ENGINEER' || targetRole === 'OFFICER' || targetRole === 'ADMIN';
-			const destination = redirectTo === 'auto' ? '/community' : redirectTo;
+			const destination = workspaceRedirect(redirectTo === 'auto' ? null : redirectTo, targetRole);
 			throw redirect(303, destination);
 		}
 	}

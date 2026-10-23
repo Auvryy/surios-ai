@@ -1,6 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { dev } from '$app/env';
 import type { Actions, PageServerLoad } from './$types.js';
 import { z } from 'zod';
+import { workspaceRedirect } from '$lib/server/workspace';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
 import { users } from '$lib/server/db/schema.js';
@@ -40,13 +42,11 @@ export const actions: Actions = {
 			return fail(400, { name, email, role, department, error });
 		}
 
-		const isGov = role === 'ENGINEER' || role === 'OFFICER';
-		let destination = '/community';
-		if (requestedRedirect && requestedRedirect.startsWith('/')) {
-			if (isGov || !requestedRedirect.startsWith('/dashboard')) {
-				destination = requestedRedirect;
-			}
-		}
+		const destination = workspaceRedirect(requestedRedirect, role);
+		if (role !== 'CITIZEN' && !dev) return fail(403, {
+			name, email, role: 'CITIZEN', department,
+			error: 'Government accounts must be provisioned by your municipality.'
+		});
 
 		try {
 			const existing = await db

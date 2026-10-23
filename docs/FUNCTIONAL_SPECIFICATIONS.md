@@ -4,7 +4,7 @@
 **Mission:** UN SDG 9 (Industry, Innovation, and Infrastructure) & SDG 11 (Sustainable Cities) — Municipal Civil Infrastructure Defect Triage, Two-Wheeler (VRU) Safety Profiling, and Accountable Public Works Dispatch.
 
 > [!IMPORTANT]
-> This document is the single source of truth for **every function, route, server action, API endpoint, database entity, and mathematical model** in SuriOS. Every feature in Phase 1, Phase 2, and Phase 3 must be implemented strictly according to these specifications.
+> Government scope has been consolidated per user direction. [GOVERNMENT_WORKSPACE.md](./GOVERNMENT_WORKSPACE.md) describes the implemented single Work orders page and supersedes earlier separate verification/analytics plans. Repair approval is human review of saved evidence; no compaction certification or AI repair sign-off is implemented.
 
 ---
 
@@ -18,9 +18,8 @@ SuriOS is structured around a **Two-Persona Swiss Minimalist Sidebar Shell** (`s
 | **`/liked`** | **Liked History** | Community (`CITIZEN`) | *Track confirmed hazards repair progress.* | **Active** — Citizen watchlist tracking DPWH repair states (`REPORTED` $\rightarrow$ `DISPATCHED` $\rightarrow$ `RESOLVED`). |
 | **`/report`** | **Report a hazard** | Community (`CITIZEN`) | *A compact prompt to post road evidence.* | **Active** — Shared composer, photos/video, AI review, precise location, persistent posts. |
 | **`/map`** | **Road hazards** | Shared (Community & Gov) | *Real-time geolocated road hazard map.* | **Active** — Stored hazard pins, compact collapsible controls, consistent severity, and linked evidence. |
-| **`/dashboard`** | **Triage & Resolve** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *Municipal maintenance work order board.* | **Active** — Unified filter pills, inline crew dispatch, status resolution, and CSV export. |
-| **`/verification`** | **Proof of Patch QA** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *AI-verified asphalt repair sign-off archive.* | **Active** — Before/After photo QA, ASTM D2950 compaction density & DPWH seal. |
-| **`/analytics`** | **Road Analytics** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *Longitudinal road degradation trend analytics.* | **Active** — 5-year PCI decay curves, monsoon correlation & preventative ROI calculator. |
+| **`/dashboard`** | **Work orders** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *Assign, repair, review, estimate, export.* | **Active** — Database-backed lifecycle, before/after evidence, human review and saved activity. |
+| **`/verification`, `/analytics`** | **Retired demo pages** | All | *Consolidated into existing work orders.* | Redirect to `/dashboard` for government users and `/community` otherwise. |
 | **`/profile`, `/community?profile=[id]`** | **Community profile** | Own / Public | *Name, profile picture, cover photo and posts.* | **Active** — Owner editing, public author profiles, shared posts and replies. |
 | **`/settings`** | **Account settings** | Signed-in users | *Email notifications and password security.* | **Active** — Saved email preferences, password change, and email reset links. |
 
@@ -35,7 +34,7 @@ Authentication is powered by native Node.js cryptographic primitives (`node:cryp
 | View Road hazards (`/map`) | ✅ | ✅ | ✅ | ✅ |
 | Submit Field Hazard Report (`/report` & `POST /api/triage`) | ✅ | ✅ | ✅ | ✅ |
 | Confirm / Upvote Existing Proximate Defect (`+1 Confirmation`) | ❌ | ✅ | ✅ | ✅ |
-| Access Operations Dispatch Canvas (`/dashboard`) | ❌ *(303 `/login`)* | ✅ *(Read-Only)* | ✅ *(Full Dispatch)* | ✅ *(Full Dispatch)* |
+| Access Work orders (`/dashboard`) | ❌ *(303 `/login`)* | ❌ *(303 `/community`)* | ✅ | ✅ |
 | Transition Ticket `REPORTED` → `DISPATCHED` → `IN_REPAIR` | ❌ | ❌ | ✅ | ✅ |
 | Submit After-Repair Photo for Proof of Patch | ❌ | ❌ | ✅ | ✅ |
 | Authorize Final Ticket Closure (`RESOLVED`) | ❌ | ❌ | ❌ *(Requires AI or Engineer)* | ✅ |
@@ -96,61 +95,28 @@ See [ROAD_HAZARDS.md](./ROAD_HAZARDS.md) and [COMMUNITY_POSTING.md](./COMMUNITY_
 
 ---
 
-### 4.4. Operations Dispatch Canvas (`/dashboard` — `src/routes/dashboard/+page.svelte` & `+page.server.ts`)
-* **Purpose:** Municipal LGU & DPWH command center for managing ticket lifecycles and dispatching maintenance crews.
-* **Server Load (`+page.server.ts`):**
-  * Protected by `hooks.server.ts` (requires authenticated session).
-  * Loads all `reports` from PostgreSQL and computes real-time KPI aggregates:
-    * `totalActive`: count where `status != 'RESOLVED'`
-    * `criticalVruCount`: count where `vruLethality IN ('HIGH', 'CRITICAL')` and `status != 'RESOLVED'`
-    * `dispatchedCount`: count where `status IN ('DISPATCHED', 'IN_REPAIR')`
-    * `resolvedCount`: count where `status == 'RESOLVED'`
-* **Server Form Actions (`+page.server.ts` — Phase 2 Implementation):**
-  * `?/updateStatus`:
-    * **Inputs:** `reportId` (UUID), `newStatus` (`'REPORTED' | 'DISPATCHED' | 'IN_REPAIR' | 'RESOLVED'`), `assignedCrew` (optional string).
-    * **RBAC Check:** Must verify `locals.user.role` is `'OFFICER'`, `'ENGINEER'`, or `'ADMIN'`.
-    * **Mutation:** Updates `reports.status` and `reports.updatedAt = new Date()` in PostgreSQL.
-  * `?/deleteSpamOrDuplicate`:
-    * Allows `ENGINEER` / `ADMIN` to remove invalid tickets.
-* **Client Functions (`+page.svelte`):**
-  * Live Leaflet map synchronized with the table filter.
-  * Slide-over **Work Order Dispatch Sheet** allowing officers to assign a crew, view the ASTM materials checklist, and trigger status transitions without page reload (`use:enhance`).
-  * `exportCsvManifest()`: Generates and downloads a clean `.csv` file of the currently filtered work orders (`Ticket ID, Distress Type, Latitude, Longitude, Severity, VRU Lethality, Status, Recommended Action, Created At`) for DPWH paper compliance.
+### 4.4. Government work orders (`/dashboard`)
 
----
+The six shared destinations remain available to government users. One Work
+orders page handles assignment, repair evidence, human review, material
+estimates, CSV and printable records. It uses the same saved reports as the map.
 
-### 4.5. Gemini "Proof of Patch" Verification (`/verification` & `POST /api/verify-patch`)
-* **Purpose:** Eliminates "ghost repairs" (contractors marking tickets resolved without fixing the road) by requiring AI visual sign-off of the completed asphalt patch.
-* **Endpoint Specification (`POST /api/verify-patch` — Phase 2/3):**
-  * **Inputs (`multipart/form-data`):**
-    * `reportId`: UUID of the ticket being resolved.
-    * `afterImage`: `File` (Photo of the completed road repair).
-    * `latitude` & `longitude`: Geodetic coordinates of the repair crew.
-  * **Verification Pipeline:**
-    1. Fetch original report from `reports` table.
-    2. **Geodetic Integrity Check:** Compute Haversine distance between original defect coordinates and repair photo coordinates. Flag a warning if $> 50\text{m}$.
-    3. **Multimodal Comparative Prompt (`verifyRoadPatch` in `gemini.ts`):**
-       * Pass BOTH the original defect image (`report.imagePath`) and the new `afterImage` to Gemini Vision.
-       * Evaluate 3 civil engineering criteria:
-         * `surfacePlanarityScore` ($1-10$): Is the patch flush with the surrounding pavement without dangerous mounds or depressions?
-         * `edgeTackingComplete` (`boolean`): Are the edges properly sealed to prevent water ingress?
-         * `voidEliminationComplete` (`boolean`): Are all potholes/cracks completely filled?
-         * `isApproved` (`boolean`): `true` if `surfacePlanarityScore >= 7` and `voidEliminationComplete === true`.
-         * `inspectorNotes` (`string`): Detailed technical audit summary.
-    4. **Database Update:**
-       * If `isApproved === true`, update `reports.status = 'RESOLVED'` and `reports.resolvedImagePath = newImagePath`.
-       * If `isApproved === false`, keep `reports.status = 'IN_REPAIR'` and return the rejection audit notes so the crew can re-compact/seal the patch.
+Named form actions are `assign`, `startRepair`, `submitRepair`, `review`, and
+`saveEstimate`. Status progresses through `REPORTED`, `DISPATCHED`, `IN_REPAIR`,
+`AWAITING_REVIEW`, and `RESOLVED`. Review can return a report for more repair.
+The saved after-image must match the evidence version being approved.
 
----
+See [GOVERNMENT_WORKSPACE.md](./GOVERNMENT_WORKSPACE.md) for the complete current
+contract, permissions, storage, migration, limits and presentation walkthrough.
+Separate `/verification` and `/analytics` pages are retired redirects. The old
+AI certification, compaction measurements, and predictive savings demos are not
+part of the implemented workflow.
 
-### 4.6. Specialized Modules (`/analytics`, `/community`, `/liked`)
-1. **`/analytics` (Road Degradation Analytics — Government Only):**
-   * Aggregates PostgreSQL `reports` by `distressType`, `riskLevel`, and barangay corridor.
-   * Displays 5-year longitudinal PCI decay curves and a **Preventative vs. Reactive Cost Calculator** showing estimated LGU budget saved by fixing defects early.
-2. **`/community` (Civic Social Stream — Community Only):**
-   * Single-column centered feed (`max-w-2xl mx-auto`) with vertical inset photo/map dock, `+1 Confirmed` upvoting, and top citizen safety contributors.
-3. **`/liked` (Liked & Confirmed History — Community Only):**
-   * Tracks every road defect a citizen has upvoted so they can monitor DPWH dispatch and repair verification in real time.
+### 4.5. Shared community pages
+
+`/community` serves the shared feed. `/liked` opens that same feed with the
+signed-in user's confirmed filter; it does not duplicate the feed on another
+page. `/map` shows report status from the same records updated by Work orders.
 
 ### Community profiles
 
