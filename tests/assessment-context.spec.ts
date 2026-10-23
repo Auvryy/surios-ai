@@ -36,6 +36,7 @@ test('headline and caption reach the AI as labeled context; public use is consid
 	const calls=await(await fetch(mock+'/requests')).json();expect(calls).toHaveLength(1);
 	expect(calls[0].texts[0]).toContain('Read the reporter\'s headline and caption BEFORE deciding relevance');
 	expect(calls[0].texts[0]).toContain('Unknown ownership alone is NOT grounds for rejection');
+	expect(calls[0].texts[0]).toContain('uncertain clearance or uncertain obstruction cannot support criticalDangerVisible');
 	expect(calls[0].texts[0]).toContain('word public alone cannot make a selfie');
 	expect(calls[0].texts[1]).toContain('"headline":"Public heritage');expect(calls[0].texts[1]).toContain('"caption":"Residents report');
 	expect(calls[0].media).toHaveLength(1);

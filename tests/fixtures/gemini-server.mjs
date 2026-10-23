@@ -12,7 +12,7 @@ const server = http.createServer(async (req,res) => {
 	if(req.url === '/requests'){res.end(JSON.stringify(requests));return;}
 	if(!req.url?.includes(':generateContent')){res.writeHead(404);res.end('{}');return;}
 	const input=JSON.parse(body);
-	const parts=input.contents.flatMap(content=>content.parts||[]);
+	const parts=[...(input.systemInstruction?.parts||[]),...input.contents.flatMap(content=>content.parts||[])];
 	const record={texts:parts.filter(part=>part.text).map(part=>part.text),media:parts.filter(part=>part.inlineData).map(part=>({mimeType:part.inlineData.mimeType,encodedLength:part.inlineData.data.length})),aborted:false};
 	requests.push(record);
 	const captured={...settings};
