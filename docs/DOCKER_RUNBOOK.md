@@ -86,3 +86,7 @@ docker image prune -f
 | **View Logs** | `docker compose logs -f` | `docker compose -f docker-compose.prod.yml logs -f web` |
 | **Check Health** | `docker compose ps` | `docker compose -f docker-compose.prod.yml ps` |
 | **Restart Web** | `npm run dev` | `docker compose -f docker-compose.prod.yml restart web` |
+
+## Account email and password recovery
+
+Migration `drizzle/0005_account-settings.sql` adds the persisted email outbox and password-reset tokens. Configure the server-only `APP_ORIGIN`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_SECURE` variables before enabling live delivery. Production Compose forwards these variables to the web container. See [Account settings](./ACCOUNT_SETTINGS.md) for configuration, migration, and verification details.
