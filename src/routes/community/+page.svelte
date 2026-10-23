@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
+	import ProfileView from '$lib/components/community/profile-view.svelte';
 	import PostCard from '$lib/components/community/post-card.svelte';
 	import Avatar from '$lib/components/community/avatar.svelte';
 	import { page } from '$app/state';
@@ -38,6 +39,9 @@
 
 </script>
 <svelte:head><title>Community Feed — SuriOS</title></svelte:head>
+{#if data.viewedProfile}
+	<section aria-label="Community feed"><ProfileView data={{ ...data, profile: data.viewedProfile }} user={data.user} embedded /></section>
+{:else}
 <div class="min-h-full bg-muted/35">
 	<div class="feed-layout mx-auto grid max-w-[1040px] items-start gap-5 px-2 py-2 sm:px-5 sm:py-4">
 		<section class="min-w-0 space-y-3" aria-label="Community feed">
@@ -62,9 +66,10 @@
 			{:else}<div class="rounded-xl border border-border bg-card px-5 py-10 text-center"><span class="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary"><MapPinIcon class="size-6" /></span><h2 class="mt-3 font-semibold">{data.filters.q || data.filters.tab || data.filters.media || data.filters.author ? 'No matching road updates' : 'Safer roads start with a report'}</h2><p class="mx-auto mt-2 max-w-xs text-sm leading-6 text-muted-foreground">{data.filters.q || data.filters.tab || data.filters.media || data.filters.author ? 'Try another name, road, or media filter.' : 'Share photos or a short video. AI will help assess the hazard before you post.'}</p><Button class="mt-4" onclick={() => data.filters.q || data.filters.tab || data.filters.media || data.filters.author ? goto('/community') : openComposer()}>{data.filters.q || data.filters.tab || data.filters.media || data.filters.author ? 'Clear filters' : 'Share a road update'}</Button></div>{/each}
 			{#if data.hasMore}<Button variant="outline" class="h-11 w-full" onclick={() => filter('page', String(data.currentPage + 1))} disabled={searchPending}>Load more updates</Button>{/if}
 		</section>
-		<aside class="hidden xl:block" aria-label="Community people"><div class="sticky top-4 space-y-4"><div class="border-b border-border pb-3"><h2 class="text-sm font-semibold">Your community</h2><p class="mt-1 text-xs leading-5 text-muted-foreground">People keeping local roads safer.</p></div>{#if people.length}<div class="space-y-1">{#each people as person}<a class="flex min-h-12 w-full items-center gap-2.5 rounded-lg px-2 text-left hover:bg-secondary" href="/profile/{person.id}"><Avatar name={person.name} src={person.avatarUrl} class="size-9" /><span class="min-w-0"><span class="block truncate text-sm font-medium">{person.name}</span><span class="block text-xs text-muted-foreground">Community contributor</span></span></a>{/each}</div>{:else}<p class="text-sm leading-6 text-muted-foreground">Your community’s updates will appear here.</p>{/if}<div class="rounded-xl border border-primary/20 bg-primary/5 p-4"><SparklesIcon class="size-5 text-primary" /><h3 class="mt-2 text-sm font-semibold">Evidence, then action</h3><p class="mt-1 text-xs leading-5 text-muted-foreground">Every post includes an AI assessment and a location, saved as a road report for municipal follow-up.</p></div></div></aside>
+		<aside class="hidden xl:block" aria-label="Community people"><div class="sticky top-4 space-y-4"><div class="border-b border-border pb-3"><h2 class="text-sm font-semibold">Your community</h2><p class="mt-1 text-xs leading-5 text-muted-foreground">People keeping local roads safer.</p></div>{#if people.length}<div class="space-y-1">{#each people as person}<a class="flex min-h-12 w-full items-center gap-2.5 rounded-lg px-2 text-left hover:bg-secondary" href="/community?profile={person.id}"><Avatar name={person.name} src={person.avatarUrl} class="size-9" /><span class="min-w-0"><span class="block truncate text-sm font-medium">{person.name}</span><span class="block text-xs text-muted-foreground">Community contributor</span></span></a>{/each}</div>{:else}<p class="text-sm leading-6 text-muted-foreground">Your community’s updates will appear here.</p>{/if}<div class="rounded-xl border border-primary/20 bg-primary/5 p-4"><SparklesIcon class="size-5 text-primary" /><h3 class="mt-2 text-sm font-semibold">Evidence, then action</h3><p class="mt-1 text-xs leading-5 text-muted-foreground">Every post includes an AI assessment and a location, saved as a road report for municipal follow-up.</p></div></div></aside>
 	</div>
 </div>
+{/if}
 <PostComposer bind:open={composer} user={data.user} onpublished={published} />
 <style>
 	.feed-layout { grid-template-columns: minmax(0, 680px); justify-content: center; }

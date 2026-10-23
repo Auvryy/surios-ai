@@ -43,7 +43,7 @@
 	}
 </script>
 				<article id="post-{post.id}" class="scroll-mt-4 overflow-hidden rounded-xl border border-border bg-card">
-					<header class="flex items-center justify-between gap-2 px-3 py-3 sm:px-4"><a class="flex min-w-0 items-center gap-2.5 rounded-lg text-left" aria-label="View profile of {post.author.name}" href="/profile/{post.author.id}"><Avatar name={post.author.name} src={post.author.avatarUrl} /><span class="min-w-0"><span class="block truncate text-sm font-semibold">{post.author.name}</span><span class="block text-xs text-muted-foreground">{timeAgo(post.createdAt)} · Community</span></span></a><span class="shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold {post.analysis.riskLevel === 'CRITICAL' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}">{post.analysis.hazardSeverity}/10 {post.analysis.riskLevel.toLowerCase()}</span></header>
+					<header class="flex items-center justify-between gap-2 px-3 py-3 sm:px-4"><a class="flex min-w-0 items-center gap-2.5 rounded-lg text-left" aria-label="View profile of {post.author.name}" href="/community?profile={post.author.id}"><Avatar name={post.author.name} src={post.author.avatarUrl} /><span class="min-w-0"><span class="block truncate text-sm font-semibold">{post.author.name}</span><span class="block text-xs text-muted-foreground">{timeAgo(post.createdAt)} · Community</span></span></a><span class="shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold {post.analysis.riskLevel === 'CRITICAL' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}">{post.analysis.hazardSeverity}/10 {post.analysis.riskLevel.toLowerCase()}</span></header>
 					<div class="space-y-1 px-3 pb-3 sm:px-4"><h2 class="text-sm font-semibold leading-snug">{post.title}</h2>{#if post.body}<p class="break-words text-sm leading-5 text-muted-foreground" class:line-clamp-2={!expanded}>{post.body}</p>{#if post.body.length > 150}<button class="min-h-8 text-xs font-semibold hover:underline" onclick={() => expanded = !expanded}>{expanded ? 'See less' : 'See more'}</button>{/if}{/if}</div>
 					<PostMedia {post} />
 {#if message}<p role="status" class="px-3 py-2 text-xs text-muted-foreground">{message}</p>{/if}
@@ -54,9 +54,9 @@
 					{#if commentsOpen}<div class="space-y-3 border-t border-border bg-muted/20 p-3 sm:p-4">
 		{#each post.comments as comment (comment.id)}
 			<div id="comment-{comment.id}" class="flex min-w-0 items-start gap-2 scroll-mt-4" class:ml-5={!!comment.parentId}>
-				<a href="/profile/{comment.author.id}" aria-label="View profile of {comment.author.name}"><Avatar name={comment.author.name} src={comment.author.avatarUrl} class="size-8 text-[10px]" /></a>
+				<a href="/community?profile={comment.author.id}" aria-label="View profile of {comment.author.name}"><Avatar name={comment.author.name} src={comment.author.avatarUrl} class="size-8 text-[10px]" /></a>
 				<div class="min-w-0 flex-1"><div class="rounded-xl bg-muted px-3 py-2">
-					<a href="/profile/{comment.author.id}" class="text-xs font-semibold hover:underline">{comment.author.name}</a>
+					<a href="/community?profile={comment.author.id}" class="text-xs font-semibold hover:underline">{comment.author.name}</a>
 					{#if comment.parentId}<a href="#comment-{comment.parentId}" class="mt-1 block text-xs text-muted-foreground hover:underline">Replying to {post.comments.find((item) => item.id === comment.parentId)?.author.name || 'a comment'}</a>{/if}
 					<p class="break-words text-sm">{comment.body}</p></div>
 					<button type="button" class="min-h-11 px-2 text-xs font-medium text-muted-foreground hover:text-primary" onclick={() => { replyTarget = comment; document.getElementById(`comment-input-${post.id}`)?.focus(); }}>Reply</button>

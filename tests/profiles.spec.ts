@@ -49,6 +49,17 @@ test.afterAll(async () => {
 test('owner edits name, avatar and cover; public profiles are private-data safe, persistent and paginated', async ({ page, browser }) => {
 	await login(page.request); await page.goto('/profile'); await page.waitForLoadState('networkidle');
 	await expect(page.getByRole('heading', { name: alice.name, exact: true })).toBeVisible();
+	const avatarControl = page.getByRole('button', { name: 'Change profile picture', exact: true });
+	const coverControl = page.getByRole('button', { name: 'Change cover photo', exact: true });
+	await expect(avatarControl).toHaveCSS('opacity', '0');
+	await avatarControl.hover(); await expect(avatarControl).toHaveCSS('opacity', '1');
+	const avatarPicker = page.waitForEvent('filechooser'); await avatarControl.click();
+	await (await avatarPicker).setFiles('static/samples/pothole-severe.jpg');
+	await expect(page.getByRole('status')).toContainText('Profile picture updated.'); await trackPhotos();
+	await coverControl.focus(); await expect(coverControl).toHaveCSS('opacity', '1');
+	const coverPicker = page.waitForEvent('filechooser'); await coverControl.click();
+	await (await coverPicker).setFiles('static/samples/alligator-fatigue.jpg');
+	await expect(page.getByRole('status')).toContainText('Cover photo updated.'); await trackPhotos();
 	await expect(page.locator('article')).toHaveCount(20);
 	await page.getByRole('button', { name: 'Load more posts', exact: true }).click(); await expect(page.locator('article')).toHaveCount(21);
 	await expect(page.locator(`#post-${postIds[21]}`)).toHaveCount(0);
@@ -61,6 +72,13 @@ test('owner edits name, avatar and cover; public profiles are private-data safe,
 	await page.reload(); await expect(page.getByRole('heading', { name: `${alice.name} Updated`, exact: true })).toBeVisible();
 	await expect(page.getByRole('region', { name: 'Profile', exact: true }).locator('img').first()).toHaveAttribute('src', saved.cover_url);
 	for (const url of [saved.avatar_url, saved.cover_url]) expect((await page.request.get(url)).status()).toBe(200);
+	const mobile = await browser.newContext({ baseURL: origin, viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+	try {
+		await login(mobile.request); const ownPage = await mobile.newPage(); await ownPage.goto('/profile');
+		await expect(ownPage.getByRole('button', { name: 'Change profile picture', exact: true })).toHaveCSS('opacity', '1');
+		await expect(ownPage.getByRole('button', { name: 'Change cover photo', exact: true })).toHaveCSS('opacity', '1');
+		await ownPage.screenshot({ path: '.svelte-kit/review/profile-owner-touch.png' });
+	} finally { await mobile.close(); }
 	const guest = await browser.newContext({ baseURL: origin });
 	try {
 		const other = await guest.newPage(); const response = await other.goto(`/profile/${alice.id}`); const html = await response!.text();
@@ -82,7 +100,9 @@ test('community author links open another profile; comments and replies persist 
 	await sql`update users set name = ${`${alice.name} Updated`} where id = ${alice.id}`;
 	await login(page.request); await page.goto(`/community?q=${postIds[21]}`); await page.waitForLoadState('networkidle');
 	await page.locator('article').getByRole('link', { name: `View profile of ${bob.name}`, exact: true }).click();
-	await expect(page).toHaveURL(new RegExp(`/profile/${bob.id}$`));
+	await expect(page).toHaveURL(`${origin}/community?profile=${bob.id}`);
+	await expect(page.getByRole('link', { name: 'Community feed', exact: true })).toHaveAttribute('aria-current', 'page');
+	await expect(page.getByRole('link', { name: 'Profile', exact: true })).not.toHaveAttribute('aria-current', 'page');
 	await expect(page.getByRole('heading', { name: bob.name, exact: true })).toBeVisible();
 	await expect(page.locator('article')).toHaveCount(1); await expect(page.getByRole('button', { name: 'Edit profile' })).toHaveCount(0);
 	const article = page.locator('article'); await article.getByRole('button', { name: 'Comment', exact: true }).click();
@@ -96,7 +116,11 @@ test('community author links open another profile; comments and replies persist 
 	await page.locator('article').getByRole('button', { name: 'Comment', exact: true }).click();
 	await expect(page.getByText('A saved reply from another person.', { exact: true })).toBeVisible();
 	await page.locator('article').getByRole('link', { name: `View profile of ${alice.name} Updated`, exact: true }).click();
-	await expect(page).toHaveURL(new RegExp(`/profile/${alice.id}$`));
+	await expect(page).toHaveURL(`${origin}/community?profile=${alice.id}`);
+	await expect(page.getByRole('button', { name: 'Edit profile', exact: true })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: 'Change profile picture', exact: true })).toHaveCount(0);
+	await page.getByRole('link', { name: 'Profile', exact: true }).click();
+	await expect(page).toHaveURL(`${origin}/profile`);
 	await expect(page.getByRole('button', { name: 'Edit profile', exact: true })).toBeVisible();
 });
 
