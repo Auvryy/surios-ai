@@ -15,8 +15,8 @@
 				const L = await import('leaflet'); if (!active) return;
 				map = L.map(container, { zoomControl: false, attributionControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, touchZoom: false }).setView([lat, lon], 15);
 				L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-				if (section) { L.polyline(section.coordinates, { color: '#2563eb', weight: 4 }).addTo(map); map.fitBounds(section.coordinates, { padding: [12, 12], maxZoom: 17 }); }
-				L.circleMarker([lat, lon], { radius: 5, color: '#ffffff', weight: 2, fillColor: '#2563eb', fillOpacity: 1, interactive: false }).addTo(map);
+				if (section) { L.polyline(section.coordinates, { color: getComputedStyle(container).getPropertyValue('--primary').trim() || '#d44a00', weight: 4 }).addTo(map); map.fitBounds(section.coordinates, { padding: [12, 12], maxZoom: 17 }); }
+				L.circleMarker([lat, lon], { radius: 5, color: '#ffffff', weight: 2, fillColor: getComputedStyle(container).getPropertyValue('--primary').trim() || '#d44a00', fillOpacity: 1, interactive: false }).addTo(map);
 			} catch { if (active) failed = true; }
 		}
 		const observer = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting)) { observer.disconnect(); void start(); } }, { rootMargin: '200px' });

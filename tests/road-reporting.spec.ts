@@ -50,7 +50,7 @@ test('overlapping road sections link matching evidence across different pins, in
 	const shared=await request.get(`/api/community/posts?q=${postId}&tab=critical&sort=severity`);const sharedData=await shared.json();expect(sharedData.posts).toHaveLength(1);expect(sharedData.posts[0].reportSeverity).toBe(8);expect(sharedData.posts[0].analysis.hazardSeverity).toBe(5);
 	const different=await recordHazardEvidence(await evidence(0,300,500,'non-road-spam.jpg'),async()=>({reportId:null,confidence:.3,reason:'Different physical defect.'})); reports.add(different.reportId); expect(different.reportId).not.toBe(first.reportId);
 });
-test('feed media controls immediately open restricted file pickers; Orie road controls work on mobile',async({page,baseURL})=>{
+test('feed media controls immediately open restricted file pickers; pin road controls work on mobile',async({page,baseURL})=>{
 	await page.context().addCookies([{name:'surios_session',value:token,url:baseURL!}]);await page.goto('/community');await page.waitForLoadState('networkidle');
 	await expect(page.getByTitle('Switch demo persona')).toHaveCount(0);
 	let chooser=page.waitForEvent('filechooser');await page.getByRole('button',{name:'Photos',exact:true}).click();let input=await chooser;expect(await input.element().getAttribute('accept')).toBe('image/jpeg,image/png,image/webp');
@@ -60,10 +60,23 @@ test('feed media controls immediately open restricted file pickers; Orie road co
 	await page.setViewportSize({width:375,height:812});await page.getByRole('button',{name:'What’s happening on your road?'}).click();await page.getByRole('button',{name:'Road section',exact:true}).click();
 	const demo=JSON.parse(await fs.readFile('static/samples/demo-road.json','utf8')).road;
 	await page.route('**/api/roads?*',route=>route.fulfill({json:{roads:[{...demo,coordinates:[[14.2813,121.4173],[14.285,121.4173]]}]}}));
-	await page.getByRole('button',{name:'Drop Orie at map center'}).dragTo(page.getByRole('region',{name:'Hazard location picker'}));await expect(page.getByLabel('Road start',{exact:true})).toBeVisible();
+	const pin=page.locator('.road-dropper'); await expect(pin).toHaveCSS('animation-name',/road-pin-hop$/); await page.emulateMedia({reducedMotion:'reduce'}); await expect(pin).toHaveCSS('animation-name','none'); await page.emulateMedia({reducedMotion:'no-preference'}); const dropper=page.getByRole('button',{name:'Drop pin at map center'}), picker=page.getByRole('region',{name:'Hazard location picker'});
+	await picker.locator('.leaflet-tile-pane').waitFor({state:'attached'});
+	await dropper.evaluate(el=>el.dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer:new DataTransfer()})));
+	const bounds=(await picker.boundingBox())!;
+	await picker.dispatchEvent('dragover',{clientX:bounds.x+90,clientY:bounds.y+80});
+	const shadow=page.getByTestId('pin-landing-shadow');await expect(shadow).toBeVisible();
+	const first=(await shadow.boundingBox())!;expect(Math.abs(first.x+first.width/2-(bounds.x+90))).toBeLessThan(2);expect(Math.abs(first.y+first.height/2-(bounds.y+80))).toBeLessThan(2);
+	await picker.dispatchEvent('dragover',{clientX:bounds.x+130,clientY:bounds.y+100});const moved=(await shadow.boundingBox())!;expect(moved.x).toBeGreaterThan(first.x+35);
+	await page.screenshot({path:'.svelte-kit/pin-landing-mobile.png',fullPage:true});
+	await picker.dispatchEvent('dragleave');await expect(shadow).toHaveCount(0);
+	await dropper.dispatchEvent('dragend');
+	await dropper.dragTo(picker);await expect(shadow).toHaveCount(0);await expect(page.getByLabel('Road start',{exact:true})).toBeVisible();
 	const end=page.getByLabel('Road end',{exact:true});await end.fill('400');await expect(page.getByText(/Pedro Guevarra Avenue · 400 m/)).toBeVisible();
-	await expect(page.locator('.road-end')).toHaveCount(2);expect(await page.locator('[role="dialog"]').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+	await expect(page.locator('.road-end')).toHaveCount(2);await expect(pin).toHaveCSS('animation-name','none');await expect(page.getByRole('region',{name:'Hazard location picker'}).locator('img[src="/orie.png"]')).toHaveCount(0);expect(await page.locator('[role="dialog"]').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
 	await page.getByRole('button',{name:'Point pin',exact:true}).click();await expect(page.getByLabel('Latitude',{exact:true})).toBeVisible();
+	const pointPin=picker.locator('.location-pin'), pointBounds=(await pointPin.boundingBox())!;
+	await page.mouse.move(pointBounds.x+pointBounds.width/2,pointBounds.y+pointBounds.height/2);await page.mouse.down();await page.mouse.move(pointBounds.x+45,pointBounds.y+45,{steps:5});await expect(shadow).toBeVisible();await page.mouse.up();await expect(shadow).toHaveCount(0);
 });
 test('saved demo road has media/map and a live map line; likes are independent of hazard support',async({page,request,baseURL})=>{
 	const [post]=await sql`select p.id,p.report_id from community_posts p join reports r on r.id=p.report_id where r.triage_payload->>'seedKey'='road-section-presentation-v1'`;
