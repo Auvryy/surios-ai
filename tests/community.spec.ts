@@ -64,9 +64,9 @@ test('rejects unauthenticated requests, unsafe origins, and invalid files before
 	expect(invalid.status()).toBe(400);
 });
 
-test('composer saves selected cover, media, report, confirmations, comments, and searchable posts (controlled AI response)', async ({ page }) => {
+test('report composer saves selected cover, media, map pin, confirmations, comments, and searchable posts (controlled AI response)', async ({ page }) => {
 	await login(page.request);
-	await page.goto('/community'); await page.waitForLoadState('networkidle');
+	await page.goto('/report'); await page.waitForLoadState('networkidle');
 	const draft = await makeDraft(page);
 	await page.route('**/api/community/assess', (route) => route.fulfill({ status: 200, json: { draftId: draft.draftId, media: draft.media, analysis } }));
 	const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
