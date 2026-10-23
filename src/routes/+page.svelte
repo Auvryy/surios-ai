@@ -48,6 +48,19 @@
 			</div>
 			<p>Official resolutions link back to the original reports.</p>
 		</section>
+
+		<section class="features" aria-label="SuriOS features">
+			<article class="feature">
+				<p class="feature-label">Community reports</p>
+				<h2>Report what you see.</h2>
+				<p>Add a location, photos, and a short note. Neighbors can confirm a hazard or add context.</p>
+			</article>
+			<article class="feature">
+				<p class="feature-label">Municipal work</p>
+				<h2>Track the repair.</h2>
+				<p>Teams can assign work orders, submit repair evidence, and review each job.</p>
+			</article>
+		</section>
 	</main>
 
 	<footer class="site-footer content-width">
@@ -125,6 +138,11 @@
 	.response-flow { display: flex; align-items: center; gap: clamp(9px, 2vw, 21px); color: #49443e; font-size: 12px; font-weight: 620; }
 	.flow-arrow { color: #beb5aa; font-size: 14px; font-weight: 400; }
 	.response-strip p { margin: 0; color: var(--muted); font-size: 11px; }
+	.features { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(26px, 6vw, 72px); padding: 32px 0 42px; border-top: 1px solid var(--line); }
+	.feature + .feature { padding-left: clamp(24px, 4vw, 48px); border-left: 1px solid var(--line); }
+	.feature-label { margin: 0 0 10px; color: var(--orange); font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+	.feature h2 { margin: 0 0 8px; font-size: clamp(18px, 2.2vw, 22px); font-weight: 680; letter-spacing: -.045em; }
+	.feature > p:last-child { max-width: 390px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
 	.site-footer { display: flex; min-height: 80px; align-items: center; justify-content: space-between; gap: 18px; border-top: 1px solid var(--line); }
 	.footer-brand { gap: 7px; font-size: 13px; }
 	.footer-note { color: #958d84; font-size: 10px; }
@@ -147,6 +165,10 @@
 		.response-strip { min-height: auto; align-items: flex-start; flex-direction: column; gap: 8px; padding-block: 18px 22px; }
 		.response-flow { font-size: 11px; }
 		.response-strip p { font-size: 10px; }
+		.features { grid-template-columns: 1fr; gap: 20px; padding: 24px 0 30px; }
+		.feature + .feature { padding: 20px 0 0; border-top: 1px solid var(--line); border-left: 0; }
+		.feature h2 { font-size: 19px; }
+		.feature > p:last-child { font-size: 11px; }
 		.site-footer { min-height: 75px; flex-wrap: wrap; gap: 9px 16px; padding-block: 15px; }
 		.footer-note { order: 3; width: 100%; font-size: 9px; }
 	}
