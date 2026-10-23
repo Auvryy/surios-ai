@@ -72,7 +72,7 @@ test('saved demo road has media/map and a live map line; likes are independent o
 	await page.goto(`/community/post/${post.id}`);await page.waitForLoadState('networkidle');await page.getByRole('button',{name:'Like',exact:true}).first().click();await expect(page.getByRole('button',{name:'Liked',exact:true}).first()).toBeVisible();
 	const [after]=await sql`select community_confirmations,hazard_severity from reports where id=${post.report_id}`;expect(after).toEqual(before);
 	await page.getByRole('button',{name:/Show location map/}).click();await expect(page.getByRole('link',{name:'Open original report map'})).toBeVisible();
-	await page.goto(`/map?report=${post.report_id}`);await expect(page.locator('.leaflet-overlay-pane canvas').first()).toBeVisible();
+	await page.goto(`/map?report=${post.report_id}`);await expect(page.locator('.leaflet-overlay-pane canvas').first()).toBeVisible();await page.getByRole('button',{name:/View .* m road section/}).click();await expect(page.getByRole('region',{name:'Hazard details'})).toHaveCount(0);
 	await page.goto('/liked');await expect(page).toHaveURL(/tab=liked/);await expect(page.locator(`#post-${post.id}`)).toBeVisible();
 });
 
