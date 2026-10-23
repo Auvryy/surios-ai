@@ -1,10 +1,8 @@
 <script lang="ts">
 	import './layout.css';
 	import { untrack } from 'svelte';
-	import favicon from '#lib/assets/favicon.svg';
 	import type { LayoutProps } from './$types';
 	import { page } from '$app/state';
-	import { dev } from '$app/env';
 	import Avatar from '$lib/components/community/avatar.svelte';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -18,7 +16,6 @@
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import AwardIcon from '@lucide/svelte/icons/award';
 	import HeartIcon from '@lucide/svelte/icons/heart';
-	import ArrowLeftRightIcon from '@lucide/svelte/icons/arrow-left-right';
 	import PanelLeftCloseIcon from '@lucide/svelte/icons/panel-left-close';
 	import PanelLeftOpenIcon from '@lucide/svelte/icons/panel-left-open';
 	let { data, children }: LayoutProps = $props();
@@ -33,7 +30,7 @@
 			{ name: isGovUser ? 'Feed' : 'Community feed', href: '/community', icon: AwardIcon },
 			{ name: 'Road hazards', href: '/map', icon: MapPinIcon },
 			{ name: 'Report a hazard', href: '/report', icon: CameraIcon },
-			{ name: 'Confirmed updates', href: '/liked', icon: HeartIcon }
+			{ name: 'Liked updates', href: '/liked', icon: HeartIcon }
 		] },
 		...(isGovUser ? [{ title: 'Government', items: [
 			{ name: 'Government updates', href: '/dashboard', icon: LayoutDashboardIcon }
@@ -41,7 +38,7 @@
 		{ title: 'Account', items: [{ name: isGovUser ? 'Account' : 'Profile', href: '/profile', icon: UserIcon }, { name: 'Settings', href: '/settings', icon: SettingsIcon }] }
 	]);
 	function isActive(href: string) {
-		const confirmed = page.url.pathname === '/community' && page.url.searchParams.get('tab') === 'confirmed';
+		const confirmed = page.url.pathname === '/community' && ['liked', 'confirmed'].includes(page.url.searchParams.get('tab') || '');
 		if (href === '/liked') return page.url.pathname === '/liked' || confirmed;
 		if (href === '/community') return page.url.pathname.startsWith('/community/post/') || page.url.pathname === '/community' && !confirmed;
 		return page.url.pathname === href || href === '/profile' && page.url.pathname.startsWith('/profile/');
@@ -51,9 +48,9 @@
 		document.cookie = `surios_nav=${collapsed ? 'collapsed' : 'expanded'}; Path=/; Max-Age=31536000; SameSite=Lax`;
 	}
 </script>
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<svelte:head><link rel="icon" href="/orie.png" /></svelte:head>
 {#snippet brand(compact = false)}
-	<a href="/community" aria-label="SuriOS community feed" class="flex min-h-11 items-center gap-2.5 rounded-lg"><span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-foreground text-sm font-bold text-background">S</span>{#if !compact}<span class="min-w-0"><span class="block text-sm font-bold">SuriOS</span><span class="block text-[10px] text-muted-foreground">Road safety, together</span></span>{/if}</a>
+	<a href="/community" aria-label="SuriOS community feed" class="flex min-h-11 items-center gap-2.5 rounded-lg"><img src="/orie.png" alt="Orie" class="size-9 shrink-0 object-contain" />{#if !compact}<span class="min-w-0"><span class="block text-sm font-bold">SuriOS</span><span class="block text-[10px] text-muted-foreground">Road safety, together</span></span>{/if}</a>
 {/snippet}
 {#snippet navigation(compact = false)}
 	<nav aria-label="{compact ? 'Collapsed' : 'Main'} navigation" class="space-y-5 px-2 py-4">
@@ -63,7 +60,6 @@
 {#snippet account(compact = false)}
 	<div class="space-y-2 border-t border-border p-2">
 		{#if data.user}<a href="/profile" aria-label="Your profile" title={compact ? data.user.name : undefined} class="flex min-h-11 items-center rounded-lg p-2 hover:bg-secondary {compact ? 'justify-center' : 'gap-2'}"><Avatar name={data.user.name} src={data.user.avatarUrl} class="size-8" />{#if !compact}<span class="min-w-0"><span class="block truncate text-xs font-medium">{data.user.name}</span><span class="block text-[10px] text-muted-foreground">{isGovUser ? 'Municipal team' : 'Community member'}</span></span>{/if}</a>{:else}<Button href="/login" variant="outline" class="min-h-11 w-full px-1 text-xs" aria-label="Sign in">{compact ? 'In' : 'Sign in'}</Button>{/if}
-		{#if !compact && dev}<form method="POST" action="/profile?/switchPersona"><input type="hidden" name="email" value={isGovUser ? 'citizen@surios.gov' : 'engineer@surios.gov'} /><input type="hidden" name="redirectTo" value="auto" /><button class="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg text-[11px] text-muted-foreground hover:bg-secondary" title="Switch demo persona"><ArrowLeftRightIcon class="size-3.5" />Switch to {isGovUser ? 'community' : 'municipal'} view</button></form>{/if}
 		<div class="flex items-center {compact ? 'flex-col gap-1' : 'justify-between px-1'}">{#if !compact}<span class="text-xs text-muted-foreground">Appearance</span>{/if}<ThemeToggle />{#if data.user}<form method="POST" action="/logout"><Button type="submit" variant="ghost" size="icon" class="size-10" aria-label="Sign out" title="Sign out"><LogOutIcon class="size-4" /></Button></form>{/if}</div>
 	</div>
 {/snippet}

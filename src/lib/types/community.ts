@@ -1,3 +1,4 @@
+import type { RoadSegment } from './roads';
 import type { MatchDecision } from './hazards';
 import type { TriageAnalysis } from './triage';
 
@@ -9,6 +10,7 @@ export interface PostMedia {
 	mimeType: string;
 }
 export interface CommunityPost {
+	roadSegment?: RoadSegment | null;
 	id: string;
 	title: string;
 	body: string;
@@ -20,6 +22,8 @@ export interface CommunityPost {
 	analysis: TriageAnalysis;
 	reportId: string;
 	reportStatus: string;
+	reportSeverity?: number;
+	reportRiskLevel?: string;
 	governmentUpdateLink: string | null;
 	grouping?: MatchDecision | null;
 	createdAt: string;

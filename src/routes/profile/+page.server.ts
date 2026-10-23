@@ -1,12 +1,9 @@
 import { changePasswordAction } from '$lib/server/password-security';
-import { dev } from '$app/env';
 import { fail, redirect } from '@sveltejs/kit';
-import { workspaceRedirect } from '$lib/server/workspace';
 import type { Actions, PageServerLoad } from './$types.js';
 import { eq } from 'drizzle-orm';
 import { db, users } from '$lib/server/db';
 import { loadProfile } from '$lib/server/profiles';
-import { generateSessionToken, createSession, setSessionTokenCookie } from '$lib/server/auth';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) redirect(303, '/login?redirectTo=/profile');
@@ -73,50 +70,4 @@ export const actions: Actions = {
 
 	changePassword: changePasswordAction,
 
-	switchPersona: async (event) => {
-		if (!dev) return fail(403, { error: 'Demo persona switching is available in development only.' });
-		const formData = await event.request.formData();
-		const targetEmail = (formData.get('email') as string)?.trim().toLowerCase();
-		const redirectTo = (formData.get('redirectTo') as string)?.trim();
-
-		if (!targetEmail) {
-			return fail(400, { error: 'Target persona email is required.' });
-		}
-
-		let targetRole = 'CITIZEN';
-		try {
-			const [targetUser] = await db
-				.select()
-				.from(users)
-				.where(eq(users.email, targetEmail))
-				.limit(1);
-
-			if (!targetUser) {
-				return fail(404, { error: 'Target persona not found.' });
-			}
-
-			targetRole = targetUser.role;
-			const sessionToken = generateSessionToken();
-			const session = await createSession(sessionToken, targetUser.id, {
-				ipAddress: event.getClientAddress?.(),
-				userAgent: event.request.headers.get('user-agent') || undefined
-			});
-
-			setSessionTokenCookie(event, sessionToken, session.expiresAt);
-			event.locals.user = targetUser;
-			event.locals.session = session;
-
-			if (!redirectTo) {
-				return { success: `Switched active role to ${targetUser.name} (${targetUser.role}).` };
-			}
-		} catch (err) {
-			console.error('[Switch Persona Error]', err);
-			return fail(500, { error: 'Failed to switch persona.' });
-		}
-
-		if (redirectTo) {
-			const destination = workspaceRedirect(redirectTo === 'auto' ? null : redirectTo, targetRole);
-			throw redirect(303, destination);
-		}
-	}
 };

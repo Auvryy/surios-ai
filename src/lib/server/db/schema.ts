@@ -1,3 +1,4 @@
+import type { RoadSegment } from '$lib/types/roads';
 import type { MatchDecision } from '$lib/types/hazards';
 import type { GovernmentProfile, PostMedia } from '$lib/types/community';
 import type { TriageAnalysis } from '$lib/types/triage';
@@ -116,6 +117,7 @@ export const communityDrafts = pgTable('community_drafts', {
 }, (table) => [index('community_drafts_user_idx').on(table.userId)]);
 
 export const communityPosts = pgTable('community_posts', {
+	roadSegment: jsonb('road_segment').$type<RoadSegment>(),
 	id: uuid('id').defaultRandom().primaryKey(),
 	userId: uuid('user_id').notNull().references(() => users.id),
 	draftId: uuid('draft_id').notNull().unique(),

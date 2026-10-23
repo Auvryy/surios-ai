@@ -81,6 +81,10 @@
 		markers.clearLayers();
 		const clusters = new Map<string, MapHazard[]>();
 		for (const hazard of items) {
+			if (hazard.roadSegment) {
+				leaflet.polyline(hazard.roadSegment.coordinates, { color: tone(hazard.severity), weight: 7, opacity: .85 }).on('click', () => focus(hazard)).bindTooltip(`${hazard.roadSegment.name} · ${Math.round(hazard.roadSegment.length)} m`).addTo(markers);
+				for (const point of [hazard.roadSegment.coordinates[0], hazard.roadSegment.coordinates[hazard.roadSegment.coordinates.length - 1]]) leaflet.circleMarker(point, { radius: 5, color: '#fff', weight: 2, fillColor: tone(hazard.severity), fillOpacity: 1 }).on('click', () => focus(hazard)).addTo(markers);
+			}
 			const point = map.latLngToLayerPoint([hazard.latitude, hazard.longitude]);
 			const key = `${Math.round(point.x / 42)}:${Math.round(point.y / 42)}`;
 			clusters.set(key, [...(clusters.get(key) || []), hazard]);

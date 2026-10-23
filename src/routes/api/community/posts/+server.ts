@@ -3,10 +3,12 @@ import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, communityDrafts } from '$lib/server/db';
 import { loadCommunityPosts, requireCommunityUser, communityFilters } from '$lib/server/community';
+import { verifyRoadSelection } from '$lib/server/roads';
+import { pointAlong } from '$lib/types/roads';
 import { recordHazardEvidence } from '$lib/server/hazard-reporting';
 import type { RequestHandler } from './$types';
 export const GET: RequestHandler = async ({ locals, url }) => json(await loadCommunityPosts(locals.user?.id, communityFilters(url)));
-const postSchema = z.object({ draftId: z.uuid(), coverId: z.uuid(), title: z.string().trim().min(3).max(120), body: z.string().trim().max(2000), locationName: z.string().trim().min(3).max(200), latitude: z.number().finite().min(-90).max(90), longitude: z.number().finite().min(-180).max(180) });
+const postSchema = z.object({ road: z.object({ id: z.string().regex(/^[1-9][0-9]{0,14}$/), start: z.number().finite().nonnegative(), end: z.number().finite().positive() }).nullable().optional(), draftId: z.uuid(), coverId: z.uuid(), title: z.string().trim().min(3).max(120), body: z.string().trim().max(2000), locationName: z.string().trim().min(3).max(200), latitude: z.number().finite().min(-90).max(90), longitude: z.number().finite().min(-180).max(180) });
 export const POST: RequestHandler = async (event) => {
 	const user = requireCommunityUser(event);
 	const parsed = postSchema.safeParse(await event.request.json().catch(() => null));
@@ -15,6 +17,8 @@ export const POST: RequestHandler = async (event) => {
 	const [draft] = await db.select().from(communityDrafts).where(and(eq(communityDrafts.id, input.draftId), eq(communityDrafts.userId, user.id)));
 	if (!draft) error(404, 'Assessment not found. Assess your attachments again.');
 	if (!draft.media.some((media) => media.id === input.coverId)) error(400, 'Choose a cover from your attachments.');
-	const result = await recordHazardEvidence({ sourceId: draft.id, userId: user.id, analysis: draft.analysis, media: draft.media, latitude: input.latitude, longitude: input.longitude, locationName: input.locationName, post: { draftId: draft.id, coverId: input.coverId, title: input.title, body: input.body } });
+	const roadSegment = input.road ? await verifyRoadSelection(input.road) : null;
+	const center = roadSegment ? pointAlong(roadSegment.coordinates, roadSegment.length / 2) : [input.latitude, input.longitude];
+	const result = await recordHazardEvidence({ roadSegment, sourceId: draft.id, userId: user.id, analysis: draft.analysis, media: draft.media, latitude: center[0], longitude: center[1], locationName: input.locationName, post: { draftId: draft.id, coverId: input.coverId, title: input.title, body: input.body } });
 	return json(result, { status: 201 });
 };

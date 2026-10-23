@@ -19,6 +19,10 @@
 	let { data }: PageProps = $props();
 	const name = $derived(data.user?.name || 'Guest');
 	let composer = $state(false);
+	let composerRef: PostComposer;
+	let photoInput: HTMLInputElement;
+	let videoInput: HTMLInputElement;
+	function selectMedia(event: Event) { const input = event.currentTarget as HTMLInputElement; const files = [...(input.files || [])]; input.value = ''; if (files.length) { composerRef.addFiles(files); composer = true; } }
 	let search = $derived(data.filters.q);
 	let message = $state('');
 	let searchPending = $state(false);
@@ -59,14 +63,14 @@
 				<div class="relative min-w-0 flex-1"><SearchIcon aria-hidden="true" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input name="q" aria-label="Search community" type="search" placeholder="Search people, roads, and posts" bind:value={search} maxlength={100} class="h-11 rounded-full bg-card pl-10 pr-12 shadow-none" /><button type="submit" class="absolute right-1 top-1 flex size-9 items-center justify-center rounded-full text-primary hover:bg-primary/10" aria-label="Search posts" disabled={searchPending}><SearchIcon aria-hidden="true" class="size-4" /></button></div>
 				<a href={data.user ? '/profile' : '/login?redirectTo=/community'} aria-label="Your profile" class="avatar size-11 bg-primary/10 text-primary"><Avatar {name} src={data.user?.avatarUrl} class="size-11" /></a>
 			</form>
-			{#if !searching && data.filters.tab !== 'confirmed'}<div class="rounded-xl border border-border bg-card px-3 pt-2">
+			{#if !searching && data.filters.tab !== 'liked'}<div class="rounded-xl border border-border bg-card px-3 pt-2">
 				<div class="flex items-center gap-2.5"><Avatar {name} src={data.user?.avatarUrl} /><button onclick={openComposer} class="flex min-h-11 flex-1 items-center rounded-full bg-muted px-4 text-left text-sm text-muted-foreground hover:bg-secondary">What’s happening on your road?</button></div>
-				<div class="mt-2 grid grid-cols-3 border-t border-border"><button onclick={openComposer} class="feed-action"><ImageIcon class="size-4 text-primary" />Photos</button><button onclick={openComposer} class="feed-action"><VideoIcon class="size-4 text-primary" />Video</button><button onclick={openComposer} class="feed-action"><MapPinIcon class="size-4 text-primary" />Location</button></div>
+				<div class="mt-2 grid grid-cols-3 border-t border-border"><button onclick={() => data.user ? photoInput.click() : openComposer()} class="feed-action"><ImageIcon class="size-4 text-primary" />Photos</button><button onclick={() => data.user ? videoInput.click() : openComposer()} class="feed-action"><VideoIcon class="size-4 text-primary" />Video</button><button onclick={openComposer} class="feed-action"><MapPinIcon class="size-4 text-primary" />Location</button></div>
 			</div>{/if}
 			<div class="flex flex-wrap items-center justify-between gap-1">
-				<div class="flex gap-1" aria-label="Feed filters">{#each [{ id: '', label: 'All updates' }, { id: 'critical', label: 'Critical' }, { id: 'confirmed', label: 'Confirmed' }] as tab}<button type="button" disabled={searchPending} aria-pressed={data.filters.tab === tab.id} class="min-h-11 rounded-full px-3 text-sm font-medium {data.filters.tab === tab.id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}" onclick={() => filter('tab', tab.id)}>{tab.label}</button>{/each}</div>
+				<div class="flex gap-1" aria-label="Feed filters">{#each [{ id: '', label: 'All updates' }, { id: 'critical', label: 'Critical' }, { id: 'liked', label: 'Liked' }] as tab}<button type="button" disabled={searchPending} aria-pressed={data.filters.tab === tab.id} class="min-h-11 rounded-full px-3 text-sm font-medium {data.filters.tab === tab.id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}" onclick={() => filter('tab', tab.id)}>{tab.label}</button>{/each}</div>
 				<div class="flex flex-wrap items-center gap-2">
-					<label class="flex items-center gap-1 text-xs text-muted-foreground">Sort<select aria-label="Sort posts" disabled={searchPending} value={data.filters.sort || 'newest'} onchange={(event) => filter('sort', event.currentTarget.value)} class="min-h-11 max-w-40 rounded-lg bg-card px-2 text-sm text-foreground">{#if data.filters.q}<option value="relevance">Most relevant</option>{/if}<option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="severity">Highest severity</option><option value="confirmations">Most confirmed</option></select></label>
+					<label class="flex items-center gap-1 text-xs text-muted-foreground">Sort<select aria-label="Sort posts" disabled={searchPending} value={data.filters.sort || 'newest'} onchange={(event) => filter('sort', event.currentTarget.value)} class="min-h-11 max-w-40 rounded-lg bg-card px-2 text-sm text-foreground">{#if data.filters.q}<option value="relevance">Most relevant</option>{/if}<option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="severity">Highest severity</option><option value="likes">Most liked</option></select></label>
 					<select aria-label="Media type" disabled={searchPending} value={data.filters.media} onchange={(event) => filter('media', event.currentTarget.value)} class="min-h-11 max-w-24 rounded-lg bg-transparent px-1 text-xs text-muted-foreground"><option value="">All media</option><option value="photo">Photos</option><option value="video">Videos</option></select>
 				</div>
 			</div>
@@ -82,7 +86,8 @@
 	</div>
 </div>
 {/if}
-<PostComposer bind:open={composer} user={data.user} onpublished={published} />
+<input bind:this={photoInput} type="file" multiple accept="image/jpeg,image/png,image/webp" onchange={selectMedia} aria-label="Choose feed photos" class="sr-only" tabindex="-1" /><input bind:this={videoInput} type="file" multiple accept="video/mp4,video/webm,video/quicktime" onchange={selectMedia} aria-label="Choose feed videos" class="sr-only" tabindex="-1" />
+<PostComposer bind:this={composerRef} bind:open={composer} user={data.user} onpublished={published} />
 <style>
 	.feed-layout { grid-template-columns: minmax(0, 680px); justify-content: center; }
 	.avatar { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 9999px; background: var(--secondary); font-size: .75rem; font-weight: 600; }

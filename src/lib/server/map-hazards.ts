@@ -18,7 +18,7 @@ export async function loadMapHazards(): Promise<{ hazards: MapHazard[]; asOf: st
 			const related = posts.filter(({ post }) => post.reportId === report.id);
 			const evidence = observations.filter((observation) => observation.reportId === report.id);
 			return {
-				id: report.id, title: String(metadata?.headline || related[0]?.post.title || report.distressType.replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase())),
+				roadSegment: metadata?.roadSegment as MapHazard['roadSegment'] || null, id: report.id, title: String(metadata?.headline || related[0]?.post.title || report.distressType.replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase())),
 				location: String(metadata?.civicAddress || `${Number(report.latitude).toFixed(5)}, ${Number(report.longitude).toFixed(5)}`),
 				latitude: Number(report.latitude), longitude: Number(report.longitude), distressType: report.distressType,
 				severity: analysis.hazardSeverity, riskLevel: analysis.riskLevel, vruLethality: analysis.vruLethality, status: report.status,

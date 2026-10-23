@@ -7,6 +7,7 @@ export interface MatchDecision {
 	reason: string;
 }
 export interface MapHazard {
+	roadSegment?: import('./roads').RoadSegment | null;
 	id: string;
 	title: string;
 	location: string;

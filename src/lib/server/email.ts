@@ -40,8 +40,8 @@ export async function queuePostEmail(tx: Transaction, input: { recipients: strin
 	const config = mailConfiguration();
 	if (!config) return;
 	for (const userId of new Set(input.recipients.filter((id) => id !== input.actorId))) {
-		const subject = input.topic === 'confirmations' ? 'Your road update was confirmed' : input.reply ? 'New reply on SuriOS' : 'New comment on SuriOS';
-		const action = input.topic === 'confirmations' ? 'confirmed' : input.reply ? 'replied to a comment on' : 'commented on';
+		const subject = input.topic === 'confirmations' ? 'Your road update was liked' : input.reply ? 'New reply on SuriOS' : 'New comment on SuriOS';
+		const action = input.topic === 'confirmations' ? 'liked' : input.reply ? 'replied to a comment on' : 'commented on';
 		await tx.insert(emailOutbox).values({ userId, topic: input.topic, eventKey: `${input.eventKey}:${userId}`, subject,
 			body: `${input.actorName} ${action} “${input.postTitle}”.\n\nOpen the conversation:\n${config.origin}/community?q=${input.postId}#post-${input.postId}\n\nEmail preferences:\n${config.origin}/settings`
 		}).onConflictDoNothing();
