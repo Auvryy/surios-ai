@@ -41,13 +41,14 @@ async function makeDraft(page: Page) {
 }
 
 test.afterAll(async () => {
-	for (const id of draftIds) {
-		await sql.begin(async (tx) => {
-			const posts = await tx`delete from community_posts where draft_id = ${id} returning report_id`;
-			for (const post of posts) await tx`delete from reports where id = ${post.report_id}`;
-			await tx`delete from community_drafts where id = ${id}`;
-		});
-	}
+	if (draftIds.length) await sql.begin(async (tx) => {
+		const posts = await tx`delete from community_posts where draft_id in ${sql(draftIds)} returning report_id`;
+		await tx`delete from report_observations where source_id in ${sql(draftIds)}`;
+		for (const reportId of new Set(posts.map((post) => post.report_id))) {
+			await tx`delete from reports r where r.id = ${reportId} and not exists (select 1 from community_posts p where p.report_id = r.id) and not exists (select 1 from report_observations o where o.report_id = r.id) and coalesce((r.triage_payload->>'supportBaseline')::int, 0) = 0`;
+		}
+		await tx`delete from community_drafts where id in ${sql(draftIds)}`;
+	});
 	await Promise.all(files.map((file) => fs.rm(file, { force: true })));
 	if (sessionIds.length) await sql`delete from sessions where id in ${sql(sessionIds)}`;
 	await sql.end();
@@ -82,8 +83,8 @@ test('composer saves selected cover, media, report, confirmations, comments, and
 	await expect(page.getByText('Severity 8/10', { exact: true })).toBeVisible();
 	await page.getByLabel('Road or landmark', { exact: true }).fill('E2E Santa Cruz school gate');
 	await expect(page.locator('.leaflet-container')).toBeVisible();
-	const y = '121.4173';
-	await page.getByLabel('Latitude', { exact: true }).fill('14.2813'); await page.getByLabel('Longitude', { exact: true }).fill(y);
+	const y = '123.4173';
+	await page.getByLabel('Latitude', { exact: true }).fill('11.2813'); await page.getByLabel('Longitude', { exact: true }).fill(y);
 	await page.getByRole('button', { name: 'Publish road update', exact: true }).click();
 	await expect(page.getByRole('dialog')).toBeHidden();
 	const article = page.locator('article').filter({ hasText: `E2E road update ${draft.draftId}` });
@@ -104,7 +105,7 @@ test('composer saves selected cover, media, report, confirmations, comments, and
 	expect(await video.evaluate((element) => element.paused)).toBe(true);
 	await page.keyboard.press('Escape'); await expect(page.getByRole('dialog')).toBeHidden();
 	await article.getByRole('button', { name: 'Next media', exact: true }).click();
-	await expect(article.locator('iframe')).toHaveAttribute('src', /marker=14.2813,121.4173/);
+	await expect(article.locator('iframe')).toHaveAttribute('src', /marker=11.2813,123.4173/);
 	const postId = (await article.getAttribute('id'))!.slice(5);
 	await article.getByRole('button', { name: 'Confirm', exact: true }).click();
 	await expect(article.getByRole('button', { name: 'Confirmed', exact: true })).toBeVisible();
@@ -119,12 +120,12 @@ test('composer saves selected cover, media, report, confirmations, comments, and
 	await page.getByRole('button', { name: 'Critical', exact: true }).click(); await expect(page.locator('article')).toHaveCount(1);
 	const range = await page.request.get(draft.media[2].url, { headers: { Range: 'bytes=0-31' } }); expect(range.status()).toBe(206); expect((await range.body()).length).toBe(32);
 	// Publishing retries return the same post and do not create duplicate reports.
-	const retry = await page.request.post('/api/community/posts', { headers: { Origin: origin }, data: { draftId: draft.draftId, coverId: draft.media[1].id, title: 'Retry title', body: '', locationName: 'E2E school gate', latitude: 14.2813, longitude: 121.4173 } });
+	const retry = await page.request.post('/api/community/posts', { headers: { Origin: origin }, data: { draftId: draft.draftId, coverId: draft.media[1].id, title: 'Retry title', body: '', locationName: 'E2E school gate', latitude: 11.2813, longitude: 123.4173 } });
 	expect((await retry.json()).id).toBe(postId);
 	const foundById = await page.request.get(`/api/community/posts?q=${postId}`); expect((await foundById.json()).total).toBe(1);
 	const [saved] = await sql`select cover_id, report_id from community_posts where id = ${postId}`;
 	expect(saved.cover_id).toBe(draft.media[1].id);
-	const [report] = await sql`select community_confirmations from reports where id = ${saved.report_id}`; expect(report.community_confirmations).toBe(2);
+	const [report] = await sql`select community_confirmations from reports where id = ${saved.report_id}`; expect(report.community_confirmations).toBe(1);
 	await page.goto('/liked'); await expect(page).toHaveURL(/tab=confirmed/);
 	await page.setViewportSize({ width: 375, height: 812 }); await page.evaluate(() => document.documentElement.classList.add('dark'));
 	await page.screenshot({ path: '.svelte-kit/review/persistent-feed-mobile-dark.png', fullPage: true });
@@ -154,7 +155,7 @@ test('assessment failure keeps attachments and allows retry; removing cover choo
 test('video-only covers reach the report map and invalid or foreign drafts cannot publish', async ({ page }) => {
 	await login(page.request); await page.goto('/community'); await page.waitForLoadState('networkidle');
 	const draft = await makeDraft(page);
-	const input = { draftId: draft.draftId, coverId: draft.media[2].id, title: `E2E video ${draft.draftId}`, body: 'Video-only road evidence', locationName: 'E2E video site', latitude: 14.2813, longitude: 121.4173 };
+	const input = { draftId: draft.draftId, coverId: draft.media[2].id, title: `E2E video ${draft.draftId}`, body: 'Video-only road evidence', locationName: 'E2E video site', latitude: 11.3813, longitude: 123.5173 };
 	const invalidCover = await page.request.post('/api/community/posts', { headers: { Origin: origin }, data: { ...input, coverId: randomUUID() } }); expect(invalidCover.status()).toBe(400);
 	const other = await page.context().browser()!.newContext({ baseURL: origin });
 	await login(other.request, 'inspector@surios.gov');
@@ -166,8 +167,34 @@ test('video-only covers reach the report map and invalid or foreign drafts canno
 	await article.getByRole('button', { name: 'Next media', exact: true }).click(); await expect(article.locator('iframe')).toBeVisible();
 	const [post] = await sql`select report_id from community_posts where id = ${id}`;
 	const [report] = await sql`select image_path from reports where id = ${post.report_id}`; expect(report.image_path).toBe(draft.media[2].url);
-	const mapResponse = await page.request.get('/'); const mapHtml = await mapResponse.text(); expect(mapResponse.status()).toBe(200); expect(mapHtml).toContain(draft.media[2].url);
+	const mapResponse = await page.request.get('/map'); const mapHtml = await mapResponse.text(); expect(mapResponse.status()).toBe(200); expect(mapHtml).toContain(draft.media[2].url);
 	const range = await page.request.get(draft.media[2].url, { headers: { Range: 'bytes=999999999-' } }); expect(range.status()).toBe(416);
 	const expired = await makeDraft(page); await sql`update community_drafts set expires_at = ${new Date(Date.now() - 60000)} where id = ${expired.draftId}`;
 	expect((await page.request.post('/api/community/posts', { headers: { Origin: origin }, data: { ...input, draftId: expired.draftId, coverId: expired.media[0].id } })).status()).toBe(410);
+});
+
+
+test('nearby community posts share one map hazard and unique support without raising severity for reused media', async ({ page }) => {
+	await login(page.request); await page.goto('/community'); await page.waitForLoadState('networkidle');
+	const first = await makeDraft(page), second = await makeDraft(page);
+	await sql`update community_drafts set media = ${sql.json([first.media[0]])} where id = ${first.draftId}`;
+	const [inspector] = await sql`select id from users where email = 'inspector@surios.gov'`;
+	await sql`update community_drafts set user_id = ${inspector.id}, media = ${sql.json([second.media[0]])}, analysis = ${sql.json({ ...analysis, hazardSeverity: 10 })} where id = ${second.draftId}`;
+	const title = `Shared evidence ${first.draftId}`;
+	const input = { draftId: first.draftId, coverId: first.media[0].id, title: `${title} A`, body: 'First view', locationName: 'Isolated shared hazard verification', latitude: 11.5, longitude: 123.6 };
+	const published = await page.request.post('/api/community/posts', { headers: { Origin: origin }, data: input }); expect(published.status()).toBe(201);
+	const one = await published.json(); expect(one.grouped).toBe(false);
+	const other = await page.context().browser()!.newContext({ baseURL: origin }); await login(other.request, 'inspector@surios.gov');
+	const repeated = await other.request.post('/api/community/posts', { headers: { Origin: origin }, data: { ...input, draftId: second.draftId, coverId: second.media[0].id, title: `${title} B`, body: 'A nearby confirmation', latitude: 11.50001 } }); expect(repeated.status()).toBe(201);
+	const two = await repeated.json(); expect(two.reportId).toBe(one.reportId); expect(two.grouped).toBe(true); expect(two.severity).toBe(8); expect(two.support).toBe(2); expect(two.priority).toBe(8.25);
+	await other.close();
+	const feed = await page.request.get(`/api/community/posts?q=${first.draftId}`); expect((await feed.json()).total).toBe(2);
+	await page.goto(`/map?report=${one.reportId}`); await page.waitForLoadState('networkidle');
+	const details = page.getByRole('region', { name: 'Hazard details' }); await expect(details).toContainText(`${title} A`);
+	await details.getByRole('button', { name: 'More details', exact: true }).click();
+	await expect(details.getByRole('link', { name: new RegExp(`${title} B`) })).toBeVisible();
+	await expect(details).toContainText('Repeated media does not increase severity.');
+	await page.getByRole('button', { name: 'Close hazard details', exact: true }).click();
+	await page.getByRole('button', { name: 'Filters', exact: true }).click(); await page.getByRole('textbox', { name: 'Search map reports' }).fill(first.draftId); await page.getByRole('button', { name: 'Show matching reports', exact: true }).click();
+	await expect(page.getByRole('complementary', { name: 'Hazard report list' }).getByRole('button', { name: /Open hazard:/ })).toHaveCount(1);
 });

@@ -12,7 +12,7 @@
 ### Key Capabilities
 * **ASTM D6433 Distress Triage:** Classifies potholes, alligator cracking, rutting, ravelling, edge drop-offs, and drainage failures with a deterministic **Hazard Severity Index (`1–10`)**.
 * **Two-Wheeler Lethality Index (VRU Profiling):** Specifically evaluates fatal rim-strike and traction-loss hazards for motorcycles, tricycles, and bicycles (which comprise over **68% of provincial road commuters**).
-* **Haversine `~25m` Geo-Clustering:** Deduplicates proximate citizen reports into a single canonical municipal ticket with a **`+1 Community Confirmation`** priority multiplier.
+* **Haversine `~25m` Geo-Clustering:** Groups nearby open reports only when damage type and shared or AI-matched evidence agree. Unique support increases priority separately from damage severity.
 * **Gemini "Proof of Patch" Verification:** Prevents "ghost repairs" by auditing after-repair contractor photos for surface planarity, edge tacking, and void elimination before closing tickets.
 * **Zero AI-Slop Design System:** Authentic **`shadcn-svelte`** interface with flat matte surfaces, 1px micro-borders, soft **Inter** typography, zero gradients, and 100% Dark/Light Mode parity.
 
@@ -27,6 +27,7 @@
 | **[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)** | End-to-end system topology, cryptographic session flow, and PostgreSQL ER diagram. |
 | **[`docs/DESIGN_SYSTEM.md`](./docs/DESIGN_SYSTEM.md)** | Zero AI-Slop Charter, OKLCH semantic tokens, and `shadcn-svelte` component architecture. |
 | **[`docs/SYSTEM_GOALS.md`](./docs/SYSTEM_GOALS.md)** | UN SDG 9/11/16 alignment, 1:6 preventative maintenance ROI curve, and Pitch Q&A Defense Matrix. |
+| **[`docs/ROAD_HAZARDS.md`](./docs/ROAD_HAZARDS.md)** | Feed-first navigation, collapsible map controls, severity, community support, priority, and AI-assisted evidence grouping. |
 | **[`docs/COMMUNITY_POSTING.md`](./docs/COMMUNITY_POSTING.md)** | Saved community posts, AI assessment, media covers, search, migrations, and browser verification. |
 | **[`docs/TECH_STACK.md`](./docs/TECH_STACK.md)** | Technology stack matrix and architectural justifications. |
 | **[`docs/DOCKER_RUNBOOK.md`](./docs/DOCKER_RUNBOOK.md)** | Local development (`port 5433`) and Ubuntu Azure VM production (`docker-compose.prod.yml`) commands. |
@@ -45,7 +46,7 @@ npm run db:push
 ```bash
 npm run dev -- --host 0.0.0.0
 ```
-Open **`http://localhost:5173`**.
+Open **`http://localhost:5173`**. The landing page is the community feed; **Road hazards** is available at `/map`.
 
 ### 3. Pre-Seeded Municipal Demo Accounts (`/login`)
 On first boot, SuriOS automatically provisions 3 municipal RBAC accounts (all using password `Password123!`):

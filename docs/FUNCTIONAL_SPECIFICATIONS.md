@@ -14,10 +14,10 @@ SuriOS is structured around a **Two-Persona Swiss Minimalist Sidebar Shell** (`s
 
 | Route | Module Name | Target Persona | 5-Word Functional Mandate | Current Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **`/community`** | **Civic Feed** | Community (`CITIZEN`) | *Single-column social road hazard stream.* | **Active** — Centered feed (`max-w-2xl`), vertical inset media dock, `+1 Confirmed` upvoting. |
+| **`/community`** | **Civic Feed** | Shared (Community & Gov) | *Single-column social road hazard stream.* | **Active** — Centered feed (`max-w-2xl`), vertical inset media dock, `+1 Confirmed` upvoting. |
 | **`/liked`** | **Liked History** | Community (`CITIZEN`) | *Track confirmed hazards repair progress.* | **Active** — Citizen watchlist tracking DPWH repair states (`REPORTED` $\rightarrow$ `DISPATCHED` $\rightarrow$ `RESOLVED`). |
 | **`/report`** | **Camera Report** | Community (`CITIZEN`) | *Camera triage for civil defects.* | **Active** — Mobile camera shutter, GPS lock, `/api/triage` integration. |
-| **`/`** | **Map Playground / GIS** | Shared (Community & Gov) | *Real-time geolocated road hazard map.* | **Active** — Interactive Leaflet GIS canvas + safe route avoidance + inspection drawer. |
+| **`/map`** | **Road hazards** | Shared (Community & Gov) | *Real-time geolocated road hazard map.* | **Active** — Stored hazard pins, compact collapsible controls, consistent severity, and linked evidence. |
 | **`/dashboard`** | **Triage & Resolve** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *Municipal maintenance work order board.* | **Active** — Unified filter pills, inline crew dispatch, status resolution, and CSV export. |
 | **`/verification`** | **Proof of Patch QA** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *AI-verified asphalt repair sign-off archive.* | **Active** — Before/After photo QA, ASTM D2950 compaction density & DPWH seal. |
 | **`/analytics`** | **Road Analytics** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *Longitudinal road degradation trend analytics.* | **Active** — 5-year PCI decay curves, monsoon correlation & preventative ROI calculator. |
@@ -32,7 +32,7 @@ Authentication is powered by native Node.js cryptographic primitives (`node:cryp
 
 | Capability / Function | Anonymous Guest | `CITIZEN` | `OFFICER` (Field Inspector) | `ENGINEER` / `ADMIN` (LGU Chief) |
 | :--- | :---: | :---: | :---: | :---: |
-| View Live Map Feed (`/`) & Standards (`/docs`) | ✅ | ✅ | ✅ | ✅ |
+| View Road hazards (`/map`) | ✅ | ✅ | ✅ | ✅ |
 | Submit Field Hazard Report (`/report` & `POST /api/triage`) | ✅ | ✅ | ✅ | ✅ |
 | Confirm / Upvote Existing Proximate Defect (`+1 Confirmation`) | ❌ | ✅ | ✅ | ✅ |
 | Access Operations Dispatch Canvas (`/dashboard`) | ❌ *(303 `/login`)* | ✅ *(Read-Only)* | ✅ *(Full Dispatch)* | ✅ *(Full Dispatch)* |
@@ -48,120 +48,51 @@ Authentication is powered by native Node.js cryptographic primitives (`node:cryp
 
 To ensure SuriOS is an authentic civil engineering platform rather than a generic AI wrapper, the backend combines **Google Gemini Multimodal Vision extraction** with **deterministic civil engineering formulas**.
 
-### A. Hybrid Deterministic Hazard Severity Index ($1 - 10$)
+### A. Severity and risk consistency
 
-When an image is submitted to `POST /api/triage`, Gemini extracts the ASTM D6433 distress category, estimated depth ($D$ in mm), estimated surface area ($A$ in $\text{m}^2$), and road context. The deterministic verification layer validates the **Hazard Severity Score ($S$)**:
+The implemented severity is the AI's 1–10 estimate with product risk floors: LOW/MODERATE/CRITICAL impose minimums 1/4/8; rider risk NONE/LOW/MODERATE/HIGH/CRITICAL imposes 1/1/4/6/8. Final severity is the maximum, clamped to 1–10. Display bands are 1–3 LOW, 4–7 MODERATE, and 8–10 CRITICAL. These are triage estimates, not a measured ASTM PCI.
 
-$$S = \min\left(10, \max\left(1, \left\lfloor B_{\text{distress}} + W_{\text{depth}}(D) + W_{\text{vru}} + W_{\text{cluster}}(C) \right\rfloor \right)\right)$$
+### B. Independent support and priority
 
-Where:
-1. **Base Distress Weight ($B_{\text{distress}}$):**
-   * `pothole`: $4.0$
-   * `drainage_culvert_failure`: $4.5$
-   * `edge_break`: $3.5$
-   * `alligator_cracking`: $3.0$
-   * `rutting`: $3.0$
-   * `longitudinal_transverse_cracking`: $2.0$
-   * `ravelling_weathering`: $1.5$
-2. **Depth Escalation Factor ($W_{\text{depth}}$):**
-   * $D < 25\text{ mm}$: $+0.5$ (Low)
-   * $25\text{ mm} \le D \le 50\text{ mm}$: $+2.0$ (Moderate)
-   * $50\text{ mm} < D \le 80\text{ mm}$: $+3.5$ (High — Immediate tire/rim strike hazard)
-   * $D > 80\text{ mm}$: $+5.0$ (Critical structural crater)
-3. **Two-Wheeler Lethality Multiplier ($W_{\text{vru}}$):**
-   * $+1.5$ if defect has sharp vertical edges, lies within the primary wheel track, or involves loose gravel/standing water that compromises motorcycle/tricycle stability.
-4. **Community Confirmation Boost ($W_{\text{cluster}}$):**
-   * $\min(2.0, 0.25 \times (C - 1))$ where $C$ is the number of unique citizen reports within a $25\text{m}$ radius.
+A contributor counts once across observations and confirmations linked to a canonical report. Signed-out field captures use a media fingerprint; legacy anonymous totals are preserved as a baseline. Support does not increase damage severity.
 
-### B. Haversine Proximity Geo-Clustering Algorithm (`~25m` Deduplication)
+`priority = min(10, severity + min(2, 0.25 × max(0, support − 1)))`
 
-To prevent 50 citizens from creating 50 duplicate tickets for the same pothole in front of LSPU Santa Cruz, `POST /api/triage` must run a spatial proximity check against unresolved (`status != 'RESOLVED'`) tickets in PostgreSQL:
+### C. Evidence grouping
 
-$$d = 2r \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta\phi}{2}\right) + \cos(\phi_1)\cos(\phi_2)\sin^2\left(\frac{\Delta\lambda}{2}\right)}\right)$$
+Candidate reports must be open, the same distress type, and within 25 metres by Haversine distance. Exact shared media hashes group directly; different images require a valid candidate ID and a visual AI comparison with model confidence ≥0.85. Uncertain comparisons stay separate. Known media alone cannot increase severity. Genuinely new evidence can raise the canonical severity; resolved reports remain separate.
 
-* Earth radius $r = 6,371,000\text{ meters}$.
-* **Clustering Rule:**
-  * If an existing open report has $d \le 25.0\text{ meters}$ AND matches the same `distressType` (or both are surface craters/cracks):
-    1. **Do NOT insert a duplicate row.**
-    2. Increment `community_confirmations = community_confirmations + 1` on the existing report.
-    3. Update `updated_at = NOW()`.
-    4. Return `clustered: true` and the existing `reportId` to the user, displaying: *"Matched existing hazard cluster within 25m (+1 Priority Confirmation added)."*
+Both community publishing and field capture use this logic. A transaction and candidate recheck handle concurrent submissions and publishing retries. The complete implemented policy, caveats, schema upgrade, and verification instructions are in [ROAD_HAZARDS.md](./ROAD_HAZARDS.md).
 
 ---
 
 ## 4. Detailed Function-by-Function & Endpoint Specifications
 
 ### 4.1. Multimodal Triage Endpoint (`POST /api/triage`)
-* **File:** [`src/routes/api/triage/+server.ts`](../src/routes/api/triage/+server.ts)
-* **Service:** [`src/lib/server/gemini.ts`](../src/lib/server/gemini.ts) (`analyzeRoadDistress`)
-* **Schema:** [`src/lib/types/triage.ts`](../src/lib/types/triage.ts) (`TriageAnalysisSchema`)
-* **Input (`multipart/form-data`):**
-  * `image`: `File` (Required, JPEG/PNG/WebP/HEIC, $\le 10\text{ MB}$).
-  * `latitude`: `number` (Default fallback: `14.2813` — Santa Cruz, Laguna).
-  * `longitude`: `number` (Default fallback: `121.4173`).
-  * `locationName`: `string` (Optional human-readable corridor/barangay label).
-* **Execution Pipeline:**
-  1. Validate MIME type and file size ($\le 10\text{ MB}$).
-  2. Convert `File` to `Buffer` and invoke `analyzeRoadDistress(buffer, mimeType)`.
-  3. **Model Fallback Chain:** Attempt `gemini-flash-lite-latest` $\rightarrow$ `gemini-flash-latest` $\rightarrow$ `gemini-3.8-flash` with `responseMimeType: 'application/json'`.
-  4. Validate output through `TriageAnalysisSchema` (with `.default(...)` resilient fallbacks).
-  5. **Spam Gate:** If `analysis.isValidInfrastructure === false`:
-     * Delete or skip saving the image to disk (prevents storage exhaustion from spam).
-     * Return HTTP `422 Unprocessable Entity` with `{ success: false, error: analysis.rejectionReason, analysis }`.
-  6. **Persistence & Geo-Clustering:**
-     * Write valid infrastructure image to `static/uploads/{timestamp}-{hex}.{ext}`.
-     * Query active reports within bounding box $(\pm 0.0003^\circ \approx 33\text{m})$.
-     * If Haversine distance $\le 25\text{m}$, increment `communityConfirmations` on existing record; otherwise `INSERT INTO reports`.
-  7. **Output (`200 OK`):**
-     ```json
-     {
-       "success": true,
-       "data": {
-         "reportId": "uuid",
-         "clustered": false,
-         "communityConfirmations": 1,
-         "imagePath": "/uploads/1792500000-a1b2c3.jpg",
-         "latitude": 14.2813,
-         "longitude": 121.4173,
-         "analysis": {
-           "isValidInfrastructure": true,
-           "distressType": "pothole",
-           "hazardSeverity": 9,
-           "riskLevel": "CRITICAL",
-           "vruLethality": "CRITICAL",
-           "vruDetails": "Deep 65mm vertical lip in primary motorcycle lane...",
-           "estimatedDimensions": { "depthEstimate": "65mm", "surfaceAreaEstimate": "0.45 sq.m" },
-           "recommendedAction": "Full-depth saw-cut, emulsion tack coat, hot-mix asphalt patch...",
-           "materialsChecklist": ["Hot-mix asphalt (60kg)", "Bituminous tack coat", "Plate compactor"],
-           "urgency": "EMERGENCY",
-           "summary": "Critical deep pothole posing severe two-wheeler ejection hazard."
-         }
-       }
-     }
-     ```
 
----
+- Source: `src/routes/api/triage/+server.ts`; shared reporting logic: `src/lib/server/hazard-reporting.ts`.
+- Input: multipart `image` (one JPEG/PNG/WebP, ≤10 MiB), valid numeric `latitude` and `longitude`. Coordinates are required and range-checked.
+- File signatures, size, and origin are checked. Gemini assesses the photo; non-infrastructure returns 422. Valid media is saved only after the assessment passes.
+- Severity is normalized using section 3. Both field capture and community publishing use the same 25-metre candidate search, hash/AI comparison, unique support, and transactional persistence.
+- Address lookup can label the location, but the submitted pin is preserved.
+- Success includes `reportId` (display ticket), `rawId` (canonical UUID), `grouped`, `match`, canonical `severity`, `support`, `priority`, `imageUrl`, coordinates, and the individual AI `analysis`.
+- Errors never return a successful pending ticket. Invalid files/coordinates keep the form available; 422 identifies non-road evidence; unavailable AI/storage returns an error.
 
-### 4.2. Map Feed Homepage (`/` — `src/routes/+page.svelte` & `+page.server.ts`)
-* **Purpose:** Primary operational landing page providing real-time spatial situational awareness.
-* **Server Load (`+page.server.ts`):**
-  * Queries top 50 reports from PostgreSQL ordered by `createdAt DESC`.
-  * Normalizes DB records alongside baseline Santa Cruz corridor telemetry into `FeedIncident[]`.
-* **Client Functions (`+page.svelte`):**
-  * `filter` state (`'ALL' | 'CRITICAL' | 'REPORTED' | 'DISPATCHED' | 'RESOLVED'`): Reactively filters both the right-hand incident stream AND the Leaflet map markers via `$derived`.
-  * `openInspect(incident: FeedIncident)`: Selects an incident, centers the Leaflet map on `[incident.latitude, incident.longitude]`, and opens the right-hand `<Sheet>` drawer.
-  * `upvoteIncident(id: string)` *(Phase 2 enhancement)*: Calls `POST /api/reports/[id]/confirm` to increment `communityConfirmations` with optimistic UI update.
+### 4.2. Road hazards (`/map`)
 
----
+The landing page is the community feed (`/community`); `/` redirects there. Road hazards is a separate full-map workspace backed by stored reports only.
 
-### 4.3. Field Report Capture (`/report` — `src/routes/report/+page.svelte`)
-* **Purpose:** Fast 15-second mobile field reporting for citizens and roving inspectors.
-* **Client Functions & Enhancements Required in Phase 2:**
-  * `handleCapture(e: Event)`: Reads camera/file input, generates object URL preview, and resets prior error/result state.
-  * `detectLocation()`: Acquires high-accuracy GPS (`enableHighAccuracy: true, timeout: 8000`) and reverse-geocodes or labels the Santa Cruz barangay corridor.
-  * `submitReport()`:
-    * Sends `FormData` to `POST /api/triage`.
-    * **Crucial Phase 2 Upgrade:** Instead of showing only a generic *"Report Dispatched"* card, display the **Full AI Triage Result Card** immediately after submission (showing the citizen the detected ASTM distress type, the 1–10 severity score, the VRU Two-Wheeler Warning banner, whether it merged into a 25m community cluster, and a link to view their pin on the Map Feed `/`)—and if `422` spam is returned, show a clear destructive `<Alert>` explaining why the photo was rejected!
+`src/lib/server/map-hazards.ts` loads up to 1,000 recently updated reports, their linked posts, and observation metadata. It normalizes legacy risk labels for display, computes priority, and supplies real timestamps and support counts. It does not inject demo incidents or invented corridor condition values.
+
+The map exposes compact floating report/filter/layer/legend controls. Pins and list cards share search, status, damage, severity, and rider-risk filters, with independent sort options. Overlapping pins are visually clustered without changing report identity. A selected pin has a compact preview that expands for details and linked evidence. Data refreshes every 30 seconds while visible.
+
+The shared sidebar can collapse and remember its state. Mobile navigation remains a drawer. Map resizing preserves the current view. Legacy root map links redirect to `/map?report=...`.
+
+### 4.3. Field Report Capture (`/report`)
+
+The capture page supports camera/file selection, sample evidence, GPS location, AI diagnosis, non-road rejection, and a link to the canonical map pin. A non-rejection error preserves the form rather than claiming the image failed the infrastructure check. The community composer additionally supports multiple images/video, a selectable cover, precise map placement, AI review before publishing, and persistent feed posts.
+
+See [ROAD_HAZARDS.md](./ROAD_HAZARDS.md) and [COMMUNITY_POSTING.md](./COMMUNITY_POSTING.md) for the implemented contracts and verification instructions.
 
 ---
 
