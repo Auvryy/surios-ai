@@ -18,15 +18,22 @@
 	let { data }: PageProps = $props();
 	const name = $derived(data.user?.name || 'Guest');
 	let composer = $state(false);
-	let search = $state('');
+	let search = $derived(data.filters.q);
 	let message = $state('');
 	let searchPending = $state(false);
-	$effect(() => { search = data.filters.q; });
+	const searching = $derived(Boolean(data.filters.q || data.filters.author));
 	const people = $derived([...new Map(data.posts.map((post) => [post.author.id, post.author])).values()]);
 	function openComposer() { composer = true; }
 	async function filter(key: string, value: string) {
 		const url = new URL(page.url.href); url.searchParams.delete('page');
 		if (value) url.searchParams.set(key, value); else url.searchParams.delete(key);
+		searchPending = true;
+		try { await goto(url, { reset: false }); }
+		finally { searchPending = false; }
+	}
+	async function clearSearch() {
+		const url = new URL(page.url.href);
+		for (const key of ['q', 'author', 'page']) url.searchParams.delete(key);
 		searchPending = true;
 		try { await goto(url, { reset: false }); }
 		finally { searchPending = false; }
@@ -46,19 +53,23 @@
 	<div class="feed-layout mx-auto grid max-w-[1040px] items-start gap-5 px-2 py-2 sm:px-5 sm:py-4">
 		<section class="min-w-0 space-y-3" aria-label="Community feed">
 			<h1 class="sr-only">Community feed</h1>
-			<form class="flex items-center gap-2" role="search" onsubmit={(event) => { event.preventDefault(); void filter('q', search.trim()); }}>
-				<div class="relative min-w-0 flex-1"><SearchIcon aria-hidden="true" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input aria-label="Search community" type="search" placeholder="Search people, roads, and posts" bind:value={search} maxlength={100} class="h-11 rounded-full bg-card pl-10 pr-12 shadow-none" /><button type="submit" class="absolute right-1 top-1 flex size-9 items-center justify-center rounded-full text-primary hover:bg-primary/10" aria-label="Search posts" disabled={searchPending}><SearchIcon class="size-4" /></button></div>
+			<form action="/community" method="GET" class="flex items-center gap-2" role="search" onsubmit={(event) => { event.preventDefault(); void filter('q', String(new FormData(event.currentTarget).get('q') || '').trim()); }}>
+				{#each ['tab', 'media', 'author', 'sort'] as key}<input type="hidden" name={key} value={page.url.searchParams.get(key) || ''} />{/each}
+				<div class="relative min-w-0 flex-1"><SearchIcon aria-hidden="true" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input name="q" aria-label="Search community" type="search" placeholder="Search people, roads, and posts" bind:value={search} maxlength={100} class="h-11 rounded-full bg-card pl-10 pr-12 shadow-none" /><button type="submit" class="absolute right-1 top-1 flex size-9 items-center justify-center rounded-full text-primary hover:bg-primary/10" aria-label="Search posts" disabled={searchPending}><SearchIcon aria-hidden="true" class="size-4" /></button></div>
 				<a href={data.user ? '/profile' : '/login?redirectTo=/community'} aria-label="Your profile" class="avatar size-11 bg-primary/10 text-primary"><Avatar {name} src={data.user?.avatarUrl} class="size-11" /></a>
 			</form>
-			<div class="rounded-xl border border-border bg-card px-3 pt-2">
+			{#if !searching}<div class="rounded-xl border border-border bg-card px-3 pt-2">
 				<div class="flex items-center gap-2.5"><Avatar {name} src={data.user?.avatarUrl} /><button onclick={openComposer} class="flex min-h-11 flex-1 items-center rounded-full bg-muted px-4 text-left text-sm text-muted-foreground hover:bg-secondary">What’s happening on your road?</button></div>
 				<div class="mt-2 grid grid-cols-3 border-t border-border"><button onclick={openComposer} class="feed-action"><ImageIcon class="size-4 text-primary" />Photos</button><button onclick={openComposer} class="feed-action"><VideoIcon class="size-4 text-primary" />Video</button><button onclick={openComposer} class="feed-action"><MapPinIcon class="size-4 text-primary" />Location</button></div>
-			</div>
+			</div>{/if}
 			<div class="flex flex-wrap items-center justify-between gap-1">
-				<div class="flex gap-1" aria-label="Feed filters">{#each [{ id: '', label: 'Latest' }, { id: 'critical', label: 'Critical' }, { id: 'confirmed', label: 'Confirmed' }] as tab}<button type="button" aria-pressed={data.filters.tab === tab.id} class="min-h-11 rounded-full px-3 text-sm font-medium {data.filters.tab === tab.id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}" onclick={() => filter('tab', tab.id)}>{tab.label}</button>{/each}</div>
-				<select aria-label="Media type" value={data.filters.media} onchange={(event) => filter('media', event.currentTarget.value)} class="min-h-11 max-w-24 rounded-lg bg-transparent px-1 text-xs text-muted-foreground"><option value="">All media</option><option value="photo">Photos</option><option value="video">Videos</option></select>
+				<div class="flex gap-1" aria-label="Feed filters">{#each [{ id: '', label: 'All updates' }, { id: 'critical', label: 'Critical' }, { id: 'confirmed', label: 'Confirmed' }] as tab}<button type="button" disabled={searchPending} aria-pressed={data.filters.tab === tab.id} class="min-h-11 rounded-full px-3 text-sm font-medium {data.filters.tab === tab.id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary'}" onclick={() => filter('tab', tab.id)}>{tab.label}</button>{/each}</div>
+				<div class="flex flex-wrap items-center gap-2">
+					<label class="flex items-center gap-1 text-xs text-muted-foreground">Sort<select aria-label="Sort posts" disabled={searchPending} value={data.filters.sort || 'newest'} onchange={(event) => filter('sort', event.currentTarget.value)} class="min-h-11 max-w-40 rounded-lg bg-card px-2 text-sm text-foreground">{#if data.filters.q}<option value="relevance">Most relevant</option>{/if}<option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="severity">Highest severity</option><option value="confirmations">Most confirmed</option></select></label>
+					<select aria-label="Media type" disabled={searchPending} value={data.filters.media} onchange={(event) => filter('media', event.currentTarget.value)} class="min-h-11 max-w-24 rounded-lg bg-transparent px-1 text-xs text-muted-foreground"><option value="">All media</option><option value="photo">Photos</option><option value="video">Videos</option></select>
+				</div>
 			</div>
-			{#if data.filters.q || data.filters.author}<div class="flex items-center justify-between gap-2 text-xs text-muted-foreground"><span>{data.total} results{data.filters.q ? ` for “${data.filters.q}”` : ' by this contributor'}</span><Button variant="ghost" size="sm" onclick={() => goto('/community')}>Clear search<XIcon class="size-3.5" /></Button></div>{/if}
+			{#if searching}<div class="flex items-center justify-between gap-2 text-xs text-muted-foreground"><span role="status" class="min-w-0 [overflow-wrap:anywhere]">{searchPending ? 'Searching…' : `${data.total} ${data.total === 1 ? 'result' : 'results'}${data.filters.q ? ` for “${data.filters.q}”` : ' by this contributor'}`}</span><Button variant="ghost" size="sm" class="shrink-0" disabled={searchPending} onclick={clearSearch}>Clear search<XIcon class="size-3.5" /></Button></div>{/if}
 			{#if message}<div role="status" class="flex items-start justify-between gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2 text-sm"><span>{message}</span><button class="flex size-8 shrink-0 items-center justify-center" aria-label="Dismiss notification" onclick={() => message = ''}><XIcon class="size-4" /></button></div>{/if}
 			<div aria-live="polite" class="sr-only">{searchPending ? 'Searching posts' : `${data.total} posts found`}</div>
 			{#each data.posts as post (post.id)}

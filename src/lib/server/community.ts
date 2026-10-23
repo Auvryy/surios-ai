@@ -1,6 +1,7 @@
 import { queuePostEmail } from './email';
 import { z } from 'zod';
-import { and, desc, eq, inArray, sql, ilike, or } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { communitySearch, communitySorts, normalizeSearch, type CommunitySort } from './community-search';
 import { error, type RequestEvent } from '@sveltejs/kit';
 import { db, communityPosts, communityComments, communityConfirmations, users, reports, reportObservations } from './db';
 import { lockReports, refreshReportSupport } from './hazard-reporting';
@@ -12,11 +13,14 @@ export function requireCommunityUser(event: RequestEvent) {
 	return event.locals.user;
 }
 
-export interface CommunityFilters { q: string; tab: string; media: string; author: string; currentPage: number }
+export interface CommunityFilters { q: string; tab: string; media: string; author: string; currentPage: number; sort?: CommunitySort }
 export function communityFilters(url: URL): CommunityFilters {
 	const params = url.searchParams;
+	const q = normalizeSearch(params.get('q') || '');
+	const requestedSort = communitySorts.find((sort) => sort === params.get('sort'));
 	return {
-		q: (params.get('q') || '').trim().slice(0, 100),
+		q,
+		sort: requestedSort === 'relevance' && !q ? 'newest' : requestedSort || (q ? 'relevance' : 'newest'),
 		tab: ['critical', 'confirmed'].includes(params.get('tab') || '') ? params.get('tab')! : '',
 		media: ['photo', 'video'].includes(params.get('media') || '') ? params.get('media')! : '',
 		author: z.uuid().safeParse(params.get('author')).success ? params.get('author')! : '',
@@ -25,19 +29,23 @@ export function communityFilters(url: URL): CommunityFilters {
 }
 export async function loadCommunityPosts(userId?: string, filters: CommunityFilters = { q: '', tab: '', media: '', author: '', currentPage: 1 }) {
 	const clauses = [];
+	const search = filters.q ? communitySearch(filters.q) : null;
 	if (filters.author) clauses.push(eq(communityPosts.userId, filters.author));
-	if (filters.q) {
-		const pattern = `%${filters.q.replace(/[\\%_]/g, '\\$&')}%`;
-		clauses.push(or(ilike(communityPosts.title, pattern), ilike(communityPosts.body, pattern), ilike(communityPosts.locationName, pattern), ilike(users.name, pattern), sql`${communityPosts.analysis}->>'distressType' ilike ${pattern}`, sql`${communityPosts.id}::text ilike ${pattern}`, sql`${communityPosts.reportId}::text ilike ${pattern}`)!);
-	}
+	if (search) clauses.push(search.where);
 	if (filters.media) clauses.push(sql`exists (select 1 from jsonb_array_elements(${communityPosts.media}) as attachment where attachment->>'kind' = ${filters.media})`);
 	if (filters.tab === 'critical') clauses.push(sql`(${communityPosts.analysis}->>'hazardSeverity')::int >= 8`);
 	if (filters.tab === 'confirmed') clauses.push(userId ? sql`exists (select 1 from ${communityConfirmations} where ${communityConfirmations.postId} = ${communityPosts.id} and ${communityConfirmations.userId} = ${userId})` : sql`false`);
 	const where = and(...clauses);
 	const limit = filters.currentPage * 20;
+	const sort = filters.sort || (search ? 'relevance' : 'newest');
+	const confirmationCount = sql<number>`(select count(*) from ${communityConfirmations} where ${communityConfirmations.postId} = ${communityPosts.id})`;
+	const order = sort === 'oldest' ? [asc(communityPosts.createdAt), asc(communityPosts.id)]
+		: [...(sort === 'relevance' && search ? [desc(search.rank)]
+			: sort === 'severity' ? [desc(sql`(${communityPosts.analysis}->>'hazardSeverity')::int`)]
+			: sort === 'confirmations' ? [desc(confirmationCount)] : []), desc(communityPosts.createdAt), desc(communityPosts.id)];
 	const [rows, [count]] = await Promise.all([
 		db.select({ post: communityPosts, grouping: reportObservations.match, author: { id: users.id, name: users.name, avatarUrl: users.avatarUrl, role: users.role } }).from(communityPosts)
-			.innerJoin(users, eq(users.id, communityPosts.userId)).leftJoin(reportObservations, eq(reportObservations.sourceId, communityPosts.draftId)).where(where).orderBy(desc(communityPosts.createdAt), desc(communityPosts.id)).limit(limit),
+			.innerJoin(users, eq(users.id, communityPosts.userId)).leftJoin(reportObservations, eq(reportObservations.sourceId, communityPosts.draftId)).where(where).orderBy(...order).limit(limit),
 		db.select({ total: sql<number>`count(*)::int` }).from(communityPosts).innerJoin(users, eq(users.id, communityPosts.userId)).where(where)
 	]);
 	const result = { posts: [] as CommunityPost[], total: count.total, hasMore: count.total > limit && filters.currentPage < 50, currentPage: filters.currentPage, filters };
