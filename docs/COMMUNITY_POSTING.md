@@ -146,3 +146,12 @@ AI assessment uses `gemini-3.5-flash-lite` with MINIMAL thinking, a 1,536-token 
 Severity reflects visible damage, without automatic score floors from exposure labels. Routine/minor defects can rate 1–4; substantial defects can rate 5–7. New assessments scoring 8–10 must include concrete visible critical-danger evidence and high confidence, or validation fails. Confidence and limitations are visible in assessment details. No score distribution is imposed and historical assessments are retained.
 
 Validation: `npm run check`, `npm run build`, and `npm run test:community`. Road tests cover formats and exact size boundaries, server geometry validation, overlapping matching/evidence severity, direct file choosers, mobile endpoints, persisted map lines, social-like isolation and removal of account switching. Quote tests verify scroll preservation and own-reaction filtering.
+
+
+## Context and assessment drafts
+
+The assessment receives the headline and caption as separate, unverified context. It considers the asset the reporter names and reported public use, including community-serving buildings and public access paths. Unknown ownership is not a rejection reason. Photos or video must still show an identifiable relevant asset: writing “public” cannot validate unrelated media or establish severity. Visible defects and unverified reported conditions remain separate.
+
+Editing a headline/caption or adding/removing attachments invalidates the previous assessment and discards its server copy. Reassess the current evidence before publishing. Removing every attachment disables assessment and publication. **Cancel assessment** aborts the current request; late responses cannot restore old results. **Discard draft** clears text, media and location. Closing the composer temporarily keeps the form while it remains mounted; leaving the page discards unpublished assessments. Drafts are not a cross-device saved-post feature.
+
+The server checks draft ownership, expiry, discard status and assessed text again during publication. Discarding deletes unpublished uploaded copies; published evidence is preserved. Discarded rows retain their original 24-hour expiry and still count against the 12-successful-assessments-per-hour limit. Network-interrupted cleanup retries through expiry cleanup on a later assessment. Migration `0013_assessment-context.sql` adds nullable context and discard timestamps without changing existing posts or legacy drafts. Use the normal migration runner (`./surios.sh build` on Azure); do not reset or reseed existing data.

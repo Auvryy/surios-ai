@@ -1,3 +1,4 @@
+import type { ReporterContext } from '$lib/types/assessment';
 import type { RoadSegment } from '$lib/types/roads';
 import type { MatchDecision } from '$lib/types/hazards';
 import type { GovernmentProfile, PostMedia } from '$lib/types/community';
@@ -111,6 +112,8 @@ export const workOrderEvents = pgTable('work_order_events', {
 
 
 export const communityDrafts = pgTable('community_drafts', {
+	reporterContext: jsonb('reporter_context').$type<ReporterContext>(),
+	discardedAt: timestamp('discarded_at', { withTimezone: true }),
 	id: uuid('id').defaultRandom().primaryKey(),
 	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
 	media: jsonb('media').$type<PostMedia[]>().notNull(),

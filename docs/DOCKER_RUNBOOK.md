@@ -183,3 +183,8 @@ Start the preview from the checkout containing the latest merged source. Run `np
 Uploads are ignored by Git: merging branches does not copy uploaded files or create an administrator in another database. On a database already containing the complete presentation snapshot, `npm run db:seed:presentation` restores missing bundled media without replacing saved posts or interactions. On an empty database, migrate first. For other existing report data, retain its media directory rather than replacing it with the demo.
 
 The four presentation accounts do not include an admin. Create the local admin explicitly with `node --env-file-if-exists=.env scripts/create-admin.mjs`, supplying `ADMIN_EMAIL` and `ADMIN_PASSWORD` through the process environment. Azure uses `./surios.sh admin`. Each database has its own accounts; an admin created in a disposable preview database will not exist in another database.
+
+
+### Assessment context and draft cleanup
+
+Migration `0013_assessment-context.sql` adds nullable reporter context and discard timestamps to assessment drafts. On an existing Azure installation, run `./surios.sh build` to apply it before the updated web container starts. Keep existing database/upload volumes; this change needs no new environment variables, account reset, or reseed.
