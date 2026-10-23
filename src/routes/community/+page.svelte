@@ -19,6 +19,10 @@
 	let { data }: PageProps = $props();
 	const name = $derived(data.user?.name || 'Guest');
 	let composer = $state(false);
+	$effect(() => {
+		if (page.url.searchParams.get('compose') !== '1') return;
+		composer = true;
+	});
 	let composerRef: PostComposer;
 	let photoInput: HTMLInputElement;
 	let videoInput: HTMLInputElement;

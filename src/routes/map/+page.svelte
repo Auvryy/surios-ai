@@ -12,6 +12,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
+	import CameraIcon from '@lucide/svelte/icons/camera';
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import LayersIcon from '@lucide/svelte/icons/layers';
 	import ListIcon from '@lucide/svelte/icons/list';
@@ -217,7 +218,7 @@
 	{/if}
 	{#if !data.hazards.length}<div class="map-panel absolute left-1/2 top-1/2 z-10 w-64 -translate-x-1/2 -translate-y-1/2 p-5 text-center"><MapPinIcon class="mx-auto size-6 text-primary" /><h2 class="mt-2 text-sm font-semibold">No hazards reported yet</h2><p class="mt-2 text-xs leading-5 text-muted-foreground">Published road updates appear here at their pinned locations.</p><Button href="/community" size="sm" class="mt-3">Open the feed</Button></div>{/if}
 	{#if errorMessage}<p role="alert" class="map-panel absolute bottom-16 left-3 z-30 max-w-[calc(100%-5rem)] px-3 py-2 text-xs">{errorMessage}</p>{/if}
-	<button class="map-chip absolute bottom-5 left-3 z-10 gap-1.5" aria-expanded={panel === 'legend'} onclick={() => openPanel('legend')}><InfoIcon class="size-3.5" />Legend<ChevronDownIcon class="size-3" /></button>
+	<div class="absolute bottom-5 left-3 z-10 flex items-center gap-2"><button class="map-chip gap-1.5" aria-expanded={panel === 'legend'} onclick={() => openPanel('legend')}><InfoIcon class="size-3.5" />Legend<ChevronDownIcon class="size-3" /></button><a href="/community?compose=1" aria-label="Create a road post" title="Create a road post" class="inline-flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"><CameraIcon aria-hidden="true" class="size-5" /></a></div>
 </div>
 <style>
 	.map-chip { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 0 12px; border: 1px solid var(--border); border-radius: 9999px; background: var(--card); font-size: 12px; box-shadow: 0 1px 4px #0001; }
