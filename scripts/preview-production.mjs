@@ -1,4 +1,9 @@
 import http from 'node:http';
+import { fileURLToPath } from 'node:url';
+
+// Media paths and build assets must resolve from this checkout, not the caller.
+const checkout = fileURLToPath(new URL('../', import.meta.url));
+process.chdir(checkout);
 
 // Local HTTP preview of the production build. Deployment remains HTTPS by default.
 process.env.NODE_ENV = 'production';
@@ -15,5 +20,9 @@ const server = http.createServer((request, response) => {
 	request.headers[protocolHeader] = 'http';
 	handler(request, response);
 });
-server.listen(port, 'localhost', () => console.log(`Production preview: http://localhost:${port}`));
+server.listen(port, 'localhost', () => {
+	console.log(`Production preview: http://localhost:${port}`);
+	console.log(`Checkout: ${checkout}`);
+	console.log(`Database: ${new URL(process.env.DATABASE_URL || 'postgres://localhost/surios').pathname.slice(1)}`);
+});
 for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => server.close(() => process.exit(0)));

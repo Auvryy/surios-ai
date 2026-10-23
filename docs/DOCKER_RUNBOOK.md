@@ -174,3 +174,12 @@ npm run preview:production
 This launcher serves the actual production build on `http://localhost:5173`, with production authentication and the 52 MiB body limit. It binds only to localhost and supplies the HTTP protocol internally, so ordinary sign-in forms pass CSRF validation without weakening checks. Set `PORT` to use another local port.
 
 The installed adapter-node 6 / SvelteKit 3 derives the origin from forwarded protocol/host headers or build-time `kit.paths.origin`; the old runtime `ORIGIN` setting is not used. For deployment, keep HTTPS and configure the trusted reverse proxy headers or a fixed build origin. `APP_ORIGIN` configures email links separately. Use the regular container entrypoint for deployment, not the loopback preview launcher.
+
+
+### Testing the merged checkout locally
+
+Start the preview from the checkout containing the latest merged source. Run `npm run build` after pulling or merging changes, then `npm run preview:production`. The launcher prints the checkout path and database name so previews from older worktrees or different databases are distinguishable. It anchors media paths to its own checkout. Stop an older preview occupying the intended port before starting its replacement.
+
+Uploads are ignored by Git: merging branches does not copy uploaded files or create an administrator in another database. On a database already containing the complete presentation snapshot, `npm run db:seed:presentation` restores missing bundled media without replacing saved posts or interactions. On an empty database, migrate first. For other existing report data, retain its media directory rather than replacing it with the demo.
+
+The four presentation accounts do not include an admin. Create the local admin explicitly with `node --env-file-if-exists=.env scripts/create-admin.mjs`, supplying `ADMIN_EMAIL` and `ADMIN_PASSWORD` through the process environment. Azure uses `./surios.sh admin`. Each database has its own accounts; an admin created in a disposable preview database will not exist in another database.
