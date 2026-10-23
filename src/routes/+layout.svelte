@@ -43,7 +43,7 @@
 	function isActive(href: string) {
 		const confirmed = page.url.pathname === '/community' && page.url.searchParams.get('tab') === 'confirmed';
 		if (href === '/liked') return page.url.pathname === '/liked' || confirmed;
-		if (href === '/community') return page.url.pathname === '/community' && !confirmed;
+		if (href === '/community') return page.url.pathname.startsWith('/community/post/') || page.url.pathname === '/community' && !confirmed;
 		return page.url.pathname === href || href === '/profile' && page.url.pathname.startsWith('/profile/');
 	}
 	function toggleSidebar() {
