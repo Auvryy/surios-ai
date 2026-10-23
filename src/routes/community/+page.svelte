@@ -545,14 +545,14 @@
 					</div>
 
 					{#if post.mainImage || post.videoUrl || post.mediaKind === 'map'}
-					<div class="relative border-y border-border bg-muted">
+					<div class="post-media-frame relative border-y border-border bg-muted">
 						{#if mapViews[post.id]}
 
 							<iframe title="Map of {post.location}" src={mapUrl(post)} loading="lazy" class="post-media w-full border-0"></iframe>
 						{:else if post.videoUrl}
 							<video controls playsinline preload="metadata" class="post-media w-full bg-black object-contain" aria-label="Video: {post.title}"><source src={post.videoUrl} /><track kind="captions" />Your browser does not support this video.</video>
 						{:else}
-							<button class="block w-full cursor-zoom-in" onclick={() => showImages(post)} aria-label="Open photos of {post.title}"><img onerror={imageFallback} src={post.mainImage} alt={post.title} class="post-media w-full object-cover" loading="lazy" /></button>
+							<button class="block h-full w-full cursor-zoom-in" onclick={() => showImages(post)} aria-label="Open photos of {post.title}"><img onerror={imageFallback} src={post.mainImage} alt={post.title} class="post-media w-full object-cover" loading="lazy" /></button>
 						{/if}
 						<!-- Keep the main photo and its inset vertical media/map dock. -->
 						{#if post.secondaryImages.length || post.hasLocation !== false}
@@ -646,8 +646,11 @@
 	.avatar { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 9999px; background: var(--secondary); font-size: .75rem; font-weight: 600; }
 	.composer-action, .post-action { display: flex; min-height: 44px; align-items: center; justify-content: center; gap: 6px; border-radius: 8px; font-size: .8125rem; font-weight: 500; cursor: pointer; transition: background-color .15s; }
 	.composer-action:hover, .post-action:hover { background: var(--secondary); }
-	.post-media { height: clamp(180px, 28svh, 280px); }
+	/* A shared frame keeps photos, videos, and maps stable when switching media.
+	   Cover the frame with the main photo for consistent edge-to-edge media. */
+	.post-media-frame { aspect-ratio: 4 / 3; }
+	.post-media { display: block; width: 100%; height: 100%; }
 	@media (min-width: 1280px) { .feed-layout { grid-template-columns: minmax(0, 680px) 240px; } }
-	@media (max-width: 400px) { .post-media { height: clamp(176px, 24svh, 220px); } .post-action { gap: 4px; font-size: .75rem; } }
+	@media (max-width: 400px) { .post-action { gap: 4px; font-size: .75rem; } }
 	@media (prefers-reduced-motion: reduce) { .composer-action, .post-action { transition: none; } }
 </style>
