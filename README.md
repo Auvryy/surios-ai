@@ -27,6 +27,7 @@
 | **[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)** | End-to-end system topology, cryptographic session flow, and PostgreSQL ER diagram. |
 | **[`docs/DESIGN_SYSTEM.md`](./docs/DESIGN_SYSTEM.md)** | Zero AI-Slop Charter, OKLCH semantic tokens, and `shadcn-svelte` component architecture. |
 | **[`docs/SYSTEM_GOALS.md`](./docs/SYSTEM_GOALS.md)** | UN SDG 9/11/16 alignment, 1:6 preventative maintenance ROI curve, and Pitch Q&A Defense Matrix. |
+| **[`docs/COMMUNITY_POSTING.md`](./docs/COMMUNITY_POSTING.md)** | Saved community posts, AI assessment, media covers, search, migrations, and browser verification. |
 | **[`docs/TECH_STACK.md`](./docs/TECH_STACK.md)** | Technology stack matrix and architectural justifications. |
 | **[`docs/DOCKER_RUNBOOK.md`](./docs/DOCKER_RUNBOOK.md)** | Local development (`port 5433`) and Ubuntu Azure VM production (`docker-compose.prod.yml`) commands. |
 
