@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { check, index, jsonb, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { type AnyPgColumn, check, index, jsonb, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { communityComments, communityPosts, users } from './schema';
 import type { GovernmentUpdate, PostMedia } from '$lib/types/community';
 
@@ -8,6 +8,7 @@ export const communityReposts = pgTable('community_reposts', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
 	postId: uuid('post_id').notNull().references(() => communityPosts.id, { onDelete: 'cascade' }),
+	quotedRepostId: uuid('quoted_repost_id').references((): AnyPgColumn => communityReposts.id, { onDelete: 'set null' }),
 	governmentUpdate: jsonb('government_update').$type<GovernmentUpdate>(),
 	body: text('body').notNull().default(''),
 	media: jsonb('media').$type<PostMedia[]>().notNull().default([]),
@@ -24,3 +25,34 @@ export const communityCommentLikes = pgTable('community_comment_likes', {
 	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
 	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 }, (table) => [primaryKey({ columns: [table.commentId, table.userId] })]);
+
+
+export const quoteLikes = pgTable('community_quote_likes', {
+	repostId: uuid('repost_id').notNull().references(() => communityReposts.id, { onDelete: 'cascade' }),
+	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => [primaryKey({ columns: [table.repostId, table.userId] })]);
+
+export const quoteComments = pgTable('community_quote_comments', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	repostId: uuid('repost_id').notNull().references(() => communityReposts.id, { onDelete: 'cascade' }),
+	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	parentId: uuid('parent_id').references((): AnyPgColumn => quoteComments.id, { onDelete: 'cascade' }),
+	body: text('body').notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => [index('community_quote_comments_repost_idx').on(table.repostId)]);
+
+export const quoteCommentLikes = pgTable('community_quote_comment_likes', {
+	commentId: uuid('comment_id').notNull().references(() => quoteComments.id, { onDelete: 'cascade' }),
+	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => [primaryKey({ columns: [table.commentId, table.userId] })]);
+
+export const governmentMedia = pgTable('government_media', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	media: jsonb('media').$type<import('$lib/types/community').GovernmentAttachment>().notNull(),
+	claimedBy: uuid('claimed_by').references(() => communityReposts.id, { onDelete: 'cascade' }),
+	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => [index('government_media_expiry_idx').on(table.expiresAt)]);

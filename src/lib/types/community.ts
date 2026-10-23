@@ -50,6 +50,12 @@ export interface CommunityRepost {
 	author: CommunityPost['author'];
 	post: CommunityPost;
 	governmentUpdate?: GovernmentUpdate | null;
+	quotedRepostId?: string | null;
+	quotedRepost?: CommunityRepost | null;
+	likes: number;
+	userLiked: boolean;
+	reposts: number;
+	comments: CommunityComment[];
 }
 
 export type CommunityFeedItem = { kind: 'post'; id: string; post: CommunityPost } | { kind: 'repost'; id: string; repost: CommunityRepost };

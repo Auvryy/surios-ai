@@ -1,3 +1,4 @@
+import { hydrateQuotes } from './quote-social';
 import { queuePostEmail } from './email';
 import { z } from 'zod';
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
@@ -79,7 +80,7 @@ export async function loadCommunityPost(id: string, userId?: string) {
 	const reposts = await db.select({ repost: communityReposts, author: authorFields }).from(communityReposts).innerJoin(users, eq(users.id, communityReposts.userId)).where(sql`(${communityReposts.postId} = ${id} or (${inArray(communityReposts.postId, siblings.map((sibling) => sibling.id))} and ${communityReposts.governmentUpdate} is not null))`).orderBy(desc(communityReposts.createdAt), desc(communityReposts.id));
 	const originalRows = await db.select({ post: communityPosts, grouping: reportObservations.match, author: authorFields }).from(communityPosts).innerJoin(users, eq(users.id, communityPosts.userId)).leftJoin(reportObservations, eq(reportObservations.sourceId, communityPosts.draftId)).where(inArray(communityPosts.id, siblings.map((sibling) => sibling.id)));
 	const originals = await hydratePosts(originalRows, userId);
-	return { post, reposts: reposts.map(({ repost, author }): CommunityRepost => ({ ...repost, createdAt: repost.createdAt.toISOString(), author, post: originals.find((original) => original.id === repost.postId)! })) };
+	return { post, reposts: await hydrateQuotes(reposts.map(({ repost, author }): CommunityRepost => ({ ...repost, createdAt: repost.createdAt.toISOString(), author, post: originals.find((original) => original.id === repost.postId)!, likes: 0, userLiked: false, reposts: 0, comments: [] })), userId) };
 }
 
 export async function loadCommunityPosts(userId?: string, filters: CommunityFilters = { q: '', tab: '', media: '', author: '', currentPage: 1 }) {
@@ -113,7 +114,7 @@ export async function loadCommunityPosts(userId?: string, filters: CommunityFilt
 	const hydrated = await hydratePosts([...repostRows.map((row) => ({ post: row.post, author: row.author, grouping: null })), ...rows], userId);
 	const byId = new Map(hydrated.map((post) => [post.id, post]));
 	const posts = rows.map((row) => byId.get(row.post.id)!);
-	const reposts = repostRows.map((row): CommunityRepost => ({ ...row.repost, author: row.reposter, createdAt: row.repost.createdAt.toISOString(), post: byId.get(row.post.id)! }));
+	const reposts = await hydrateQuotes(repostRows.map((row): CommunityRepost => ({ ...row.repost, author: row.reposter, createdAt: row.repost.createdAt.toISOString(), post: byId.get(row.post.id)!, likes: 0, userLiked: false, reposts: 0, comments: [] })), userId);
 	const ranked = [
 		...posts.map((post, index) => ({ item: { kind: 'post', id: post.id, post } as CommunityFeedItem, post, date: post.createdAt, rank: Number(rows[index].rank) })),
 		...reposts.map((repost, index) => ({ item: { kind: 'repost', id: repost.id, repost } as CommunityFeedItem, post: repost.post, date: repost.createdAt, rank: Number(repostRows[index].rank) }))

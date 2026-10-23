@@ -64,6 +64,13 @@
       "when": 1792752781507,
       "tag": "0008_government-updates",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792754906986,
+      "tag": "0009_quote-interactions",
+      "breakpoints": true
     }
   ]
 }
