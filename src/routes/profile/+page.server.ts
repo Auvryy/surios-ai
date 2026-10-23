@@ -1,9 +1,10 @@
+import { changePasswordAction } from '$lib/server/password-security';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types.js';
 import { eq } from 'drizzle-orm';
 import { db, users } from '$lib/server/db';
 import { loadProfile } from '$lib/server/profiles';
-import { hashPassword, verifyPassword, generateSessionToken, createSession, setSessionTokenCookie } from '$lib/server/auth';
+import { generateSessionToken, createSession, setSessionTokenCookie } from '$lib/server/auth';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) redirect(303, '/login?redirectTo=/profile');
@@ -68,56 +69,7 @@ export const actions: Actions = {
 		}
 	},
 
-	changePassword: async ({ request, locals }) => {
-		if (!locals.user) {
-			throw redirect(303, '/login');
-		}
-
-		const formData = await request.formData();
-		const currentPassword = formData.get('currentPassword') as string;
-		const newPassword = formData.get('newPassword') as string;
-		const confirmPassword = formData.get('confirmPassword') as string;
-
-		if (!currentPassword || !newPassword) {
-			return fail(400, { error: 'Both current and new passwords are required.' });
-		}
-
-		if (newPassword.length < 8) {
-			return fail(400, { error: 'New password must be at least 8 characters.' });
-		}
-
-		if (confirmPassword && newPassword !== confirmPassword) {
-			return fail(400, { error: 'New password and confirmation do not match.' });
-		}
-
-		try {
-			// Fetch current user with password hash
-			const [user] = await db
-				.select()
-				.from(users)
-				.where(eq(users.id, locals.user.id))
-				.limit(1);
-
-			if (!user || !verifyPassword(currentPassword, user.passwordHash)) {
-				return fail(400, { error: 'Current password does not match.' });
-			}
-
-			const newPasswordHash = hashPassword(newPassword);
-
-			await db
-				.update(users)
-				.set({
-					passwordHash: newPasswordHash,
-					updatedAt: new Date()
-				})
-				.where(eq(users.id, locals.user.id));
-
-			return { success: 'Password changed and re-encrypted successfully.' };
-		} catch (error) {
-			console.error('[Change Password Error]', error);
-			return fail(500, { error: 'Failed to change password. Please try again.' });
-		}
-	},
+	changePassword: changePasswordAction,
 
 	switchPersona: async (event) => {
 		const formData = await event.request.formData();
