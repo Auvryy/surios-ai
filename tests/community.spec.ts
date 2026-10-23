@@ -90,7 +90,7 @@ test('report composer saves selected cover, media, map pin, confirmations, comme
 	await expect(page.getByRole('dialog')).toBeHidden();
 	const article = page.locator('article').filter({ hasText: `E2E road update ${draft.draftId}` });
 	await expect(article).toBeVisible();
-	await expect(article.locator('.media-frame > button img')).toHaveAttribute('src', draft.media[1].url);
+	await expect(article.locator('.media-frame > a img')).toHaveAttribute('src', draft.media[1].url);
 	await page.reload(); await page.waitForLoadState('networkidle'); await expect(article).toBeVisible();
 	for (const viewport of [{ width: 1440, height: 900 }, { width: 768, height: 1024 }, { width: 375, height: 812 }, { width: 320, height: 740 }]) {
 		await page.setViewportSize(viewport);
