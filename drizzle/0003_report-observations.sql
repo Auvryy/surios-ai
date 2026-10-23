@@ -20,3 +20,12 @@ UPDATE reports SET triage_payload = COALESCE(triage_payload, '{}'::jsonb) || jso
 --> statement-breakpoint
 INSERT INTO report_observations (report_id, source_id, user_id, observer_key, analysis, media, fingerprints, match, created_at)
 SELECT report_id, draft_id, user_id, 'user:' || user_id::text, analysis, media, '[]'::jsonb, '{"method":"legacy","confidence":1,"reason":"Existing published observation; preserved during upgrade."}'::jsonb, created_at FROM community_posts;
+
+--> statement-breakpoint
+UPDATE reports r SET community_confirmations = GREATEST(1, COALESCE((r.triage_payload->>'supportBaseline')::int, 0) + (
+ SELECT count(DISTINCT supporter)::int FROM (
+  SELECT observer_key AS supporter FROM report_observations WHERE report_id = r.id
+  UNION ALL
+  SELECT 'user:' || c.user_id::text FROM community_confirmations c JOIN community_posts p ON p.id = c.post_id WHERE p.report_id = r.id
+ ) contributors
+));

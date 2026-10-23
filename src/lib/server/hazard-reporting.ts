@@ -91,6 +91,19 @@ async function decideMatch(input: EvidenceInput, candidates: Awaited<ReturnType<
 	return { reportId: null, method: 'unverified', confidence: 0, reason: 'Visual similarity was unavailable or uncertain; saved separately.' } as const;
 }
 export async function recordHazardEvidence(input: EvidenceInput, compare: typeof compareRoadEvidence = compareRoadEvidence) {
+	// Reject expired drafts and answer retries before any optional AI comparison.
+	const [existingObservation] = await db.select().from(reportObservations).where(eq(reportObservations.sourceId, input.sourceId));
+	if (existingObservation) {
+		if (input.post && existingObservation.userId !== input.userId) error(403, 'This assessment belongs to another account.');
+		const [report] = await db.select().from(reports).where(eq(reports.id, existingObservation.reportId));
+		const [post] = input.post ? await db.select({ id: communityPosts.id }).from(communityPosts).where(eq(communityPosts.draftId, input.post.draftId)) : [];
+		return { id: post?.id, reportId: report.id, grouped: ['exact', 'ai'].includes(existingObservation.match.method), match: existingObservation.match, severity: report.hazardSeverity, support: report.communityConfirmations, priority: hazardPriority(report.hazardSeverity, report.communityConfirmations) };
+	}
+	if (input.post) {
+		const [draft] = await db.select().from(communityDrafts).where(and(eq(communityDrafts.id, input.post.draftId), eq(communityDrafts.userId, input.userId!)));
+		if (!draft) error(404, 'Assessment not found.');
+		if (draft.expiresAt < new Date()) error(410, 'This assessment expired. Assess your attachments again.');
+	}
 	const analysis = normalizeSeverity(input.analysis);
 	const fingerprints = (await Promise.all(input.media.map(mediaBytes))).filter((item) => item !== null).map((item) => crypto.createHash('sha256').update(item.buffer).digest('hex'));
 	if (!fingerprints.length) error(410, 'Evidence files are unavailable. Attach and assess them again.');
