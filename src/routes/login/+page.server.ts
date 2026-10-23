@@ -59,7 +59,7 @@ export const actions: Actions = {
 			setSessionTokenCookie(event, sessionToken, session.expiresAt);
 
 			const isGov = user.role === 'ENGINEER' || user.role === 'OFFICER' || user.role === 'ADMIN';
-			destination = isGov ? '/dashboard' : '/community';
+			destination = '/community';
 			if (requestedRedirect && requestedRedirect.startsWith('/')) {
 				if (isGov || !requestedRedirect.startsWith('/dashboard')) {
 					destination = requestedRedirect;

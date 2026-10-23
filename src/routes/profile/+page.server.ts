@@ -244,7 +244,7 @@ export const actions: Actions = {
 
 		if (redirectTo) {
 			const isGov = targetRole === 'ENGINEER' || targetRole === 'OFFICER' || targetRole === 'ADMIN';
-			const destination = redirectTo === 'auto' ? (isGov ? '/dashboard' : '/community') : redirectTo;
+			const destination = redirectTo === 'auto' ? '/community' : redirectTo;
 			throw redirect(303, destination);
 		}
 	}

@@ -41,7 +41,7 @@ export const actions: Actions = {
 		}
 
 		const isGov = role === 'ENGINEER' || role === 'OFFICER';
-		let destination = isGov ? '/dashboard' : '/community';
+		let destination = '/community';
 		if (requestedRedirect && requestedRedirect.startsWith('/')) {
 			if (isGov || !requestedRedirect.startsWith('/dashboard')) {
 				destination = requestedRedirect;

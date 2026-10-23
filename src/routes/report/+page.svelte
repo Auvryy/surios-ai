@@ -161,7 +161,7 @@
 				reportId = data.data.reportId || 'TKT-DISPATCHED';
 				imageUrl = data.data.imageUrl || preview;
 				triageResult = data.data.analysis;
-			} else if (res.status === 422 || !data.success) {
+			} else if (res.status === 422) {
 				submitted = true;
 				isRejected = true;
 				submissionError =
@@ -341,12 +341,12 @@
 
 					<div class="flex items-center gap-2 shrink-0">
 						<Button
-							href="/?id={reportId}"
+							href="/map?report={reportId}"
 							size="sm"
 							class="h-9 px-3.5 text-xs font-medium gap-1.5"
 						>
 							<MapPinIcon class="h-3.5 w-3.5" />
-							<span>View Pin on Live Map Feed</span>
+							<span>View on road hazards</span>
 							<ArrowRightIcon class="h-3.5 w-3.5" />
 						</Button>
 					</div>
@@ -524,12 +524,12 @@
 				</Button>
 
 				<Button
-					href="/?id={reportId}"
+					href="/map?report={reportId}"
 					size="sm"
 					class="w-full sm:w-auto h-9 text-xs font-medium gap-1.5"
 				>
 					<MapPinIcon class="h-3.5 w-3.5" />
-					<span>View Pin on Live Map Feed</span>
+					<span>View on road hazards</span>
 					<ArrowRightIcon class="h-3.5 w-3.5" />
 				</Button>
 			</CardFooter>

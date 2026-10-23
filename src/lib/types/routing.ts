@@ -5,6 +5,7 @@ export interface RouteStep {
 }
 
 export interface DispatchRoute {
+	estimated?: boolean;
 	coordinates: [number, number][]; // [lat, lng] for Leaflet
 	distanceKm: number;
 	distanceFormatted: string;
