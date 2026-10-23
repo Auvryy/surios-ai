@@ -89,6 +89,12 @@ export async function validateSessionToken(token: string): Promise<SessionValida
 
 	const { session, user } = result[0];
 
+	// Deactivation takes effect on every request, including existing sessions.
+	if (user.accountStatus === 'INACTIVE') {
+		await db.delete(sessions).where(eq(sessions.userId, user.id));
+		return { session: null, user: null };
+	}
+
 	// Expired session check
 	if (Date.now() >= session.expiresAt.getTime()) {
 		await db.delete(sessions).where(eq(sessions.id, token));

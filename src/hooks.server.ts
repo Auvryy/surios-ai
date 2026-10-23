@@ -1,6 +1,6 @@
 import { startEmailWorker } from '$lib/server/email';
 import { dev } from '$app/env';
-import { redirect } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import { isGovernmentUser, isRetiredPage, workspaceRedirect } from '$lib/server/workspace';
 import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 import {
@@ -36,6 +36,15 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	const pathname = event.url.pathname;
+	const account = event.locals.user;
+	if (account && ['PENDING', 'REJECTED'].includes(account.accountStatus) && !['/account-status', '/logout'].includes(pathname)) {
+		if (pathname.startsWith('/api/')) error(403, 'Government account approval is required.');
+		redirect(303, '/account-status');
+	}
+	if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+		if (!account) redirect(303, '/login?redirectTo=/admin');
+		if (account.role !== 'ADMIN') error(403, 'Administrator access required.');
+	}
 	const role = event.locals.user?.role;
 	const isGovUser = isGovernmentUser(role);
 

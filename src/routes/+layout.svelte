@@ -23,7 +23,7 @@
 	let collapsed = $state(untrack(() => data.sidebarCollapsed));
 	$effect(() => { collapsed = data.sidebarCollapsed; });
 	const isLandingPage = $derived(page.url.pathname === '/');
-	const isAuthPage = $derived(['/login', '/register', '/forgot-password', '/reset-password'].includes(page.url.pathname));
+	const isAuthPage = $derived(['/login', '/register', '/forgot-password', '/reset-password', '/account-status'].includes(page.url.pathname));
 	const isMapPage = $derived(page.url.pathname === '/map');
 	const isGovUser = $derived(['ENGINEER', 'OFFICER', 'ADMIN'].includes(data.user?.role || ''));
 	const groups = $derived([
@@ -36,6 +36,7 @@
 		...(isGovUser ? [{ title: 'Government', items: [
 			{ name: 'Government updates', href: '/dashboard', icon: LayoutDashboardIcon }
 		] }] : []),
+		...(data.user?.role === 'ADMIN' ? [{ title: 'Administration', items: [{ name: 'Account approvals', href: '/admin', icon: UserIcon }] }] : []),
 		{ title: 'Account', items: [{ name: isGovUser ? 'Account' : 'Profile', href: '/profile', icon: UserIcon }, { name: 'Settings', href: '/settings', icon: SettingsIcon }] }
 	]);
 	function isActive(href: string) {

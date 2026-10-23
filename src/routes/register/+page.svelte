@@ -1,198 +1,36 @@
 <script lang="ts">
-	import type { ActionData, PageProps } from './$types.js';
+	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
-	import { dev } from '$app/env';
-	import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '$lib/components/ui/card/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { Alert, AlertDescription } from '$lib/components/ui/alert/index.js';
-	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
-	import UserPlusIcon from '@lucide/svelte/icons/user-plus';
-
-	let { data, form }: PageProps & { form: ActionData } = $props();
-
-	let name = $state('');
-	let email = $state('');
-	let password = $state('');
-	let role = $state<'CITIZEN' | 'OFFICER' | 'ENGINEER'>('CITIZEN');
-	let department = $state('');
-	let isSubmitting = $state(false);
-	const availableRoles = dev ? ['CITIZEN', 'OFFICER', 'ENGINEER'] as const : ['CITIZEN'] as const;
-
-	$effect(() => {
-		if (form) {
-			if (form.name) name = form.name;
-			if (form.email) email = form.email;
-			if (form.role === 'CITIZEN' || form.role === 'OFFICER' || form.role === 'ENGINEER') {
-				role = form.role;
-			}
-			if (form.department) department = form.department;
-		}
-	});
-
-	const roleDescriptions: Record<string, string> = {
-		CITIZEN: 'Submit hazard reports, track status, and verify completed road repairs.',
-		OFFICER: 'Field safety inspector. Review AI severity ratings and dispatch repair crews.',
-		ENGINEER: 'Municipal engineering administrator. Manage lifecycle, standards, and contractors.'
-	};
+	import type { PageProps } from './$types';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	let { data, form }: PageProps = $props();
+	let role = $state(untrack(() => form?.role === 'OFFICER' ? 'OFFICER' : 'CITIZEN'));
+	let submitting = $state(false);
 </script>
-
-<svelte:head>
-	<title>Register Account — SuriOS Municipal Platform</title>
-</svelte:head>
-
-<div class="min-h-[calc(100vh-8rem)] flex items-center justify-center p-4">
-	<div class="w-full max-w-lg space-y-6">
-		<Card class="border-border bg-card shadow-none">
-			<CardHeader class="space-y-1.5 pb-4">
-				<div class="flex items-center justify-between">
-					<CardTitle class="text-lg font-semibold tracking-tight">Create Account</CardTitle>
-					<Badge variant="outline" class="text-[10px] uppercase font-mono tracking-wider border-border">
-						Onboarding
-					</Badge>
+<svelte:head><title>Create account — SuriOS</title></svelte:head>
+<div class="mx-auto w-full max-w-lg px-4 py-8 sm:py-12">
+	<div class="rounded-2xl border border-border bg-card p-5 sm:p-7">
+		<h1 class="text-xl font-semibold">Create account</h1>
+		<p class="mt-2 text-sm text-muted-foreground">Report public infrastructure concerns or apply to represent your government office.</p>
+		{#if form?.error}<p role="alert" class="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{form.error}</p>{/if}
+		<form method="POST" class="mt-6 space-y-4" use:enhance={() => { submitting = true; return async ({ update }) => { await update(); submitting = false; }; }}>
+			<input type="hidden" name="redirectTo" value={data.redirectTo} />
+			<fieldset><legend class="mb-2 text-sm font-medium">Account type</legend><div class="grid grid-cols-2 gap-3">{#each [['CITIZEN', 'Citizen'], ['OFFICER', 'Government']] as [value, label]}<label class="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm {role === value ? 'border-primary bg-primary/10 text-primary' : 'border-border'}"><input type="radio" name="role" {value} bind:group={role} class="accent-primary" />{label}</label>{/each}</div></fieldset>
+			<div class="space-y-1.5"><label for="name" class="text-sm font-medium">Full name</label><Input id="name" name="name" value={form?.name || ''} required minlength={2} maxlength={120} autocomplete="name" class="min-h-11" /></div>
+			<div class="space-y-1.5"><label for="email" class="text-sm font-medium">Email address</label><Input id="email" name="email" type="email" value={form?.email || ''} required maxlength={254} autocomplete="email" class="min-h-11" /></div>
+			{#if role === 'OFFICER'}
+				<div class="rounded-xl bg-secondary/50 p-4 space-y-4">
+					<p class="text-sm text-muted-foreground">An administrator will review your office details and ID number before activating government access.</p>
+					<div class="space-y-1.5"><label for="department" class="text-sm font-medium">Office / department</label><Input id="department" name="department" value={form?.department || ''} required minlength={2} maxlength={160} placeholder="Municipal Engineering Office" class="min-h-11" /></div>
+					<div class="space-y-1.5"><label for="level" class="text-sm font-medium">Office level</label><select id="level" name="level" class="min-h-11 w-full rounded-md border border-input bg-background px-3 text-sm"><option value="MUNICIPAL" selected={form?.level !== 'BARANGAY'}>Municipal / city</option><option value="BARANGAY" selected={form?.level === 'BARANGAY'}>Barangay</option></select></div>
+					<div class="space-y-1.5"><label for="jurisdiction" class="text-sm font-medium">Work location / jurisdiction</label><Input id="jurisdiction" name="jurisdiction" value={form?.jurisdiction || ''} required minlength={2} maxlength={120} placeholder="Santa Cruz, Laguna — or your barangay" class="min-h-11" /><p class="text-xs text-muted-foreground">The municipality, city, or barangay your office serves.</p></div>
+					<div class="space-y-1.5"><label for="badgeNumber" class="text-sm font-medium">Government ID number</label><Input id="badgeNumber" name="badgeNumber" value={form?.badgeNumber || ''} required minlength={2} maxlength={80} class="min-h-11" /><p class="text-xs text-muted-foreground">For admin review. Your ID number is kept private.</p></div>
 				</div>
-				<CardDescription class="text-xs text-muted-foreground">
-					Register as a citizen reporter or municipal staff member.
-				</CardDescription>
-			</CardHeader>
-
-			<CardContent class="space-y-4">
-				{#if form?.error}
-					<Alert variant="destructive" class="py-2.5 px-3 border-destructive/30 bg-destructive/10 text-destructive">
-						<div class="flex items-center gap-2">
-							<ShieldAlertIcon class="h-4 w-4 shrink-0" />
-							<AlertDescription class="text-xs font-medium">
-								{form.error}
-							</AlertDescription>
-						</div>
-					</Alert>
-				{/if}
-
-				<form
-					method="POST"
-					use:enhance={() => {
-						isSubmitting = true;
-						return async ({ update }) => {
-							isSubmitting = false;
-							await update();
-						};
-					}}
-					class="space-y-3.5"
-				>
-					<input type="hidden" name="redirectTo" value={data.redirectTo} />
-
-					<!-- Role Selection -->
-					<div class="space-y-1.5">
-						<label for="role-selector" class="text-xs font-medium text-foreground">
-							Account Type & Municipal Role
-						</label>
-						<div class="grid grid-cols-3 gap-2">
-							{#each availableRoles as r}
-								<button
-									type="button"
-									onclick={() => (role = r)}
-									class="flex flex-col items-center justify-center p-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer {role === r
-										? 'border-primary bg-primary/10 text-primary font-semibold'
-										: 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60'}"
-								>
-									<span>{r === 'CITIZEN' ? 'Citizen' : r === 'OFFICER' ? 'Inspector' : 'Engineer'}</span>
-									<span class="text-[9px] font-normal opacity-70 mt-0.5">
-										{r === 'CITIZEN' ? 'Public' : r === 'OFFICER' ? 'Field' : 'Admin'}
-									</span>
-								</button>
-							{/each}
-						</div>
-						<input type="hidden" name="role" value={role} />
-						<p class="text-[11px] text-muted-foreground mt-1">
-							{roleDescriptions[role]}
-						</p>
-					</div>
-
-					<div class="space-y-1.5">
-						<label for="name" class="text-xs font-medium text-foreground">
-							Full name
-						</label>
-						<Input
-							id="name"
-							name="name"
-							type="text"
-							required
-							bind:value={name}
-							placeholder="e.g. Maria Santos"
-							class="h-9 text-xs"
-						/>
-					</div>
-
-					<div class="space-y-1.5">
-						<label for="email" class="text-xs font-medium text-foreground">
-							Email address
-						</label>
-						<Input
-							id="email"
-							name="email"
-							type="email"
-							autocomplete="email"
-							required
-							bind:value={email}
-							placeholder="maria.santos@surios.gov"
-							class="h-9 text-xs"
-						/>
-					</div>
-
-					{#if role !== 'CITIZEN'}
-						<div class="space-y-1.5">
-							<label for="department" class="text-xs font-medium text-foreground">
-								Agency / Department
-							</label>
-							<Input
-								id="department"
-								name="department"
-								type="text"
-								bind:value={department}
-								placeholder="e.g. Santa Cruz Municipal Engineering Office"
-								class="h-9 text-xs"
-							/>
-						</div>
-					{/if}
-
-					<div class="space-y-1.5">
-						<label for="password" class="text-xs font-medium text-foreground">
-							Password (minimum 8 characters)
-						</label>
-						<Input
-							id="password"
-							name="password"
-							type="password"
-							autocomplete="new-password"
-							required
-							bind:value={password}
-							placeholder="••••••••••••"
-							class="h-9 text-xs font-mono"
-						/>
-					</div>
-
-					<Button
-						type="submit"
-						disabled={isSubmitting}
-						class="w-full h-9 text-xs font-medium mt-2"
-					>
-						{#if isSubmitting}
-							<span>Creating Account...</span>
-						{:else}
-							<UserPlusIcon class="mr-1.5 h-3.5 w-3.5" />
-							<span>Register Account</span>
-						{/if}
-					</Button>
-				</form>
-			</CardContent>
-
-			<CardFooter class="pt-2 pb-4 border-t border-border flex items-center justify-center text-xs text-muted-foreground">
-				<span>Already have an account?</span>
-				<a href="/login" class="ml-1.5 font-medium text-foreground underline underline-offset-4 hover:text-primary transition-colors">
-					Sign in here
-				</a>
-			</CardFooter>
-		</Card>
+			{/if}
+			<div class="space-y-1.5"><label for="password" class="text-sm font-medium">Password</label><Input id="password" name="password" type="password" autocomplete="new-password" required minlength={8} maxlength={256} aria-describedby="password-help" class="min-h-11" /><p id="password-help" class="text-xs text-muted-foreground">At least 8 characters.</p></div>
+			<Button type="submit" disabled={submitting} class="min-h-11 w-full">{submitting ? 'Creating account…' : role === 'OFFICER' ? 'Submit government application' : 'Create citizen account'}</Button>
+		</form>
+		<p class="mt-6 text-center text-sm text-muted-foreground">Already registered? <a href="/login" class="font-medium text-primary underline underline-offset-4">Sign in</a></p>
 	</div>
 </div>

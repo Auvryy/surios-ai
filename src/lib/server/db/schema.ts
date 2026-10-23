@@ -25,6 +25,9 @@ export const users = pgTable('users', {
 	coverUrl: text('cover_url'),
 	passwordHash: text('password_hash').notNull(),
 	role: text('role').notNull().default('CITIZEN'), // 'CITIZEN' | 'OFFICER' | 'ENGINEER' | 'ADMIN'
+	accountStatus: text('account_status').notNull().default('ACTIVE'), // ACTIVE | PENDING | REJECTED | INACTIVE
+	reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+	reviewedBy: uuid('reviewed_by'),
 	department: text('department'),
 	governmentProfile: jsonb('government_profile').$type<GovernmentProfile>(),
 	badgeNumber: text('badge_number'),
