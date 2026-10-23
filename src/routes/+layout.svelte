@@ -74,7 +74,7 @@
 		<div class="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background px-3 md:hidden">
 			<div class="flex items-center gap-2"><Sheet bind:open={mobileOpen}><SheetTrigger>{#snippet child({ props })}<Button variant="ghost" size="icon" class="size-10" aria-label="Open navigation" {...props}><MenuIcon class="size-4" /></Button>{/snippet}</SheetTrigger><SheetContent side="left" class="flex w-72 max-w-[90vw] flex-col p-0"><SheetHeader class="border-b border-border px-4 py-3"><SheetTitle>SuriOS</SheetTitle></SheetHeader><div class="min-h-0 flex-1 overflow-y-auto">{@render navigation()}</div>{@render account()}</SheetContent></Sheet>{@render brand(true)}<span class="text-sm font-semibold">{isMapPage ? 'Road hazards' : 'SuriOS'}</span></div><ThemeToggle />
 		</div>
-		<main class="min-w-0 flex-1 {isMapPage ? 'map-workspace overflow-hidden' : ''}">{@render children()}{#if !isMapPage}<footer class="mt-auto border-t border-border px-4 py-4 text-center text-xs text-muted-foreground">SuriOS · Community road safety · Santa Cruz, Laguna</footer>{/if}</main>
+		<main class="min-w-0 flex-1 {isMapPage ? 'map-workspace overflow-hidden' : ''}">{@render children()}</main>
 	</div>
 {/if}
 <style>
