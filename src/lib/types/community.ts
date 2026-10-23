@@ -1,3 +1,4 @@
+import type { MatchDecision } from './hazards';
 import type { TriageAnalysis } from './triage';
 
 export interface PostMedia {
@@ -18,6 +19,7 @@ export interface CommunityPost {
 	coverId: string;
 	analysis: TriageAnalysis;
 	reportId: string;
+	grouping?: MatchDecision | null;
 	createdAt: string;
 	author: { id: string; name: string; role: string };
 	confirmations: number;

@@ -5,6 +5,7 @@ import path from 'node:path';
 import { db, communityDrafts } from '$lib/server/db';
 import { requireCommunityUser } from '$lib/server/community';
 import { MEDIA_DIR, readUploadForm, validateMedia, removeMedia, cleanExpiredDrafts } from '$lib/server/community-media';
+import { normalizeSeverity } from '$lib/types/hazards';
 import { analyzeRoadMedia } from '$lib/server/gemini';
 import type { RequestHandler } from './$types';
 
@@ -21,7 +22,7 @@ export const POST: RequestHandler = async (event) => {
 		const form = await readUploadForm(event.request);
 		const files = await validateMedia(form.getAll('media'));
 		let analysis;
-		try { analysis = await analyzeRoadMedia(files.map(({ buffer, media }) => ({ buffer, mimeType: media.mimeType }))); }
+		try { analysis = normalizeSeverity(await analyzeRoadMedia(files.map(({ buffer, media }) => ({ buffer, mimeType: media.mimeType })))); }
 		catch (cause) { console.error('[Community AI]', cause instanceof Error ? cause.message : 'Assessment failed'); error(503, 'AI assessment is unavailable. Your draft is still here; please try again shortly.'); }
 		if (!analysis.isValidInfrastructure) return json({ error: analysis.rejectionReason || 'These attachments do not show a public road hazard.', analysis }, { status: 422 });
 		await fs.mkdir(MEDIA_DIR, { recursive: true });
