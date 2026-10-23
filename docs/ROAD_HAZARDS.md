@@ -5,12 +5,13 @@
 ## Map interface
 
 - The global sidebar collapses to an icon rail. Its state is stored in the `surios_nav` preference cookie and restored on reload. Mobile navigation remains a drawer.
+- OpenStreetMap streets is the only basemap, with attribution and no API key requirement. The light/dark minimal basemap selector has been removed. Dark mode adjusts the same street tiles locally.
 - The map fills the available viewport. Resizing the sidebar invalidates Leaflet's size without resetting the user's view.
 - Floating chips open the report list, filters/sort, layers, fit-visible action, refresh, and legend. Their panels can close again, leaving the map visible.
-- List entries show one thumbnail, title, severity, location, status, support, and evidence count. Selecting a pin opens a compact preview; **More details** reveals the AI summary, proposed repair, grouping reasons, and links to related posts.
+- List entries show one thumbnail, title, severity, location, status, support, and evidence count. Selecting a pin opens a compact preview; **View N source posts** beside the severity metrics opens dated links to the original posts and their grouping reasons. These links open the exact saved post in the feed. Field-only reports explicitly say that no community post is linked. **More details** reveals the AI summary and proposed repair.
 - Search, status, damage type, critical severity, and rider-risk filters affect both pins and the list. Sort choices are priority, severity, newest, and support.
 - Overlapping pins are grouped visually by a 42-pixel map grid. The corner count means **separate hazards overlap on screen**. Clicking that pin opens those hazards in the list. Visual clustering never merges database reports.
-- Data comes only from stored reports. Demo incidents, invented corridor PCI scores, and fabricated road-condition line colours are removed. Reference road outlines are neutral, optional context.
+- Data comes only from stored reports. Hardcoded demo incidents, invented corridor PCI scores, and fabricated road-condition line colours are removed. Reference road outlines are neutral, optional context.
 - Visible maps refresh every 30 seconds and when the browser regains focus. Manual refresh is also available. An update failure keeps the last loaded data and shows an error.
 - Directions reuse the road-routing service. If the service cannot return a road route, the fallback is explicitly a dashed direct connection without invented turns or travel time.
 
@@ -97,3 +98,9 @@ npm run test:community
 The suite covers severity normalization, bounded priority, repeated evidence, unique support, confident visual-match decisions, uncertain matches, distance/category/resolved exclusions, concurrent publication, feed-first navigation, persistent sidebar collapse, floating controls, sorting, filters, map deep links, and responsive viewport fit. Existing posting/media/comment tests remain in place.
 
 Automated grouping tests inject controlled visual decisions and use isolated database fixtures. They make no paid model calls. A separate live Gemini check confirmed matching road imagery; it does not establish model accuracy across all real-world scenes.
+
+## Presentation posts
+
+Run `npm run db:seed:community` after migrations and starting the app once (to create demo accounts). This explicitly seeds three PostgreSQL posts, their source observations, and two map hazards using the bundled road photos. Two posts share one hazard to demonstrate traceable related evidence and distinct-participant support. The normal feed/map queries load them; there are no hardcoded fallback cards.
+
+Titles and bodies label this dataset as demo. Locations, scores and authorship are illustrative, not verified current conditions or live Gemini results. The command is transactional and idempotent, does not run on startup, preserves existing field reports and user posts, and leaves interactions unchanged on repeat runs. `DATABASE_URL` selects the target database (loaded from `.env` when present).
