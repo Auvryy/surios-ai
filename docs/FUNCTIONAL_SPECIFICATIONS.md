@@ -90,7 +90,7 @@ The shared sidebar can collapse and remember its state. Mobile navigation remain
 
 ### 4.3. Field Report Capture (`/report`)
 
-The report page opens with a compact posting prompt and Photos, Video, and Location actions. Each opens the same community composer, with multiple images/video, a selectable cover, precise map placement, AI review before publishing, and persistent feed posts linked to canonical map pins. Posting requires sign-in. Publishing opens the exact saved post in the feed. The old module introduction, fixed nearby-confirmation banner, pitch demos, and separate single-photo form have been removed. The legacy `/api/triage` field-capture endpoint remains available; it is no longer the report page’s submission flow.
+The report page opens with a minimal camera/upload box and a Take a photo action. Image selection opens the shared community composer with the images attached; the camera action requests rear-camera capture on supporting mobile browsers. The composer supports multiple images/video, a selectable cover, precise map placement, AI review before publishing, and persistent feed posts linked to canonical map pins. Posting requires sign-in. Publishing opens the exact saved post in the feed. The old module introduction, fixed nearby-confirmation banner, pitch demos, and separate single-photo form have been removed. The legacy `/api/triage` field-capture endpoint remains available; it is no longer the report page’s submission flow.
 
 See [ROAD_HAZARDS.md](./ROAD_HAZARDS.md) and [COMMUNITY_POSTING.md](./COMMUNITY_POSTING.md) for the implemented contracts and verification instructions.
 

@@ -32,7 +32,11 @@
 	function choose(event: Event) {
 		const input = event.currentTarget as HTMLInputElement;
 		const selected = [...(input.files || [])];
-		input.value = ''; error = '';
+		input.value = '';
+		addFiles(selected);
+	}
+	export function addFiles(selected: File[]) {
+		error = '';
 		if (!selected.length) return;
 		const combined = [...attachments.map((item) => item.file), ...selected];
 		if (combined.length > 6 || combined.some((file) => file.size > 10 * 1024 * 1024) || combined.reduce((total, file) => total + file.size, 0) > 12 * 1024 * 1024) { error = 'Choose up to 6 files, 10 MB each and 12 MB in total.'; return; }

@@ -2,39 +2,45 @@
 	import { goto } from '$app/navigation';
 	import type { PageProps } from './$types';
 	import PostComposer from '$lib/components/community/post-composer.svelte';
-	import ImageIcon from '@lucide/svelte/icons/image';
-	import VideoIcon from '@lucide/svelte/icons/video';
-	import MapPinIcon from '@lucide/svelte/icons/map-pin';
+	import { Button } from '$lib/components/ui/button';
+	import CameraIcon from '@lucide/svelte/icons/camera';
+	import UploadIcon from '@lucide/svelte/icons/upload';
 
 	let { data }: PageProps = $props();
 	let composer = $state(false);
-	const name = $derived(data.user?.name || 'Guest');
-	const initials = $derived(name.split(' ').slice(0, 2).map((part) => part[0]).join(''));
-	function openComposer() { composer = true; }
+	let composerRef: PostComposer;
+	let uploadInput: HTMLInputElement;
+	let cameraInput: HTMLInputElement;
+	function choosePhoto(camera = false) {
+		if (!data.user) { composer = true; return; }
+		(camera ? cameraInput : uploadInput).click();
+	}
+	function selectedPhoto(event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const files = [...(input.files || [])];
+		input.value = '';
+		if (!files.length) return;
+		composerRef.addFiles(files);
+		composer = true;
+	}
 	async function published(id: string) {
 		await goto(`/community?q=${id}#post-${id}`, { refreshAll: true });
 	}
 </script>
 
 <svelte:head><title>Report a hazard — SuriOS</title></svelte:head>
-<div class="min-h-full bg-muted/35 px-3 py-4 sm:px-5 sm:py-6">
-	<section class="mx-auto max-w-[680px] rounded-xl border border-border bg-card px-3 pt-3" aria-label="Report a hazard">
+<div class="min-h-full bg-muted/35 px-4 py-6 sm:py-8">
+	<section class="mx-auto max-w-[560px] space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5" aria-label="Report a hazard">
 		<h1 class="sr-only">Report a hazard</h1>
-		<div class="flex items-center gap-3">
-			<span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary" aria-hidden="true">{initials}</span>
-			<button type="button" onclick={openComposer} class="flex min-h-12 min-w-0 flex-1 items-center rounded-full bg-muted px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-secondary focus-visible:outline-2 focus-visible:outline-ring">What’s happening on your road?</button>
-		</div>
-		<div class="mt-3 grid grid-cols-3 border-t border-border py-1">
-			<button type="button" onclick={openComposer} class="report-action"><ImageIcon aria-hidden="true" class="size-4 text-primary" />Photos</button>
-			<button type="button" onclick={openComposer} class="report-action"><VideoIcon aria-hidden="true" class="size-4 text-primary" />Video</button>
-			<button type="button" onclick={openComposer} class="report-action"><MapPinIcon aria-hidden="true" class="size-4 text-primary" />Location</button>
-		</div>
+		<button type="button" onclick={() => choosePhoto()} class="flex min-h-60 w-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-input bg-muted/25 px-5 py-8 text-center transition-colors hover:border-primary/50 hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-ring">
+			<span class="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary"><CameraIcon aria-hidden="true" class="size-6" /></span>
+			<span class="text-base font-medium">Add a hazard photo</span>
+			<span class="text-sm text-muted-foreground">Upload an image to start a post.</span>
+			<span class="mt-1 inline-flex items-center gap-2 text-sm font-medium text-primary"><UploadIcon aria-hidden="true" class="size-4" />Choose image</span>
+		</button>
+		<Button type="button" variant="outline" class="h-11 w-full" onclick={() => choosePhoto(true)}><CameraIcon aria-hidden="true" class="size-4" />Take a photo</Button>
+		<input bind:this={uploadInput} type="file" accept="image/jpeg,image/png,image/webp" multiple onchange={selectedPhoto} aria-label="Upload hazard images" class="sr-only" tabindex="-1" />
+		<input bind:this={cameraInput} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onchange={selectedPhoto} aria-label="Capture hazard photo" class="sr-only" tabindex="-1" />
 	</section>
 </div>
-<PostComposer bind:open={composer} user={data.user} onpublished={published} />
-
-<style>
-	.report-action { display: flex; min-height: 44px; align-items: center; justify-content: center; gap: 6px; border-radius: 8px; font-size: .8125rem; }
-	.report-action:hover { background: var(--secondary); }
-	.report-action:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-</style>
+<PostComposer bind:this={composerRef} bind:open={composer} user={data.user} onpublished={published} />

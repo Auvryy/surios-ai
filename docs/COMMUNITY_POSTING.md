@@ -4,7 +4,7 @@ The community feed reads PostgreSQL records. Posts, comments, and confirmations 
 
 ## Posting flow
 
-1. Open the compact posting prompt in `/community` or `/report`, sign in if needed, and enter a headline and description. `/report` uses the shared composer; the old dispatch introduction, fixed nearby-confirmation banner, and pitch-demo cards are removed. Publishing from `/report` opens the exact saved post in the feed.
+1. Open the posting prompt in `/community`, or choose an image / take a photo from the camera box in `/report`, sign in if needed, and enter a headline and description. Image selection on `/report` opens the shared composer with the selected files already attached. The camera action requests the rear camera on supporting mobile browsers and falls back to the native file picker elsewhere. `/report` uses the shared composer; the old dispatch introduction, fixed nearby-confirmation banner, and pitch-demo cards are removed. Publishing from `/report` opens the exact saved post in the feed.
 2. Add up to six JPEG, PNG, WebP, MP4, WebM, or MOV attachments. Each file is limited to 10 MiB and the combined payload to 12 MiB.
 3. Choose any attached photo or video as the cover. Main photos fill a consistent responsive 4:3 frame using `object-cover`. The full gallery uses `object-contain` for inspection.
 4. Select **Assess with AI**. The server checks authentication, origin, upload limits, MIME signatures, and account assessment limits before sending all attachments to Gemini. Non-road evidence is rejected. Assessment errors preserve the local form for retry.
