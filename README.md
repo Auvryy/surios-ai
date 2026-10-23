@@ -13,7 +13,7 @@
 * **ASTM D6433 Distress Triage:** Classifies potholes, alligator cracking, rutting, ravelling, edge drop-offs, and drainage failures with a deterministic **Hazard Severity Index (`1–10`)**.
 * **Two-Wheeler Lethality Index (VRU Profiling):** Specifically evaluates fatal rim-strike and traction-loss hazards for motorcycles, tricycles, and bicycles (which comprise over **68% of provincial road commuters**).
 * **Haversine `~25m` Geo-Clustering:** Groups nearby open reports only when damage type and shared or AI-matched evidence agree. Unique support increases priority separately from damage severity.
-* **Government Work Orders:** One workspace for crew assignment, repair photos, human review, material planning estimates, CSV export, and printable records. Changes persist on the same reports shown in Road hazards.
+* **Government Quote Updates:** Public In progress/Resolved quotes with photos or PDF evidence, itemized PHP budgets and municipal/barangay profiles. Resolving a shared hazard updates all linked posts and the map, with direct links to the government explanation.
 * **Zero AI-Slop Design System:** Authentic **`shadcn-svelte`** interface with flat matte surfaces, 1px micro-borders, soft **Inter** typography, zero gradients, and 100% Dark/Light Mode parity.
 
 ---
@@ -28,7 +28,7 @@
 | **[`docs/DESIGN_SYSTEM.md`](./docs/DESIGN_SYSTEM.md)** | Zero AI-Slop Charter, OKLCH semantic tokens, and `shadcn-svelte` component architecture. |
 | **[`docs/SYSTEM_GOALS.md`](./docs/SYSTEM_GOALS.md)** | UN SDG 9/11/16 alignment, 1:6 preventative maintenance ROI curve, and Pitch Q&A Defense Matrix. |
 | **[`docs/ROAD_HAZARDS.md`](./docs/ROAD_HAZARDS.md)** | Feed-first navigation, collapsible map controls, severity, community support, priority, and AI-assisted evidence grouping. |
-| **[`docs/GOVERNMENT_WORKSPACE.md`](./docs/GOVERNMENT_WORKSPACE.md)** | Single government workspace, persistent repair lifecycle, evidence review, estimates, exports, and migration 0006. |
+| **[`docs/GOVERNMENT_WORKSPACE.md`](./docs/GOVERNMENT_WORKSPACE.md)** | Government quote updates, linked-post resolution, evidence, budgets, office profiles, demo seed and migration 0008. |
 | **[`docs/ACCOUNT_SETTINGS.md`](./docs/ACCOUNT_SETTINGS.md)** | Essential settings, email preferences/delivery, password changes, recovery, and mail setup. |
 | **[`docs/COMMUNITY_PROFILES.md`](./docs/COMMUNITY_PROFILES.md)** | Public profiles, profile/cover photos, author navigation, and saved replies. |
 | **[`docs/COMMUNITY_POSTING.md`](./docs/COMMUNITY_POSTING.md)** | Saved community posts, AI assessment, media covers, search, migrations, and browser verification. |
@@ -51,13 +51,15 @@ npm run dev -- --host 0.0.0.0
 ```
 Open **`http://localhost:5173`**. The landing page is the community feed; **Road hazards** is available at `/map`.
 
-Government accounts keep the six shared destinations plus **Work orders** at `/dashboard`. Repair evidence, estimates and exports are inside the work order; separate verification and analytics demo pages have been removed. Existing databases must apply migration `0006_government-work-orders.sql` before running this version.
+Government accounts keep the six shared destinations plus **Government updates** at `/dashboard`. Officials quote citizen posts with progress/resolution evidence and optional budget breakdowns. Existing databases must apply migrations through `0008_government-updates.sql`. See the [government guide](docs/GOVERNMENT_WORKSPACE.md) for migration and explicit presentation seed commands.
 
 ### 3. Pre-Seeded Municipal Demo Accounts (`/login`)
 In development, SuriOS provisions 3 demo accounts (all using password `Password123!`). Production does not create demo users or expose demo persona switching; public production registration creates citizen accounts only.
 
 | Role | Email | Password | Municipal Authority |
 | :--- | :--- | :--- | :--- |
-| **`ENGINEER`** | `engineer@surios.gov` | `Password123!` | Work order assignment, repair submission, human review, and export. |
-| **`OFFICER` (Inspector)** | `inspector@surios.gov` | `Password123!` | Work order assignment, repair submission, human review, and export. |
+| **`ENGINEER`** | `engineer@surios.gov` | `Password123!` | Progress/resolution quote updates, evidence, budgets, office profile and export. |
+| **`OFFICER` (Inspector)** | `inspector@surios.gov` | `Password123!` | Progress/resolution quote updates, evidence, budgets, office profile and export. |
 | **`CITIZEN` (Reporter)** | `citizen@surios.gov` | `Password123!` | Public Commuter — Field hazard capture, community confirmation voting, and status tracking. |
+
+Run `node --env-file-if-exists=.env scripts/seed-government.mjs` after the community seed to add the labeled municipal example. Demo login: `municipality@surios.gov` / `Password123!`.

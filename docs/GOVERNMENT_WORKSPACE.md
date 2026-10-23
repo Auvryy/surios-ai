@@ -1,124 +1,104 @@
-# Government workspace
+# Government quote updates
 
-Government users keep Feed, Road hazards, Report a hazard, Confirmed updates,
-Account, and Settings. One additional destination, **Work orders** (`/dashboard`),
-handles the government workflow. There are no separate repair, estimator,
-analytics, or audit pages.
+Government work now centers on **public updates quoting a citizen report**.
+The six shared destinations remain; `/dashboard` is the single **Government
+updates** page. Crew assignment and the dimensional material calculator were
+removed from the interface. Historical work-order data are retained.
 
-`/verification`, `/analytics`, `/docs`, and `/crews` redirect to Work orders for
-government users and to the feed otherwise. The removed mock screens and their
-simulated approvals, compaction percentages, and budget predictions are gone.
+## Publishing an update
 
-## Work orders
+Sign in as an engineer, officer or admin. On a feed post choose **Update**, or
+open Government updates, find the report and choose **Post government update**.
+The government queue shows one representative post per shared hazard.
 
-The queue uses the same saved reports as Road hazards. It supports search and
-status filtering, selecting a report, and these persistent actions:
+- Choose **In progress** or **Resolved**.
+- Explain the action or reason in up to 1,000 characters.
+- Attach 1–4 JPEG/PNG/WebP photos or PDF documents: up to 4 MiB each and 12 MiB
+  total. Work instructions, completion paperwork and repair photos are supported.
+  Upload signatures and limits are checked server-side. PDFs download as files
+  with `nosniff` and a sandbox policy; they are not embedded as active content.
+- Optionally enter up to 20 labeled budget amounts in PHP, with two decimal
+  places. Label the breakdown **Estimated budget** or **Actual expenditure**.
+  Totals are sums of the entered amounts; there are no assumed material prices,
+  measured quantities or automatically certified costs.
 
-1. **Assign crew:** `REPORTED` → `DISPATCHED`.
-2. **Start repair:** `DISPATCHED` → `IN_REPAIR`; requires an assigned crew.
-3. **Submit repair:** Attach an after-photo and repair notes; moves to
-   `AWAITING_REVIEW`.
-4. **Review:** A government reviewer records notes and approves (`RESOLVED`) or
-   returns it (`IN_REPAIR`). Approval requires a saved after-photo matching the
-   evidence the reviewer opened. Stale approvals are rejected.
+The public quote emphasizes the government's text and evidence. The original
+report appears underneath as a small linked card with its photo. Opening an
+official update displays that update prominently, rather than repeating a large
+copy of the original report. Other official updates remain available as history.
+The Photos filter includes official repair photos even when the quoted source
+contains only video. The CSV download includes official quotes, budgets, evidence
+links and dates.
 
-Each action records its actor, timestamp and description. Submitted image paths
-are preserved in the event history, including evidence returned for more work.
-State transitions hold a report row lock and update report status, work-order
-metadata, and activity in one database transaction. Invalid/stale transitions
-fail without changing the report.
+## Shared report status and grouped posts
 
-Review is a human assessment of photo evidence. It is not a Gemini comparison,
-measured compaction test, engineering certification, or authorization of payment.
+Every post refers to a canonical `reports.id`. Publishing an official quote locks
+that shared report and commits the quote, report status and audit event in one
+transaction. **In progress** maps to the existing `IN_REPAIR` state; **Resolved**
+maps to `RESOLVED`. The citizen map reads the same record.
 
-## Material estimate and exports
+All posts sharing that report display the same current status. Their status
+buttons open the latest government explanation and evidence, including when it
+quoted a different post in the group. The source thread shows official updates
+from all posts in its group. Nearby but separately classified reports are not
+closed automatically. Existing same-hazard evidence grouping rules still apply;
+posting a quote never adds a hazard observation or increases severity/support.
+A later In progress update can reopen a resolved report, with history retained.
+A follow-up composer on an already resolved report defaults to Resolved. Older
+quotes show the current report status and preserve their originally posted status
+as history; their status buttons also link to the latest official explanation.
 
-Each work order contains an optional, collapsed material estimate form. Enter
-measured length and width (m), depth (mm), supplier density (kg/m³), bag weight
-(kg), bag price (PHP), and an allowance percentage. No supplier rates or field
-dimensions are invented by the application.
+Request UUIDs prevent duplicate updates on retry. Official updates cannot be
+undone using the social repost deletion endpoint. Corrections are new public
+updates. Report locking plus database timestamps order concurrent office updates.
 
-- Volume = length × width × depth / 1,000.
-- Material mass = volume × density × (1 + allowance / 100).
-- Bags = ceiling(material mass / bag weight).
-- Material cost = bags × bag price, rounded to two decimal places.
+## Municipal and barangay profiles
 
-The server validates inputs, calculates and saves the estimate. The result is a
-planning estimate for materials only; labor, equipment, and base repairs are
-excluded. Resolved work orders retain their saved estimate.
+Government accounts edit their own name, government level (municipality or
+barangay), jurisdiction, description, avatar and cover through **Account**.
+Visitors see these details and the office's post/update feed inside
+`/community?profile=<UUID>`, consistent with other public profiles. Citizen
+accounts cannot add government metadata or publish official statuses.
 
-**Export CSV** downloads the matching saved reports, including crew, status,
-material estimate and after-photo URL. Text cells are quoted and spreadsheet
-formula prefixes are neutralized. **Print record** prints the selected report,
-evidence, estimate and activity; the browser can save this as a PDF.
+Public statistics show distinct reports handled, currently In progress, and
+Resolved. Repeated quotes about one report count once. A report is attributed
+to the account that authored its latest official update; a later update from
+another office transfers attribution. These are operational counts, not an
+independent certification of repair quality or government spending.
 
-The queue currently shares the map loader's latest-1,000-report window. Filtering
-and export apply within that window. Print covers the selected work order.
+## Migration and presentation example
 
-## Access and migration
+Apply migrations through `0007_community-social.sql`, then additive
+`0008_government-updates.sql`. Migration 0008 adds nullable JSON metadata to
+users and reposts; it does not delete existing posts, reports or work orders.
+Use the normal journal-managed migration runner where configured. On a database
+whose earlier migrations were applied manually, apply only the new SQL file.
 
-Only signed-in `ENGINEER`, `OFFICER`, and `ADMIN` accounts can open Work orders,
-export records, or perform its actions. Citizen requests return to the feed.
-Return URLs for login, registration and persona switching must stay inside the
-allowed workspace.
+Run these explicit seeds after starting the development app once:
 
-Development keeps the existing demo role selection, seeded accounts and persona
-switch. Production does not seed demo users, hides the switch, rejects the demo
-switch action, and restricts public registration to citizen accounts. Government
-accounts must be provisioned separately. Existing accounts are not deleted.
+```bash
+node --env-file-if-exists=.env scripts/seed-community.mjs
+node --env-file-if-exists=.env scripts/seed-government.mjs
+```
 
-Apply `drizzle/0006_government-work-orders.sql` before starting this version.
-It adds `work_orders` and `work_order_events` without changing or deleting
-existing reports or community data. Use the normal migration runner for a
-journal-managed database. Where previous migrations were applied manually, apply
-only this new SQL file. The migration has been applied to the local development
-database as part of this implementation.
+The government seed only selects the labeled presentation pothole from the
+community seed. It adds a **Demo · Santa Cruz Municipal Office** account,
+In progress and Resolved quote updates, downloadable sample work/completion PDFs,
+and a PHP 5,000 illustrative breakdown for materials, labor and equipment.
+All linked demo posts show Resolved. Re-running the seed leaves the example
+unchanged. It is never called by application startup.
 
-Repair photos use the existing ignored `static/uploads/community` storage and
-`/media/` route. Configure deployment upload/body limits consistently with the
-existing 10 MB image limit.
+Demo login: `municipality@surios.gov` / `Password123!`.
+Documents and quote details explicitly identify the demonstration and make no
+claim of real maintenance, official certification or actual public spending.
 
-## Presentation walkthrough
-
-1. Submit or select a clearly labeled saved demonstration report.
-2. Sign in as government staff and open the same report in Work orders.
-3. Assign a crew and start repair. Refresh to demonstrate persistence.
-4. Optionally enter measured/supplier values and save a material estimate.
-5. Upload repair evidence, then review and approve or return it with notes.
-6. Open Road hazards to show the same report's updated status.
-7. Download CSV or print the selected record.
+Production continues to disable development persona switching, automatic demo
+account creation and public self-registration for government roles.
 
 ## Verification
 
-Run these checks from this checkout; browser tests use port 5177 and should run
-serially with other suites that use that port:
-
-```bash
-npm run check
-npm run build
-npm run test:community -- tests/government-workspace.spec.ts
-npm run test:community
-```
-
-The government suite covers all three roles, the six retained shared pages,
-single operations destination, mobile/collapsed navigation, legacy redirects,
-safe authentication returns, persistent assignment/repair/review, stale evidence,
-material arithmetic, native forms, CSV, and citizen-visible map status. Fixtures
-and uploaded evidence are scoped to the tests and cleaned afterward.
-
-Validated locally on this implementation:
-
-- Svelte check: zero errors and warnings; production build passed.
-- Full existing-plus-government Playwright suite: 33 passed.
-- Government suite rerun on final source: 12 passed.
-- Reviewed light desktop and mobile layouts at 1,440, 375 and 320 px, plus dark
-  mobile. No horizontal overflow in the tested widths.
-- Generated a PDF and inspected its text for the selected report, photo labels,
-  saved estimate and actor/review history.
-- Built-server smoke: government page and CSV return 200, legacy redirects work,
-  demo switching and government self-registration are refused. The temporary
-  HTTP server used explicit local protocol forwarding and was stopped afterward.
-- Scoped cleanup confirmed no government fixture users or reports remain.
-
-The citizen search feature is separate work on `feat/community-search`; its
-commits are not included in the government branch by this task.
+`tests/government-workspace.spec.ts` covers all three government roles, shared
+navigation, removal of crew/calculator controls, budget/photo/PDF persistence,
+grouped-post closure and links, unrelated-report isolation, map status, profile
+statistics, municipal/barangay profile editing, mobile widths, authorization,
+input limits, idempotency, retained history and concurrent office updates.
