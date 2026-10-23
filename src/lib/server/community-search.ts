@@ -1,4 +1,4 @@
-import { and, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, eq, ilike, or, sql, type SQL } from 'drizzle-orm';
 import { communityPosts, users } from './db';
 
 export const communitySorts = ['relevance', 'newest', 'oldest', 'severity', 'confirmations'] as const;
@@ -15,11 +15,11 @@ function pattern(value: string) {
 // All words must match, but they can occur in different fields and any order.
 // PostgreSQL English stemming handles pothole/potholes and crack/cracking;
 // literal matching also supports partial names, local place names and IDs.
-export function communitySearch(query: string) {
+export function communitySearch(query: string, extraFields: SQL = sql`''`) {
 	const title = sql`coalesce(${communityPosts.title}, '')`;
 	const location = sql`coalesce(${communityPosts.locationName}, '')`;
 	const author = sql`coalesce(${users.name}, '')`;
-	const details = sql`concat_ws(' ', ${communityPosts.body}, replace(${communityPosts.analysis}->>'distressType', '_', ' '))`;
+	const details = sql`concat_ws(' ', ${communityPosts.body}, replace(${communityPosts.analysis}->>'distressType', '_', ' '), ${extraFields})`;
 	const document = sql`concat_ws(' ', ${title}, ${location}, ${author}, ${details})`;
 	const vector = sql`(setweight(to_tsvector('english', ${title}), 'A') || setweight(to_tsvector('english', ${location}), 'A') || setweight(to_tsvector('english', ${author}), 'B') || setweight(to_tsvector('english', ${details}), 'C'))`;
 	const stopWords = new Set(['a', 'an', 'the', 'at', 'in', 'on', 'near', 'of', 'and', 'for', 'to', 'is', 'with']);
