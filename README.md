@@ -54,7 +54,7 @@ Open **`http://localhost:5173`**. The landing page is the community feed; **Road
 Government accounts keep the six shared destinations plus **Government updates** at `/dashboard`. Officials quote citizen posts with progress/resolution evidence and optional budget breakdowns. Existing databases must apply migrations through `0009_quote-interactions.sql`. See the [government guide](docs/GOVERNMENT_WORKSPACE.md) for migration and explicit presentation seed commands.
 
 ### 3. Pre-Seeded Municipal Demo Accounts (`/login`)
-In development, SuriOS provisions 3 demo accounts (all using password `Password123!`). Production does not create demo users or expose demo persona switching; public production registration creates citizen accounts only.
+In development, SuriOS provisions 3 demo accounts (all using password `Password123!`). Account switching is removed; use the normal login for seeded accounts. Production does not create demo users; public production registration creates citizen accounts only.
 
 | Role | Email | Password | Municipal Authority |
 | :--- | :--- | :--- | :--- |

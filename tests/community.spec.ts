@@ -108,12 +108,12 @@ test('report composer saves selected cover, media, map pin, confirmations, comme
 	await article.getByRole('button', { name: 'Next media', exact: true }).click();
 	await expect(article.locator('iframe')).toHaveAttribute('src', /marker=11.2813,123.4173/);
 	const postId = (await article.getAttribute('id'))!.slice(5);
-	await article.getByRole('button', { name: 'Confirm', exact: true }).click();
-	await expect(article.getByRole('button', { name: 'Confirmed', exact: true })).toBeVisible();
+	await article.getByRole('button', { name: 'Like', exact: true }).click();
+	await expect(article.getByRole('button', { name: 'Liked', exact: true })).toBeVisible();
 	await article.getByRole('link', { name: 'Comment', exact: true }).click();
 	await article.getByRole('textbox', { name: /Comment on/ }).fill('E2E persisted comment'); await article.getByRole('button', { name: 'Send comment' }).click();
 	await expect(article.getByText('E2E persisted comment')).toBeVisible();
-	await page.reload(); await page.waitForLoadState('networkidle'); await expect(article.getByRole('button', { name: 'Confirmed', exact: true })).toBeVisible();
+	await page.reload(); await page.waitForLoadState('networkidle'); await expect(article.getByRole('button', { name: 'Liked', exact: true })).toBeVisible();
 	await article.getByRole('link', { name: 'Comment', exact: true }).click(); await expect(article.getByText('E2E persisted comment')).toBeVisible();
 	await page.goto('/community'); await page.waitForLoadState('networkidle');
 	await page.getByRole('searchbox', { name: 'Search community' }).fill(draft.draftId); await page.getByRole('button', { name: 'Search posts', exact: true }).click();
@@ -128,7 +128,7 @@ test('report composer saves selected cover, media, map pin, confirmations, comme
 	const [saved] = await sql`select cover_id, report_id from community_posts where id = ${postId}`;
 	expect(saved.cover_id).toBe(draft.media[1].id);
 	const [report] = await sql`select community_confirmations from reports where id = ${saved.report_id}`; expect(report.community_confirmations).toBe(1);
-	await page.goto('/liked'); await expect(page).toHaveURL(/tab=confirmed/);
+	await page.goto('/liked'); await expect(page).toHaveURL(/tab=liked/);
 	await page.setViewportSize({ width: 375, height: 812 }); await page.evaluate(() => document.documentElement.classList.add('dark'));
 	await page.screenshot({ path: '.svelte-kit/review/persistent-feed-mobile-dark.png', fullPage: true });
 	expect(errors).toEqual([]);

@@ -63,7 +63,7 @@ test('an official can publish nine photos with +5 overflow, inspect every photo,
 	await expect(quote.getByRole('img',{name:'Map of Test Road',exact:true})).toHaveClass(/leaflet-container/);
 	const [saved]=await sql`select government_update from community_reposts where id=${officialId}`;expect(saved.government_update.attachments).toHaveLength(9);for(const media of saved.government_update.attachments)evidenceUrls.add(media.url);
 	await quote.getByRole('link',{name:'View all 9 photos',exact:true}).click();
-	for(let index=0;index<9;index++){await expect(quote.locator('[data-quote-gallery] > div > img')).toHaveAttribute('alt',`work-${index+1}.jpg`);if(index<8)await quote.getByRole('link',{name:'Next government photo',exact:true}).click();}
+	for(let index=0;index<9;index++){await expect(quote.locator('[data-quote-gallery] > div > img')).toHaveAttribute('alt',`work-${index+1}.jpg`);if(index<8){ const next=quote.getByRole('link',{name:'Next government photo',exact:true}); await next.scrollIntoViewIfNeeded(); const beforeScroll=await page.evaluate(()=>window.scrollY); await next.click(); await expect(quote.locator('[data-quote-gallery] > div > img')).toHaveAttribute('alt',`work-${index+2}.jpg`); expect(Math.abs((await page.evaluate(()=>window.scrollY))-beforeScroll)).toBeLessThan(5); }}
 	for(const width of [320,375,768,1440]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);}
 	await page.setViewportSize({width:375,height:900});await page.goto(`/community/post/${post}?repost=${officialId}`);await page.waitForLoadState('networkidle');await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:'.svelte-kit/quote-gallery-mobile.png',fullPage:true});
 	expect(await baseline()).toEqual(before);
@@ -132,4 +132,14 @@ test('the shared Share dialog copies the government quote permalink, including i
 	const expected=`${baseURL}/community/post/${post}?repost=${id}#repost-${id}`;
 	expect(await page.evaluate(()=>(window as typeof window & {quoteLinks:string[]}).quoteLinks)).toEqual([expected]);
 	const facebook=await dialog.getByRole('link',{name:'Facebook',exact:true}).getAttribute('href');expect(new URL(facebook!).searchParams.get('u')).toBe(expected);
+});
+
+test('Liked filter and Most liked sort use each quote’s own reactions, independently of its citizen source', async ({request})=>{
+	const id=await makeOfficial(request);
+	const response=await request.post(`/api/community/reposts/${id}`,{headers:headers(1),data:{action:'like',liked:true}});expect(response.status()).toBe(200);
+	const liked=await request.get(`/api/community/posts?q=${marker}&tab=liked&sort=likes`,{headers:headers(1)});const result=await liked.json();
+	expect(result.feed.some((item:any)=>item.kind==='repost'&&item.id===id)).toBe(true);
+	expect(result.feed.some((item:any)=>item.kind==='post'&&item.id===post)).toBe(false);
+	const sorted=await request.get(`/api/community/posts?q=${marker}&sort=likes`,{headers:headers(1)});expect((await sorted.json()).feed[0].id).toBe(id);
+	const oldLink=await request.get(`/api/community/posts?q=${marker}&tab=confirmed`,{headers:headers(1)});expect((await oldLink.json()).filters.tab).toBe('liked');
 });

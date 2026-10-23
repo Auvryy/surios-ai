@@ -113,7 +113,7 @@ Demo login: `municipality@surios.gov` / `Password123!`.
 Documents and quote details explicitly identify the demonstration and make no
 claim of real maintenance, official certification or actual public spending.
 
-Production continues to disable development persona switching, automatic demo
+Account switching has been removed in all modes. Production disables automatic demo
 account creation and public self-registration for government roles.
 
 ## Verification

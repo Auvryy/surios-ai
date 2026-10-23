@@ -6,6 +6,7 @@ const sql = postgres(process.env.DATABASE_URL || 'postgres://postgres:postgres@l
 const marker = `searchfixture${randomUUID().replaceAll('-', '')}`;
 const author = randomUUID(), supporter = randomUUID(), report = randomUUID();
 const ids = Array.from({ length: 25 }, () => randomUUID());
+const reportIds = ids.map((_, index) => index ? randomUUID() : report);
 const session = randomBytes(32).toString('hex');
 const drafts = ids.map(() => randomUUID());
 const analysis = { isValidInfrastructure: true, distressType: 'pothole', hazardSeverity: 4, riskLevel: 'MODERATE', vruLethality: 'LOW', vruDetails: 'Test fixture', estimatedDimensions: { depthEstimate: 'Test', surfaceAreaEstimate: 'Test' }, recommendedAction: 'Inspect', materialsChecklist: [], urgency: 'ROUTINE', summary: 'Test fixture' };
@@ -13,14 +14,15 @@ const analysis = { isValidInfrastructure: true, distressType: 'pothole', hazardS
 test.beforeAll(async () => {
 	await sql.begin(async (tx) => {
 		await tx`insert into users (id, email, name, password_hash) values (${author}, ${`${marker}@example.test`}, ${`Mara Santos ${marker}`}, 'unused-test-hash'), (${supporter}, ${`${marker}-support@example.test`}, 'Search supporter', 'unused-test-hash')`;
-		await tx`insert into reports (id, image_path, latitude, longitude, distress_type, hazard_severity, risk_level, vru_lethality, recommended_action) values (${report}, '/samples/pothole-severe.jpg', 14.28, 121.42, 'pothole', 4, 'MODERATE', 'LOW', 'Test fixture')`;
 		for (const [index, id] of ids.entries()) {
 			const titles = ['School pothole', 'Inspection notes', 'Rizal drainage obstruction', 'Surface repair update'];
 			const bodies = ['Broken asphalt outside the gate.', 'School pothole needs inspection.', 'Water pools outside the market.', 'Long narrow damage along the lane.'];
 			const severity = [4, 9, 8, 3][index] || 2;
+			// Distinct damage types/severities represent distinct canonical hazards.
+			await tx`insert into reports(id,image_path,latitude,longitude,distress_type,hazard_severity,risk_level,vru_lethality,recommended_action) values(${reportIds[index]},'/samples/pothole-severe.jpg',14.28,121.42,'pothole',${severity},${severity >= 8 ? 'CRITICAL' : severity >= 4 ? 'MODERATE' : 'LOW'},'LOW','Test fixture')`;
 			const kind = index === 2 ? 'video' : 'photo';
 			const media = [{ id: randomUUID(), kind, url: kind === 'photo' ? '/samples/pothole-severe.jpg' : '/samples/test.webm', name: 'Search fixture', mimeType: kind === 'photo' ? 'image/jpeg' : 'video/webm' }];
-			await tx`insert into community_posts (id, user_id, draft_id, report_id, title, body, location_name, latitude, longitude, media, cover_id, analysis, created_at) values (${id}, ${author}, ${drafts[index]}, ${report}, ${titles[index] || `Routine pavement check ${index}`}, ${`${bodies[index] || 'Routine inspection.'} ${marker}`}, ${index === 0 || index === 2 ? 'Rizal Street' : 'Municipal plaza'}, 14.28, 121.42, ${sql.json(media)}, ${media[0].id}, ${sql.json({ ...analysis, hazardSeverity: severity, distressType: index === 2 ? 'drainage_culvert_failure' : index === 3 ? 'longitudinal_transverse_cracking' : index > 3 ? 'ravelling_weathering' : 'pothole' })}, ${new Date(Date.UTC(2025, 0, index + 1))})`;
+			await tx`insert into community_posts (id, user_id, draft_id, report_id, title, body, location_name, latitude, longitude, media, cover_id, analysis, created_at) values (${id}, ${author}, ${drafts[index]}, ${reportIds[index]}, ${titles[index] || `Routine pavement check ${index}`}, ${`${bodies[index] || 'Routine inspection.'} ${marker}`}, ${index === 0 || index === 2 ? 'Rizal Street' : 'Municipal plaza'}, 14.28, 121.42, ${sql.json(media)}, ${media[0].id}, ${sql.json({ ...analysis, hazardSeverity: severity, distressType: index === 2 ? 'drainage_culvert_failure' : index === 3 ? 'longitudinal_transverse_cracking' : index > 3 ? 'ravelling_weathering' : 'pothole' })}, ${new Date(Date.UTC(2025, 0, index + 1))})`;
 		}
 		await tx`insert into community_confirmations (post_id, user_id) values (${ids[0]}, ${author}), (${ids[0]}, ${supporter}), (${ids[1]}, ${supporter})`;
 		await tx`insert into sessions (id, user_id, expires_at) values (${session}, ${author}, ${new Date(Date.now() + 86400000)})`;
@@ -30,7 +32,7 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
 	await sql.begin(async (tx) => {
 		await tx`delete from community_posts where id in ${sql(ids)}`;
-		await tx`delete from reports where id = ${report}`;
+		await tx`delete from reports where id in ${sql(reportIds)}`;
 		await tx`delete from users where id in ${sql([author, supporter])}`;
 	});
 	await sql.end();
@@ -67,7 +69,7 @@ test('sorts the entire matching dataset and combines media, severity and contrib
 
 test('keeps exact post, report and assessment links searchable and treats wildcard characters literally', async ({ request }) => {
 	for (const q of [ids[0], ids[0].toUpperCase(), drafts[0]]) expect((await search(request, q)).posts.map((post: { id: string }) => post.id)).toEqual([ids[0]]);
-	expect((await search(request, report)).total).toBe(25);
+	expect((await search(request, report)).total).toBe(1);
 	for (const q of [`${marker} %`, `${marker} _`, `${marker} \\`, `${marker} ' OR 1=1 --`, '!!!']) expect((await search(request, q)).total).toBe(0);
 });
 

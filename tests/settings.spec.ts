@@ -50,7 +50,7 @@ test('minimal categorized settings save only the signed-in user’s email prefer
 	await expect(page.getByRole('heading', { name: 'Password & security', exact: true })).toBeVisible();
 	await expect(page.getByText(/AI Diagnostics|ASTM Tolerances|Municipal Platform/)).toHaveCount(0);
 	await page.getByRole('checkbox', { name: /Comments and replies/ }).check();
-	await page.getByRole('checkbox', { name: /Post confirmations/ }).check();
+	await page.getByRole('checkbox', { name: /Post likes/ }).check();
 	await page.getByRole('button', { name: 'Save preferences', exact: true }).click(); await expect(page.getByRole('status')).toHaveText('Email preferences saved.');
 	await page.reload(); await expect(page.getByRole('checkbox', { name: /Comments and replies/ })).toBeChecked();
 	const [saved] = await sql`select settings from users where id = ${owner.id}`; expect(saved.settings).toEqual({ ...preferences, emailComments: true, emailConfirmations: true });
@@ -74,7 +74,7 @@ test('SMTP emails follow comment/reply and confirmation preferences, suppress se
 		await login(other.request, actor);
 		const confirm = () => other.request.post(`/api/community/posts/${postId}`, { headers: { Origin: origin }, data: { action: 'confirm', confirmed: true } });
 		expect((await confirm()).status()).toBe(200); await confirm();
-		await expect.poll(() => delivered(owner.email, 'Your road update was confirmed').length, { timeout: 15000 }).toBe(1);
+		await expect.poll(() => delivered(owner.email, 'Your road update was liked').length, { timeout: 15000 }).toBe(1);
 		const [confirmation] = await sql`select count(*)::int as count from email_outbox where event_key = ${`confirmation:${postId}:${actor.id}:${owner.id}`}`; expect(confirmation.count).toBe(1);
 		const root = await comment(other.request, 'A notification comment.');
 		await expect.poll(() => delivered(owner.email, 'New comment on SuriOS').length, { timeout: 15000 }).toBe(1);
