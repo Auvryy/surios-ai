@@ -23,7 +23,7 @@ AI severity and dimensions are estimates for triage, not certified measurements.
 - Search matches saved titles, descriptions, locations, contributor names, distress categories, and post/report IDs. Shared links search by post ID so older posts remain reachable beyond the first batch. Literal `%`, `_`, and backslash characters are escaped before SQL pattern matching.
 - Search, media, contributor, critical, and confirmed filters are stored in the URL and work after refreshing. **Load more** adds batches of 20 up to 1,000 posts per filter; search queries the whole matching dataset rather than only the visible cards.
 - Confirmations are unique per user/post. Setting a confirmation repeatedly is idempotent. The linked report deduplicates authors and confirmations across grouped posts; repeatedly confirming the same hazard does not inflate its priority.
-- Comments are authenticated, validated, saved, and rendered as text.
+- Comments and replies are authenticated, validated, saved, and rendered as text. Replies retain a parent comment from the same post. Author names and pictures link to public profiles; the same post cards and interactions appear on profile pages. See [Community profiles](./COMMUNITY_PROFILES.md).
 - `/liked` redirects to the signed-in user's saved confirmations.
 - Guests can browse and search. Posting and interactions require sign-in.
 

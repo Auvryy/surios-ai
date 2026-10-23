@@ -160,3 +160,5 @@ flowchart LR
 
 * **Local vs. Production Port Isolation:** Local PostgreSQL runs on port `5433` (`surios_local_db` in `docker-compose.yml`) to prevent collisions with existing host services on `5432`, while production runs over an isolated internal Docker bridge (`db:5432` in `docker-compose.prod.yml`).
 * **HTTPS Geolocation Compliance:** Cloudflare Universal SSL terminates HTTPS at the edge for `https://surios.site`, satisfying mobile browsers' strict secure-context requirement for `navigator.geolocation` and camera hardware access.
+
+Public community profiles at `/profile/[id]` select only public identity and authored posts. The owner route `/profile` still requires authentication. Photo editing and comment/reply mutations require an authenticated session and same-origin requests; see [Community profiles](./COMMUNITY_PROFILES.md).
