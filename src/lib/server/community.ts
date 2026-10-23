@@ -26,7 +26,7 @@ export async function loadCommunityPosts(userId?: string, filters: CommunityFilt
 	if (filters.author) clauses.push(eq(communityPosts.userId, filters.author));
 	if (filters.q) {
 		const pattern = `%${filters.q.replace(/[\\%_]/g, '\\$&')}%`;
-		clauses.push(or(ilike(communityPosts.title, pattern), ilike(communityPosts.body, pattern), ilike(communityPosts.locationName, pattern), ilike(users.name, pattern), sql`${communityPosts.analysis}->>'distressType' ilike ${pattern}`)!);
+		clauses.push(or(ilike(communityPosts.title, pattern), ilike(communityPosts.body, pattern), ilike(communityPosts.locationName, pattern), ilike(users.name, pattern), sql`${communityPosts.analysis}->>'distressType' ilike ${pattern}`, sql`${communityPosts.id}::text ilike ${pattern}`, sql`${communityPosts.reportId}::text ilike ${pattern}`)!);
 	}
 	if (filters.media) clauses.push(sql`exists (select 1 from jsonb_array_elements(${communityPosts.media}) as attachment where attachment->>'kind' = ${filters.media})`);
 	if (filters.tab === 'critical') clauses.push(sql`(${communityPosts.analysis}->>'hazardSeverity')::int >= 8`);

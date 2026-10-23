@@ -59,7 +59,7 @@
 		finally { busy[post.id] = false; }
 	}
 	async function share(post: CommunityPost) {
-		try { await navigator.clipboard.writeText(`${window.location.origin}/community#post-${post.id}`); message = 'Post link copied.'; }
+		try { await navigator.clipboard.writeText(`${window.location.origin}/community?q=${post.id}#post-${post.id}`); message = 'Post link copied.'; }
 		catch { message = 'Unable to copy the link. Copy this page’s address from your browser.'; }
 	}
 	function timeAgo(date: string) {
