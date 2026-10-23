@@ -1,18 +1,15 @@
-import type { PageServerLoad } from './$types.js';
-import { db } from '$lib/server/db/index.js';
-import { reports } from '$lib/server/db/schema.js';
-import { desc } from 'drizzle-orm';
+import type { Actions, PageServerLoad } from './$types';
+import { loadWorkOrders, requireGovernmentUser, updateWorkOrder } from '$lib/server/work-orders';
 
-export const load: PageServerLoad = async ({ locals }) => {
-	// Query recent civil reports from PostgreSQL
-	const dbReports = await db
-		.select()
-		.from(reports)
-		.orderBy(desc(reports.createdAt))
-		.limit(20);
+export const load: PageServerLoad = async (event) => {
+	requireGovernmentUser(event);
+	return loadWorkOrders(event.url);
+};
 
-	return {
-		user: locals.user,
-		dbReports
-	};
+export const actions: Actions = {
+	assign: (event) => updateWorkOrder(event, 'assign'),
+	startRepair: (event) => updateWorkOrder(event, 'startRepair'),
+	submitRepair: (event) => updateWorkOrder(event, 'submitRepair'),
+	review: (event) => updateWorkOrder(event, 'review'),
+	saveEstimate: (event) => updateWorkOrder(event, 'saveEstimate')
 };

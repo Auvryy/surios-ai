@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types.js';
 import { z } from 'zod';
+import { workspaceRedirect } from '$lib/server/workspace';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
 import { users } from '$lib/server/db/schema.js';
@@ -58,13 +59,7 @@ export const actions: Actions = {
 
 			setSessionTokenCookie(event, sessionToken, session.expiresAt);
 
-			const isGov = user.role === 'ENGINEER' || user.role === 'OFFICER' || user.role === 'ADMIN';
-			destination = '/community';
-			if (requestedRedirect && requestedRedirect.startsWith('/')) {
-				if (isGov || !requestedRedirect.startsWith('/dashboard')) {
-					destination = requestedRedirect;
-				}
-			}
+			destination = workspaceRedirect(requestedRedirect, user.role);
 		} catch (err) {
 			console.error('[Login Error]', err);
 			return fail(500, {
