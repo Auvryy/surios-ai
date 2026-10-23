@@ -93,6 +93,16 @@ npx playwright test --config playwright.search.config.ts
 
 This suite reserves port 5187, disables outbound email, and creates uniquely identified temporary users, posts, confirmations, and one report in the configured local database, removing only those fixtures afterward. It covers multiword matching, weighted relevance, English stemming, literal wildcard handling, evidence IDs, all sort modes, combined filters, stable pagination, URL persistence, composer visibility, native search submission, and responsive widths. It does not require Gemini credentials.
 
+## Social upgrade
+
+After applying government migration `0006_government-work-orders.sql`, apply additive `0007_community-social.sql` before serving this version. It creates only `community_reposts`, `community_comment_likes` and their constraints/indexes; existing reports, severity, source observations and posts are retained.
+
+```bash
+docker compose exec -T surios-db psql -U postgres -d surios -v ON_ERROR_STOP=1 -1 < drizzle/0007_community-social.sql
+```
+
+Use the deployment's normal journaled migration runner instead when that runner manages the database; do not apply the same migration twice. Drizzle configuration includes both the base schema and `community-social-schema.ts`, so future generated migrations retain both government and citizen tables.
+
 ## Social and thread verification
 
 ```bash
