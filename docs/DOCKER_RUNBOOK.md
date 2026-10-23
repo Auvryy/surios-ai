@@ -94,3 +94,11 @@ Migration `drizzle/0005_account-settings.sql` adds the persisted email outbox an
 ## Road reporting deployment
 
 Apply `drizzle/0010_road-segments.sql` before starting the updated app. It is additive and retains existing seeded accounts/posts. Production Compose accepts `52M` request bodies for the 50 MiB total media limit; configure Nginx or another front proxy with `client_max_body_size 52m;` as well. The app uses OpenStreetMap street tiles and bounded cached public OSM geometry requests, with no map API key required. The optional labeled road demo is seeded explicitly with `node --env-file-if-exists=.env scripts/seed-road.mjs` from the repository checkout; it is never inserted on startup.
+
+For a local production preview, use the browser's exact origin so normal sign-in forms pass CSRF validation:
+
+```bash
+NODE_ENV=production ORIGIN=http://localhost:5173 HOST=localhost PORT=5173 BODY_SIZE_LIMIT=52M node --env-file-if-exists=.env build
+```
+
+For a deployed site, set `ORIGIN` to its public HTTPS origin or configure trusted proxy protocol/host forwarding. Keep CSRF checks enabled. `APP_ORIGIN` configures email links separately.
