@@ -1,7 +1,7 @@
 import { and, eq, ilike, or, sql, type SQL } from 'drizzle-orm';
 import { communityPosts, users } from './db';
 
-export const communitySorts = ['relevance', 'newest', 'oldest', 'severity', 'confirmations'] as const;
+export const communitySorts = ['relevance', 'newest', 'oldest', 'severity', 'likes'] as const;
 export type CommunitySort = typeof communitySorts[number];
 
 export function normalizeSearch(value: string) {

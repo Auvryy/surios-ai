@@ -10,12 +10,14 @@
 **SuriOS** (from Tagalog *suri* — to inspect, analyze, and appraise) is an AI-driven public civil infrastructure defect detection, hazard triage, and municipal maintenance dispatch platform aligned with **UN Sustainable Development Goal 9: Industry, Innovation, and Infrastructure**.
 
 ### The Core Problem & Solution
-- **The Problem:** Local municipal governments (LGUs) lack automated, crowdsourced detection and triage systems for road hazards (potholes, alligator cracking, drainage failure, asphalt degradation) once roads are operational.
+- **The Problem:** Local governments lack a shared, evidence-based way for residents and staff to document defects across public infrastructure and track the response after assets are in service.
 - **The Solution:**
-  1. Citizens or city inspectors capture road defect photos with geolocation coordinates.
-  2. Google Gemini Multimodal Vision inspects the photo, filters out spam/non-infrastructure, classifies distress based on civil engineering standards (ASTM D6433), and estimates severity.
+  1. Residents or city inspectors capture photos/videos and a location for an infrastructure concern.
+  2. Google Gemini Multimodal Vision checks for recognizable public infrastructure, separates visible observations from unverified reporter claims, classifies the issue, and estimates severity. ASTM D6433 terminology applies only to road pavement.
   3. A deterministic **Hazard Severity Index (1–10)** and recommended civil maintenance actions are generated.
-  4. Maintenance tickets are routed to a real-time, interactive municipal operations dashboard for dispatch and lifecycle tracking.
+  4. Reports are grouped only when evidence supports the same asset/issue, then linked to official progress and resolution updates for public tracking.
+
+The assessment scope includes road pavement, bridges and footbridges, drainage channels and flood canals, streetlights and utility poles, water pipes and hydrants, and telecom/fiber infrastructure. The current map's OSM road corridors and drawn road sections apply to road reports; other assets are represented by their reported point location. A photo cannot establish hidden structural condition, service status, ownership, water quality, or whether a cable is energized.
 
 ---
 
@@ -28,7 +30,7 @@ You must strictly preserve this technology stack. Do **not** suggest, introduce,
 | **Frontend Framework** | **Svelte 5** | **Runes syntax only (`$state`, `$derived`, `$effect`, `$props`, `$bindable`).** <br>❌ NEVER use legacy Svelte 3/4 stores (`writable`, `derived`, `subscribe`). <br>❌ NEVER use legacy `export let`. |
 | **Meta-Framework** | **SvelteKit** (TypeScript) | Form actions in `+page.server.ts`, API endpoints in `+server.ts`. Client-side SPA navigation via progressive enhancement (`use:enhance`). |
 | **Styling & UI** | **Tailwind CSS v4 + shadcn-svelte** | Bits UI primitives, Lucide icons (`@lucide/svelte`). Minimalist, accessible, high-trust civic tech styling. |
-| **AI Vision Engine** | **Google Gemini API** (`@google/genai`) | Model: `gemini-3.5-flash`. Structured output with strict Zod schema validation. |
+| **AI Vision Engine** | **Google Gemini API** (`@google/genai`) | Default assessment/matching model: `gemini-3.5-flash-lite` (MINIMAL thinking; no automatic larger-model fallback). Structured output with strict Zod schema validation. |
 | **Database** | **PostgreSQL** | Coordinate storage, triage payloads (`JSONB`), ticket lifecycle status. |
 | **Container & Infra** | **Docker & Docker Compose** | Ubuntu Azure Virtual Machine behind Nginx reverse proxy (subdomain routing, SSL termination on 80/443). |
 
@@ -48,17 +50,23 @@ You must strictly preserve this technology stack. Do **not** suggest, introduce,
 * **Image Handling:** Never store raw image base64 strings or BLOBs inside PostgreSQL tables. Save images to disk/storage volumes and store only relative file paths and metadata in the database.
 * **HTTPS Requirement:** Remember that the HTML5 Geolocation API (`navigator.geolocation`) requires an HTTPS secure context on physical mobile devices. Always design citizen reporting flows with progressive fallback.
 
-### C. Civil Engineering & AI Triage Standards
-* System prompts must align with **ASTM D6433 (Standard Practice for Roads and Parking Lots Pavement Condition Index - PCI)**.
-* Standard distress classifications:
+### C. Public Infrastructure & AI Triage Standards
+* Apply **ASTM D6433** only to road and parking-lot pavement. Do not present that pavement standard as a bridge, utility, lighting, or telecom inspection method.
+* Supported issue classifications:
   - `pothole`
   - `alligator_cracking` (fatigue cracking)
   - `longitudinal_transverse_cracking`
   - `rutting`
   - `ravelling_weathering`
   - `drainage_culvert_failure`
-* **Vulnerable Road User (VRU) Risk:** Always assess hazard risk specifically for two-wheelers (motorcycles, scooters, bicycles) and pedestrians.
-* **Spam Filter:** If the image is not civil infrastructure (selfies, pets, indoor photos, blurry captures), immediately set `isValidInfrastructure: false` with a clear explanation.
+  - `bridge_structure_defect`, `footbridge_access_defect`
+  - `drainage_channel_failure`, `drainage_cover_missing`, `drainage_blockage`
+  - `streetlight_damage`, `utility_pole_damage`
+  - `water_pipe_leak`, `hydrant_damage`, `telecom_cable_hazard`
+* **Evidence discipline:** `visibleDefects` contains only what the supplied media shows. `reportedConditions` restates user claims as unverified; those claims alone never raise severity or establish a critical hazard. Do not infer hidden damage, outage, cause, public/private ownership, water quality, electrical state, or completed work.
+* **Severity:** Use the full 1–10 scale proportionately. Scores 8–10 require clear visible evidence of severe immediate danger and high confidence; ordinary defects usually remain at 4 or lower when the evidence shows only localized minor damage.
+* **Public exposure:** Describe people and access-path exposure visible in the media. Do not invent two-wheeler risk or fatal outcomes where those are not visible.
+* **Spam Filter:** If the media does not show recognizable public infrastructure, reject it with a clear explanation; a text description by itself is not proof.
 
 ---
 

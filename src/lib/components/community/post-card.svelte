@@ -8,7 +8,6 @@
 	import RepostComposer from './repost-composer.svelte';
 	import Avatar from './avatar.svelte';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
-	import ThumbsUpIcon from '@lucide/svelte/icons/thumbs-up';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
 	import PostShare from './post-share.svelte';
 	import Repeat2Icon from '@lucide/svelte/icons/repeat-2';
@@ -16,11 +15,13 @@
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import SendIcon from '@lucide/svelte/icons/send';
 	import XIcon from '@lucide/svelte/icons/x';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import type { CommunityPost, CommunityComment } from '$lib/types/community';
 	let { post, user, detail = false, mediaId = '' }: { post: CommunityPost; user: { id: string; role?: string } | null; detail?: boolean; mediaId?: string } = $props();
 	let article = $state<HTMLElement>();
 	let commentInput = $state('');
 	let busy = $state(false);
+	let deleting = $state(false);
 	let actionError = $state('');
 	let repostOpen = $state(false);
 	let replyTarget = $state<CommunityComment | null>(null);
@@ -68,6 +69,17 @@
 		finally { busy = false; }
 	}
 	async function repost() { if (await signedIn()) repostOpen = true; }
+	async function deletePost() {
+		if (!user || user.id !== post.author.id || deleting || !window.confirm('Delete your post? The linked hazard and any government resolution will remain available.')) return;
+		deleting = true; actionError = '';
+		try {
+			const response = await fetch(`/api/community/posts/${post.id}`, { method: 'DELETE' });
+			const result = await response.json();
+			if (!response.ok) throw new Error(result.message || 'Unable to delete this post.');
+			await invalidateAll();
+		} catch (cause) { actionError = cause instanceof Error ? cause.message : 'Unable to delete this post.'; }
+		finally { deleting = false; }
+	}
 	function timeAgo(date: string) {
 		const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(date)) / 60000));
 		return minutes < 1 ? 'Just now' : minutes < 60 ? `${minutes}m ago` : minutes < 1440 ? `${Math.floor(minutes / 60)}h ago` : new Date(date).toLocaleDateString();
@@ -75,21 +87,26 @@
 </script>
 
 <article bind:this={article} id="post-{post.id}" class="scroll-mt-4 overflow-hidden rounded-xl border border-border bg-card" class:cursor-pointer={!detail}>
-	<header class="flex items-center justify-between gap-2 px-3 py-3 sm:px-4">
-		<a class="flex min-w-0 items-center gap-2.5 rounded-lg text-left" aria-label="View profile of {post.author.name}" href="/community?profile={post.author.id}"><Avatar name={post.author.name} src={post.author.avatarUrl} /><span class="min-w-0"><span class="block truncate text-sm font-semibold">{post.author.name}</span><span class="block text-xs text-muted-foreground">{timeAgo(post.createdAt)} · Community</span></span></a>
-		<span class="shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold {post.analysis.riskLevel === 'CRITICAL' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}">{post.analysis.hazardSeverity}/10 {post.analysis.riskLevel.toLowerCase()}</span>
+		<header class="flex items-center justify-between gap-2 px-3 py-3 sm:px-4">
+			<a class="flex min-w-0 items-center gap-2.5 rounded-lg text-left" aria-label="View profile of {post.author.name}" href="/community?profile={post.author.id}"><Avatar name={post.author.name} src={post.author.avatarUrl} /><span class="min-w-0"><span class="block truncate text-sm font-semibold">{post.author.name}</span><span class="block text-xs text-muted-foreground">{timeAgo(post.createdAt)} · Community</span></span></a>
+			<div class="flex shrink-0 items-center gap-1">{#if !post.deletedAt}<span class="rounded-full px-2 py-1 text-[11px] font-semibold {(post.reportRiskLevel || post.analysis.riskLevel) === 'CRITICAL' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}">{post.reportSeverity ?? post.analysis.hazardSeverity}/10 {(post.reportRiskLevel || post.analysis.riskLevel).toLowerCase()}</span>{/if}
+				{#if user?.id === post.author.id && !post.deletedAt}<details class="relative"><summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary focus-visible:outline-2 focus-visible:outline-primary" aria-label="More options for your post"><EllipsisIcon aria-hidden="true" class="size-5" /></summary><div class="absolute right-0 top-full z-20 min-w-40 rounded-lg border border-border bg-popover p-1 shadow-md"><button type="button" class="flex min-h-11 w-full items-center rounded-md px-3 text-left text-sm text-destructive hover:bg-secondary" disabled={deleting} onclick={deletePost}>{deleting ? 'Deleting…' : 'Delete post'}</button></div></details>{/if}
+			</div>
 	</header>
+		{#if post.deletedAt}
+			<div class="space-y-3 px-4 pb-4"><p class="text-sm text-muted-foreground">This post was deleted by its author.</p><div class="flex flex-wrap gap-2"><a href="/map?report={post.reportId}" class="inline-flex min-h-10 items-center rounded-lg bg-secondary px-3 text-xs font-medium hover:bg-secondary/70">View hazard map</a>{#if post.governmentUpdateLink}<a href={post.governmentUpdateLink} class="inline-flex min-h-10 items-center rounded-lg bg-primary/10 px-3 text-xs font-medium text-primary hover:bg-primary/15">View government update</a>{/if}</div></div>
+		{:else}
 	<div class="space-y-1 px-3 pb-3 sm:px-4"><h2 class="text-sm font-semibold leading-snug"><a href={threadUrl} class="rounded-sm hover:underline">{post.title}</a></h2>{#if post.body}<p class="break-words text-sm leading-5 text-muted-foreground" class:line-clamp-2={!detail}>{post.body}</p>{#if !detail && post.body.length > 150}<a href={threadUrl} class="inline-flex min-h-8 items-center text-xs font-semibold hover:underline">Read full post</a>{/if}{/if}</div>
 	<PostMedia {post} {detail} {mediaId} />
 
 	<div class="space-y-2 px-3 py-2 sm:px-4">
 		<a href="https://www.openstreetmap.org/?mlat={post.latitude}&mlon={post.longitude}#map=17/{post.latitude}/{post.longitude}" target="_blank" rel="noreferrer" class="flex items-start gap-1.5 text-xs text-muted-foreground hover:underline"><MapPinIcon aria-hidden="true" class="mt-0.5 size-3.5 shrink-0 text-primary" />{post.locationName}</a>
-		<details class="rounded-lg bg-primary/5 px-3"><summary class="flex min-h-10 cursor-pointer items-center gap-2 text-xs font-medium"><SparklesIcon aria-hidden="true" class="size-3.5 text-primary" />AI assessed · {post.analysis.distressType.replaceAll('_', ' ')}<span class="ml-auto text-muted-foreground">Details</span></summary><div class="space-y-2 pb-3 text-xs leading-5 text-muted-foreground"><p>{post.analysis.summary}</p><p><strong class="font-medium text-foreground">Rider risk:</strong> {post.analysis.vruLethality.toLowerCase()} · {post.analysis.vruDetails}</p><p><strong class="font-medium text-foreground">Suggested repair:</strong> {post.analysis.recommendedAction}</p><p>AI estimates require on-site inspection.</p><a class="inline-flex min-h-10 items-center gap-1 font-medium text-primary hover:underline" href="/map?report={post.reportId}"><MapPinIcon aria-hidden="true" class="size-3.5" />View hazard on map · {post.reportId.slice(0, 8).toUpperCase()}</a>{#if post.grouping}<p>{post.grouping.reason}</p>{/if}</div></details>
+		<details class="rounded-lg bg-primary/5 px-3"><summary class="flex min-h-10 cursor-pointer items-center gap-2 text-xs font-medium"><SparklesIcon aria-hidden="true" class="size-3.5 text-primary" />AI assessed · {post.analysis.infrastructureType?.replaceAll('_', ' ') || 'public infrastructure'} · {post.analysis.distressType.replaceAll('_', ' ')}<span class="ml-auto text-muted-foreground">Details</span></summary><div class="space-y-2 pb-3 text-xs leading-5 text-muted-foreground"><p>{post.analysis.summary}</p>{#if post.analysis.severityEvidence}<p><strong class="font-medium text-foreground">Visible evidence:</strong> {post.analysis.severityEvidence.visibleDefects.join('; ') || 'No clear defect visible.'}</p>{#if post.analysis.severityEvidence.reportedConditions?.length}<p><strong class="font-medium text-foreground">Reported, unverified:</strong> {post.analysis.severityEvidence.reportedConditions.join('; ')}</p>{/if}<p>Confidence: {post.analysis.severityEvidence.confidence.toLowerCase()}. {post.analysis.severityEvidence.limitations}</p>{/if}<p><strong class="font-medium text-foreground">Visible public exposure:</strong> {post.analysis.vruDetails}</p><p><strong class="font-medium text-foreground">Suggested response:</strong> {post.analysis.recommendedAction}</p><p>AI estimates require on-site inspection.</p><a class="inline-flex min-h-10 items-center gap-1 font-medium text-primary hover:underline" href="/map?report={post.reportId}"><MapPinIcon aria-hidden="true" class="size-3.5" />View hazard on map · {post.reportId.slice(0, 8).toUpperCase()}</a>{#if post.grouping}<p>{post.grouping.reason}</p>{/if}</div></details>
 	</div>
 	{#if post.reportStatus && post.reportStatus !== 'REPORTED'}<div class="px-3 pb-3 sm:px-4"><a data-report-status={post.reportStatus} href={post.governmentUpdateLink || `${threadUrl}#government-updates`} class="inline-flex min-h-9 items-center rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary">{post.reportStatus === 'RESOLVED' ? 'Resolved' : 'In progress'} · View government update</a></div>{/if}
-	<div class="flex flex-wrap items-center justify-between gap-x-3 px-3 pb-2 text-xs text-muted-foreground sm:px-4"><span>{post.confirmations} confirmations</span><a class="inline-flex min-h-8 items-center hover:underline" href="{threadUrl}#comments">{post.comments.length} comments · {post.reposts || 0} reposts</a></div>
+	<div class="flex flex-wrap items-center justify-between gap-x-3 px-3 pb-2 text-xs text-muted-foreground sm:px-4"><span>{post.confirmations} {post.confirmations === 1 ? 'like' : 'likes'}</span><a class="inline-flex min-h-8 items-center hover:underline" href="{threadUrl}#comments">{post.comments.length} comments · {post.reposts || 0} reposts</a></div>
 	<div class="mx-3 grid grid-cols-4 border-t border-border py-1 sm:mx-4">
-		<button class="feed-action {post.userConfirmed ? 'text-primary' : ''}" aria-pressed={post.userConfirmed} disabled={busy} onclick={() => interact({ action: 'confirm', confirmed: !post.userConfirmed })}><ThumbsUpIcon aria-hidden="true" class="size-4" />{post.userConfirmed ? 'Confirmed' : 'Confirm'}</button>
+		<button class="feed-action {post.userConfirmed ? 'text-primary' : ''}" aria-pressed={post.userConfirmed} disabled={busy} onclick={() => interact({ action: 'like', liked: !post.userConfirmed })}><HeartIcon aria-hidden="true" class="size-4" />{post.userConfirmed ? 'Liked' : 'Like'}</button>
 		<a class="feed-action" href="{threadUrl}#comments"><MessageSquareIcon aria-hidden="true" class="size-4" />Comment</a>
 		<button class="feed-action {post.userReposted ? 'text-primary' : ''}" onclick={repost}><Repeat2Icon aria-hidden="true" class="size-4" />{isGovernment(user?.role) ? 'Update' : 'Repost'}</button>
 		<PostShare title={post.title} path={threadUrl} />
@@ -113,7 +130,8 @@
 			</form>
 		{/if}
 	</section>{/if}
-</article>
+		{/if}
+	</article>
 {#if repostOpen}<RepostComposer bind:open={repostOpen} {post} {user} />{/if}
 
 <style>

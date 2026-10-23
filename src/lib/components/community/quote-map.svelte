@@ -1,11 +1,12 @@
 <script lang="ts">
+	import type { RoadSegment } from '$lib/types/roads';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
-	let { latitude, longitude, name, href }: { latitude: number; longitude: number; name: string; href: string } = $props();
+	let { latitude, longitude, name, href, roadSegment = null }: { latitude: number; longitude: number; name: string; href: string; roadSegment?: RoadSegment | null } = $props();
 	let element = $state<HTMLDivElement>();
 	let failed = $state(false);
 	$effect(() => {
 		if (!element) return;
-		const container = element, lat = latitude, lon = longitude;
+		const container = element, lat = latitude, lon = longitude, section = roadSegment;
 		let active = true, started = false;
 		let map: import('leaflet').Map | undefined;
 		async function start() {
@@ -14,7 +15,8 @@
 				const L = await import('leaflet'); if (!active) return;
 				map = L.map(container, { zoomControl: false, attributionControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, touchZoom: false }).setView([lat, lon], 15);
 				L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-				L.circleMarker([lat, lon], { radius: 5, color: '#ffffff', weight: 2, fillColor: '#f97316', fillOpacity: 1, interactive: false }).addTo(map);
+				if (section) { L.polyline(section.coordinates, { color: getComputedStyle(container).getPropertyValue('--primary').trim() || '#d44a00', weight: 4 }).addTo(map); map.fitBounds(section.coordinates, { padding: [12, 12], maxZoom: 17 }); }
+				L.circleMarker([lat, lon], { radius: 5, color: '#ffffff', weight: 2, fillColor: getComputedStyle(container).getPropertyValue('--primary').trim() || '#d44a00', fillOpacity: 1, interactive: false }).addTo(map);
 			} catch { if (active) failed = true; }
 		}
 		const observer = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting)) { observer.disconnect(); void start(); } }, { rootMargin: '200px' });

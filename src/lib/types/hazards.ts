@@ -7,6 +7,7 @@ export interface MatchDecision {
 	reason: string;
 }
 export interface MapHazard {
+	roadSegment?: import('./roads').RoadSegment | null;
 	id: string;
 	title: string;
 	location: string;
@@ -31,9 +32,8 @@ export interface MapHazard {
 
 /** Product triage bands, not a certified pavement condition index. */
 export function normalizeSeverity(analysis: TriageAnalysis): TriageAnalysis {
-	const riskFloor = { LOW: 1, MODERATE: 4, CRITICAL: 8 }[analysis.riskLevel];
-	const riderFloor = { NONE: 1, LOW: 1, MODERATE: 4, HIGH: 6, CRITICAL: 8 }[analysis.vruLethality];
-	const hazardSeverity = Math.min(10, Math.max(1, Math.round(analysis.hazardSeverity), riskFloor, riderFloor));
+	// Labels describe the score; they cannot independently inflate physical damage severity.
+	const hazardSeverity = Math.min(10, Math.max(1, Math.round(analysis.hazardSeverity)));
 	return { ...analysis, hazardSeverity, riskLevel: hazardSeverity >= 8 ? 'CRITICAL' : hazardSeverity >= 4 ? 'MODERATE' : 'LOW' };
 }
 export function hazardPriority(severity: number, support: number) {

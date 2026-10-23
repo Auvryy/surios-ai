@@ -1,5 +1,5 @@
 # SuriOS — UI/UX Design System Specification
-**SDG 9 Municipal Civil Infrastructure & Vulnerable Road User Safety Platform**
+**SDG 9 Public Infrastructure Reporting & Response Platform**
 
 ---
 
@@ -79,7 +79,7 @@ SuriOS standardizes on **shadcn-svelte** built on top of **Bits UI** primitives 
 | **`Tabs`** | `$lib/components/ui/tabs` | Segmented tab views in Triage (`Overview`, `ASTM Specs`, `Materials`) and Settings (`Appearance`, `Alerts`, `ASTM`, `Diagnostics`). |
 | **`Sheet`** | `$lib/components/ui/sheet` | Slide-over inspection drawer (`side="right"`) and mobile navigation drawer (`side="left"`). |
 | **`Dialog`** | `$lib/components/ui/dialog` | Gemini "Proof of Patch" inspection modals. |
-| **`Alert`** | `$lib/components/ui/alert` | High-contrast Two-Wheeler Lethality warnings and authentication error banners. |
+| **`Alert`** | `$lib/components/ui/alert` | High-contrast critical infrastructure warnings and authentication error banners. |
 | **`Separator`** | `$lib/components/ui/separator` | 1px horizontal and vertical dividing rules (`border-border`). |
 | **`EmptyState`** | `$lib/components/ui/empty-state.svelte` | Dashed icon container, phase badge, and planned specification checklist for upcoming modules. |
 | **`ThemeToggle`** | `$lib/components/theme-toggle.svelte` | Instant dark/light mode switch persisted to `localStorage('surios-theme')`. |
@@ -94,7 +94,7 @@ SuriOS standardizes on **shadcn-svelte** built on top of **Bits UI** primitives 
 | **`--card`** | `oklch(1 0 0)` (`#ffffff`) | `oklch(0.135 0 0)` (`#18181b`) | Elevated matte card & sidebar surface. |
 | **`--border`** | `oklch(0.91 0 0)` (`#e4e4e7`) | `oklch(0.23 0 0)` (`#27272a`) | 1px structural micro-border. |
 | **`--primary`** | `oklch(0.145 0 0)` (`#09090b`)| `oklch(0.985 0 0)` (`#fafafa`) | Solid primary buttons & active indicators. |
-| **`--destructive`** | `oklch(0.577 0.245 27.3)` | `oklch(0.55 0.22 25)` | Two-Wheeler Lethality & Critical Road Hazards (`Severity 8–10`). |
+| **`--destructive`** | `oklch(0.577 0.245 27.3)` | `oklch(0.55 0.22 25)` | Critical infrastructure hazards (`Severity 8–10`). |
 | **`--muted`** | `oklch(0.965 0 0)` | `oklch(0.18 0 0)` | Subdued pill badges, secondary surfaces, and input backgrounds. |
 
 ---

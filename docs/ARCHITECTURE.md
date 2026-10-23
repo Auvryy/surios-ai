@@ -77,7 +77,7 @@ flowchart TD
 ### C. 🧠 Multimodal Vision & Civil Triage Pipeline (`src/lib/server/gemini.ts`)
 * **Resilient Multi-Model Fallback Chain:** Sequentially attempts `gemini-flash-lite-latest` $\rightarrow$ `gemini-flash-latest` $\rightarrow$ `gemini-3.8-flash` via `@google/genai` with `responseMimeType: 'application/json'`.
 * **Dual-Stage Validation:**
-  1. **Spam & Non-Infrastructure Gate:** Rejects selfies, indoor rooms, pets, and non-road imagery (`isValidInfrastructure: false`), returning HTTP `422` without polluting the database.
+  1. **Spam & Non-Infrastructure Gate:** Rejects selfies, indoor rooms, pets, and media that does not show recognizable public infrastructure (`isValidInfrastructure: false`), returning HTTP `422` without polluting the database.
   2. **Zod Schema Enforcement (`TriageAnalysisSchema`):** Normalizes enum casing and enforces safe defaults so malformed fields never crash the server.
 * **ASTM D6433 & VRU Lethality Profiling:** Categorizes pavement distress (*pothole, alligator cracking, longitudinal/transverse cracking, rutting, ravelling/weathering, drainage failure, edge break*) and evaluates specific kinematic threats to motorcycles, tricycles, and bicycles.
 
@@ -86,7 +86,7 @@ flowchart TD
 * **Numeric Severity Marker Encoding:** Adhering to our Zero AI-Slop Charter (no decorative status dots), map pins render the exact numeric **Hazard Severity Index (`1` to `10`)** inside a crisp bordered badge:
   * **Low (`1–4`):** Neutral Slate (`#64748b`) — Routine monitoring & crack sealing.
   * **Moderate (`5–7`):** Warning Amber (`#f59e0b`) — Scheduled cold/hot mix patching.
-  * **Critical (`8–10`):** Destructive Red (`#ef4444`) — Emergency dispatch for lethal VRU craters.
+  * **Critical (`8–10`):** Destructive Red (`#ef4444`) — Urgent review for severe visible infrastructure hazards with clear public exposure.
 * **Haversine `~25m` Deduplication:** Proximate reports of the same defect merge into a single canonical ticket, incrementing `community_confirmations` as a priority multiplier.
 
 ---

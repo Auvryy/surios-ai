@@ -24,9 +24,9 @@ async function record(input: Awaited<ReturnType<typeof evidence>>, compare = noA
 	const result = await recordHazardEvidence(input, compare); createdReports.add(result.reportId); return result;
 }
 
-test('severity bands stay consistent with rider risk; support changes priority only', () => {
-	expect(normalizeSeverity({ ...base, hazardSeverity: 1, riskLevel: 'LOW', vruLethality: 'CRITICAL' }).hazardSeverity).toBe(8);
-	expect(normalizeSeverity({ ...base, hazardSeverity: 1, riskLevel: 'CRITICAL' }).riskLevel).toBe('CRITICAL');
+test('severity uses the observed score without risk-label inflation; support changes priority only', () => {
+	expect(normalizeSeverity({ ...base, hazardSeverity: 1, riskLevel: 'LOW', vruLethality: 'CRITICAL' }).hazardSeverity).toBe(1);
+	expect(normalizeSeverity({ ...base, hazardSeverity: 1, riskLevel: 'CRITICAL' }).riskLevel).toBe('LOW');
 	expect(hazardPriority(5, 1)).toBe(5); expect(hazardPriority(5, 2)).toBe(5.25); expect(hazardPriority(5, 100)).toBe(7); expect(hazardPriority(9, 100)).toBe(10);
 	expect(distanceMeters({ latitude: 14, longitude: 121 }, { latitude: 14, longitude: 121 })).toBe(0);
 	expect(distanceMeters({ latitude: 14, longitude: 121 }, { latitude: 14.001, longitude: 121 })).toBeGreaterThan(100);

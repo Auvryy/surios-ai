@@ -90,3 +90,17 @@ docker image prune -f
 ## Account email and password recovery
 
 Migration `drizzle/0005_account-settings.sql` adds the persisted email outbox and password-reset tokens. Configure the server-only `APP_ORIGIN`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_SECURE` variables before enabling live delivery. Production Compose forwards these variables to the web container. See [Account settings](./ACCOUNT_SETTINGS.md) for configuration, migration, and verification details.
+
+## Road reporting deployment
+
+Apply `drizzle/0010_road-segments.sql` before starting the updated app. It is additive and retains existing seeded accounts/posts. Production Compose accepts `52M` request bodies for the 50 MiB total media limit; configure Nginx or another front proxy with `client_max_body_size 52m;` as well. The app uses OpenStreetMap street tiles and bounded cached public OSM geometry requests, with no map API key required. The optional labeled road demo is seeded explicitly with `node --env-file-if-exists=.env scripts/seed-road.mjs` from the repository checkout; it is never inserted on startup.
+
+For a local production preview after `npm run build`, run:
+
+```bash
+npm run preview:production
+```
+
+This launcher serves the actual production build on `http://localhost:5173`, with production authentication and the 52 MiB body limit. It binds only to localhost and supplies the HTTP protocol internally, so ordinary sign-in forms pass CSRF validation without weakening checks. Set `PORT` to use another local port.
+
+The installed adapter-node 6 / SvelteKit 3 derives the origin from forwarded protocol/host headers or build-time `kit.paths.origin`; the old runtime `ORIGIN` setting is not used. For deployment, keep HTTPS and configure the trusted reverse proxy headers or a fixed build origin. `APP_ORIGIN` configures email links separately. Use the regular container entrypoint for deployment, not the loopback preview launcher.

@@ -71,6 +71,20 @@
       "when": 1792754906986,
       "tag": "0009_quote-interactions",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792758718349,
+      "tag": "0010_road-segments",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792767930963,
+      "tag": "0011_community-post-soft-delete",
+      "breakpoints": true
     }
   ]
 }

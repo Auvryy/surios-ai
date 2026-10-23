@@ -31,7 +31,7 @@ test.afterAll(async () => {
 test('confirmed updates hide the duplicate posting box while feed and other filters keep their behavior', async ({ page, baseURL }) => {
 	await page.context().addCookies([{ name: 'surios_session', value: token, url: baseURL! }]);
 	await page.goto('/liked'); await page.waitForLoadState('networkidle');
-	await expect(page).toHaveURL(/tab=confirmed/);
+	await expect(page).toHaveURL(/tab=liked/);
 	await expect(page.locator(`#post-${postId}`)).toBeVisible();
 	await expect(page.getByRole('button', { name: 'What’s happening on your road?', exact: true })).toHaveCount(0);
 	for (const name of ['Photos', 'Video', 'Location']) await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0);

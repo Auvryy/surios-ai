@@ -22,9 +22,10 @@ export const POST: RequestHandler = async (event) => {
 		const form = await readUploadForm(event.request);
 		const files = await validateMedia(form.getAll('media'));
 		let analysis;
-		try { analysis = normalizeSeverity(await analyzeRoadMedia(files.map(({ buffer, media }) => ({ buffer, mimeType: media.mimeType })))); }
+		const reporterContext = typeof form.get('context') === 'string' ? String(form.get('context')).slice(0, 2200) : '';
+		try { analysis = normalizeSeverity(await analyzeRoadMedia(files.map(({ buffer, media }) => ({ buffer, mimeType: media.mimeType })), reporterContext)); }
 		catch (cause) { console.error('[Community AI]', cause instanceof Error ? cause.message : 'Assessment failed'); error(503, 'AI assessment is unavailable. Your draft is still here; please try again shortly.'); }
-		if (!analysis.isValidInfrastructure) return json({ error: analysis.rejectionReason || 'These attachments do not show a public road hazard.', analysis }, { status: 422 });
+		if (!analysis.isValidInfrastructure) return json({ error: analysis.rejectionReason || 'These attachments do not show recognizable public infrastructure.', analysis }, { status: 422 });
 		await fs.mkdir(MEDIA_DIR, { recursive: true });
 		for (const file of files) {
 			saved.push(file);

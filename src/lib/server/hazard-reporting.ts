@@ -3,8 +3,9 @@ import { error } from '@sveltejs/kit';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { db, reports, reportObservations, communityPosts, communityDrafts, communityConfirmations, type Report } from './db';
-import { compareRoadEvidence } from './gemini';
+import { db, reports, reportObservations, communityPosts, communityDrafts, type Report } from './db';
+import { roadSectionsOverlap, type RoadSegment } from '$lib/types/roads';
+import { compareInfrastructureEvidence } from './gemini';
 import { distanceMeters, normalizeSeverity, hazardPriority, type MatchDecision } from '$lib/types/hazards';
 import type { TriageAnalysis } from '$lib/types/triage';
 import type { PostMedia } from '$lib/types/community';
@@ -16,9 +17,6 @@ export async function refreshReportSupport(tx: Transaction, reportId: string) {
 	const [result] = await tx.execute<{ count: number }>(sql`
 		select count(distinct supporter)::int as count from (
 			select observer_key as supporter from report_observations where report_id = ${reportId}::uuid
-			union all
-			select 'user:' || c.user_id::text as supporter from community_confirmations c
-			join community_posts p on p.id = c.post_id where p.report_id = ${reportId}::uuid
 		) supporters`);
 	const [report] = await tx.select().from(reports).where(eq(reports.id, reportId));
 	const baseline = Number((report.triagePayload as Record<string, unknown> | null)?.supportBaseline || 0);
@@ -27,6 +25,7 @@ export async function refreshReportSupport(tx: Transaction, reportId: string) {
 	return support;
 }
 interface EvidenceInput {
+	roadSegment?: RoadSegment | null;
 	sourceId: string;
 	userId?: string;
 	analysis: TriageAnalysis;
@@ -41,7 +40,7 @@ async function mediaBytes(media: PostMedia) {
 	if (/^\/media\/[0-9a-f-]{36}\.(jpg|png|webp|mp4|webm|mov)$/.test(media.url)) filename = path.resolve('static/uploads/community', path.basename(media.url));
 	else if (/^\/uploads\/[a-zA-Z0-9_.-]+$/.test(media.url)) filename = path.resolve('static/uploads', path.basename(media.url));
 	else return null;
-	try { const stat = await fs.stat(filename); if (stat.size > 10 * 1024 * 1024) return null; return { buffer: await fs.readFile(filename), mimeType: media.mimeType }; }
+	try { const stat = await fs.stat(filename); if (stat.size > 25 * 1024 * 1024) return null; return { buffer: await fs.readFile(filename), mimeType: media.mimeType }; }
 	catch { return null; }
 }
 function reportMedia(report: Report): PostMedia[] {
@@ -52,7 +51,9 @@ function reportMedia(report: Report): PostMedia[] {
 	return mimeType ? [{ id: report.id, url: report.imagePath, kind: mimeType.startsWith('video/') ? 'video' : 'photo', name: 'Existing road evidence', mimeType }] : [];
 }
 async function candidatesAt(input: EvidenceInput, tx: Transaction | typeof db = db) {
-	const latitudeDelta = 25 / 111000;
+	const roadSegment = input.analysis.infrastructureType === 'ROAD_PAVEMENT' ? input.roadSegment : null;
+	const radius = roadSegment ? 525 : 25;
+	const latitudeDelta = radius / 111000;
 	const longitudeDelta = latitudeDelta / Math.max(.001, Math.cos(input.latitude * Math.PI / 180));
 	const rows = await tx.select().from(reports).where(and(
 		ne(reports.status, 'RESOLVED'), eq(reports.distressType, input.analysis.distressType),
@@ -60,10 +61,14 @@ async function candidatesAt(input: EvidenceInput, tx: Transaction | typeof db = 
 		between(reports.longitude, String(input.longitude - longitudeDelta), String(input.longitude + longitudeDelta))
 	)).orderBy(desc(reports.updatedAt)).limit(50);
 	return rows.map((report) => ({ report, distance: distanceMeters(input, { latitude: Number(report.latitude), longitude: Number(report.longitude) }) }))
-		.filter((item) => item.distance <= 25).sort((a, b) => a.distance - b.distance || a.report.id.localeCompare(b.report.id)).slice(0, 3);
+		.filter((item) => {
+			const metadata = item.report.triagePayload as { infrastructureType?: string; roadSegment?: RoadSegment } | null;
+			const sameInfrastructure = !input.analysis.infrastructureType || !metadata?.infrastructureType || input.analysis.infrastructureType === metadata.infrastructureType;
+			return sameInfrastructure && (item.distance <= 25 || (!!roadSegment && roadSectionsOverlap(roadSegment, metadata?.roadSegment)));
+		}).sort((a, b) => a.distance - b.distance || a.report.id.localeCompare(b.report.id)).slice(0, 3);
 }
-async function decideMatch(input: EvidenceInput, candidates: Awaited<ReturnType<typeof candidatesAt>>, fingerprints: string[], compare: typeof compareRoadEvidence) {
-	if (!candidates.length) return { reportId: null, method: 'new', confidence: 1, reason: 'No open report of this damage type within 25 metres.' } as const;
+async function decideMatch(input: EvidenceInput, candidates: Awaited<ReturnType<typeof candidatesAt>>, fingerprints: string[], compare: typeof compareInfrastructureEvidence) {
+	if (!candidates.length) return { reportId: null, method: 'new', confidence: 1, reason: 'No open report of this issue type near the reported location or on the same road section.' } as const;
 	const observations = await db.select().from(reportObservations).where(inArray(reportObservations.reportId, candidates.map((item) => item.report.id)));
 	const visualCandidates = [];
 	let incomingBytes = null;
@@ -76,9 +81,10 @@ async function decideMatch(input: EvidenceInput, candidates: Awaited<ReturnType<
 		let evidence = null;
 		for (const media of reportMedia(item.report)) { evidence = await mediaBytes(media); if (evidence) break; }
 		if (evidence) storedHashes.push(crypto.createHash('sha256').update(evidence.buffer).digest('hex'));
-		if (fingerprints.some((hash) => storedHashes.includes(hash))) return { reportId: item.report.id, method: 'exact', confidence: 1, newEvidence: fingerprints.some((hash) => !storedHashes.includes(hash)), reason: 'Shared evidence, same damage type, and a pin within 25 metres. Repeated media does not increase severity.' } as const;
-		if (evidence && bytes + evidence.buffer.length <= 12 * 1024 * 1024) bytes += evidence.buffer.length; else evidence = null;
-		visualCandidates.push({ id: item.report.id, distance: item.distance, distressType: item.report.distressType, summary: (item.report.triagePayload as { summary?: string } | null)?.summary || item.report.recommendedAction, media: evidence });
+		if (fingerprints.some((hash) => storedHashes.includes(hash))) return { reportId: item.report.id, method: 'exact', confidence: 1, newEvidence: fingerprints.some((hash) => !storedHashes.includes(hash)), reason: 'Shared media identifies the same issue. Repeated media does not increase severity.' } as const;
+		if (evidence && bytes + evidence.buffer.length <= 50 * 1024 * 1024) bytes += evidence.buffer.length; else evidence = null;
+		const metadata = item.report.triagePayload as { infrastructureType?: string; summary?: string } | null;
+		visualCandidates.push({ id: item.report.id, distance: item.distance, infrastructureType: metadata?.infrastructureType, distressType: item.report.distressType, summary: metadata?.summary || item.report.recommendedAction, media: evidence });
 	}
 	if (incomingBytes && visualCandidates.some((candidate) => candidate.media)) {
 		try {
@@ -90,7 +96,7 @@ async function decideMatch(input: EvidenceInput, candidates: Awaited<ReturnType<
 	}
 	return { reportId: null, method: 'unverified', confidence: 0, reason: 'Visual similarity was unavailable or uncertain; saved separately.' } as const;
 }
-export async function recordHazardEvidence(input: EvidenceInput, compare: typeof compareRoadEvidence = compareRoadEvidence) {
+export async function recordHazardEvidence(input: EvidenceInput, compare: typeof compareInfrastructureEvidence = compareInfrastructureEvidence) {
 	// Reject expired drafts and answer retries before any optional AI comparison.
 	const [existingObservation] = await db.select().from(reportObservations).where(eq(reportObservations.sourceId, input.sourceId));
 	if (existingObservation) {
@@ -141,16 +147,16 @@ export async function recordHazardEvidence(input: EvidenceInput, compare: typeof
 				const rider = mayUpdate && riderRanks.indexOf(analysis.vruLethality) > riderRanks.indexOf(chosen.vruLethality) ? analysis.vruLethality : chosen.vruLethality;
 				await tx.update(reports).set({ hazardSeverity: Math.max(previous.hazardSeverity, mayUpdate ? analysis.hazardSeverity : previous.hazardSeverity), riskLevel: canonical.riskLevel, vruLethality: rider, vruDetails: rider === analysis.vruLethality ? analysis.vruDetails : chosen.vruDetails,
 					recommendedAction: newer ? analysis.recommendedAction : chosen.recommendedAction, materialsChecklist: newer ? analysis.materialsChecklist : chosen.materialsChecklist, imagePath: newer ? imagePath : chosen.imagePath,
-					triagePayload: { ...(chosen.triagePayload as object || {}), ...canonical, vruLethality: rider, civicAddress: (chosen.triagePayload as { civicAddress?: string } | null)?.civicAddress || input.locationName, headline: (chosen.triagePayload as { headline?: string } | null)?.headline || input.post?.title, media: newer ? input.media : reportMedia(chosen) }
+					triagePayload: { ...(chosen.triagePayload as object || {}), ...canonical, roadSegment: (chosen.triagePayload as { roadSegment?: RoadSegment } | null)?.roadSegment || input.roadSegment || null, vruLethality: rider, civicAddress: (chosen.triagePayload as { civicAddress?: string } | null)?.civicAddress || input.locationName, headline: (chosen.triagePayload as { headline?: string } | null)?.headline || input.post?.title, media: newer ? input.media : reportMedia(chosen) }
 				}).where(eq(reports.id, reportId));
 			} else {
-				const [report] = await tx.insert(reports).values({ imagePath, latitude: input.latitude.toFixed(8), longitude: input.longitude.toFixed(8), distressType: analysis.distressType, hazardSeverity: analysis.hazardSeverity, riskLevel: analysis.riskLevel, vruLethality: analysis.vruLethality, vruDetails: analysis.vruDetails, recommendedAction: analysis.recommendedAction, materialsChecklist: analysis.materialsChecklist, communityConfirmations: 1, triagePayload: { ...analysis, civicAddress: input.locationName, headline: input.post?.title, media: input.media, supportBaseline: 0 } }).returning({ id: reports.id });
+				const [report] = await tx.insert(reports).values({ imagePath, latitude: input.latitude.toFixed(8), longitude: input.longitude.toFixed(8), distressType: analysis.distressType, hazardSeverity: analysis.hazardSeverity, riskLevel: analysis.riskLevel, vruLethality: analysis.vruLethality, vruDetails: analysis.vruDetails, recommendedAction: analysis.recommendedAction, materialsChecklist: analysis.materialsChecklist, communityConfirmations: 1, triagePayload: { ...analysis, roadSegment: input.roadSegment || null, civicAddress: input.locationName, headline: input.post?.title, media: input.media, supportBaseline: 0 } }).returning({ id: reports.id });
 				reportId = report.id;
 			}
 			await tx.insert(reportObservations).values({ reportId, sourceId: input.sourceId, userId: input.userId, observerKey: input.userId ? `user:${input.userId}` : `media:${fingerprints.slice().sort().join(':')}`, analysis, media: input.media, fingerprints, match });
 			let id: string | undefined;
 			if (input.post) {
-				const [post] = await tx.insert(communityPosts).values({ ...input.post, userId: input.userId!, reportId, locationName: input.locationName, latitude: input.latitude.toFixed(8), longitude: input.longitude.toFixed(8), media: input.media, analysis }).returning({ id: communityPosts.id });
+				const [post] = await tx.insert(communityPosts).values({ ...input.post, roadSegment: input.roadSegment || null, userId: input.userId!, reportId, locationName: input.locationName, latitude: input.latitude.toFixed(8), longitude: input.longitude.toFixed(8), media: input.media, analysis }).returning({ id: communityPosts.id });
 				id = post.id;
 			}
 			const support = await refreshReportSupport(tx, reportId);

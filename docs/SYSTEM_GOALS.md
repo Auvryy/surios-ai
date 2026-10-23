@@ -1,65 +1,58 @@
-# SuriOS — System Goals, SDG Alignment & Pitch Defense Matrix
+# SuriOS — System Goals and SDG Alignment
 
-This document defines the core problem domain, UN Sustainable Development Goal (SDG) alignment, economic sustainability model, and **ITEL 304 Hackathon Pitch Evaluation Defense** for **SuriOS**.
+This document describes SuriOS's public purpose, current infrastructure scope, and a practical plan for evaluating its impact.
 
----
+## 1. Mission
 
-## 1. Executive Summary & Mission
+**SuriOS** (from Tagalog *suri* — to inspect, analyze, and appraise) helps communities document public infrastructure concerns and follow their progress with accountable public-sector updates. Its current geographic focus is Santa Cruz, Laguna (`14.2813° N, 121.4173° E`). The system combines location-tagged media, cautious AI triage, evidence-supported report grouping, and official status updates.
 
-**SuriOS** (from Tagalog *suri* — to inspect, analyze, and appraise) is an AI-driven public civil infrastructure defect detection, hazard triage, and municipal maintenance dispatch platform anchored in the **Santa Cruz, Laguna provincial corridor (`14.2813° N, 121.4173° E`)**.
+Road pavement is the first fully developed mapped workflow. The broader reporting and assessment scope includes:
 
-Its mission is to shift local government units (LGUs) and DPWH district engineering offices from **reactive crisis repairs** (patching deep craters only after fatal motorcycle crashes or viral complaints) to **proactive, standards-based preventative maintenance** powered by Google Gemini multimodal vision and ASTM D6433 civil engineering telemetry.
-
----
-
-## 2. Credible UN SDG Alignment (Criterion 1 — 25% Weight)
-
-Per the official evaluation guidelines, SuriOS focuses deeply on **UN SDG 9** as its primary anchor, supported by credible, measurable links to **SDG 11** and **SDG 16**:
-
-| UN Sustainable Development Goal | Specific Target | Credible Contribution & Measurable Mechanism in SuriOS |
+| Infrastructure | Examples residents can report | Public value |
 | :--- | :--- | :--- |
-| **SDG 9: Industry, Innovation, and Infrastructure** *(Primary)* | **Target 9.1 & 9.4:** Quality, reliable, sustainable, and resilient infrastructure. | Automates **ASTM D6433** pavement distress inspection via smartphone cameras. Detects early-stage surface cracking and ravelling before monsoon water infiltrates the sub-base, extending road lifespan at $1/6\text{th}$ the material and carbon cost of full reconstruction. |
-| **SDG 11: Sustainable Cities and Communities** *(Secondary)* | **Target 11.2:** Safe, affordable, accessible, and sustainable transport systems for all. | Introduces the **Two-Wheeler Lethality Index (VRU Profiling)**. Over **68% of commuters** in Laguna corridors travel by motorcycle, tricycle, or bicycle. SuriOS specifically flags sharp-lipped potholes ($>50\text{mm}$), longitudinal wheel-rut cracks, and shoulder drop-offs that cause fatal two-wheeler ejection. |
-| **SDG 16: Peace, Justice, and Strong Institutions** *(Secondary)* | **Target 16.6:** Develop effective, accountable, and transparent institutions. | Enforces the **Gemini "Proof of Patch" Verification Protocol**. Maintenance tickets cannot be closed by contractor self-reporting; an after-repair photo from the same GPS coordinates must pass AI visual inspection for surface planarity, edge tacking, and void elimination. |
+| **Bridges and footbridges** | Broken railings, cracked steps, or visible distress to supports | Bridges connect communities to services, jobs, and markets. |
+| **Drainage and flood canals** | Collapsed canal walls, blocked drains, or missing covers | Maintained drainage supports resilient public infrastructure during heavy rain. |
+| **Streetlights and utility poles** | Damaged fixtures or poles, dangling wires, or a reported lighting outage | Reliable lighting and utility infrastructure supports access and public services. An outage described in text remains unverified until checked. |
+| **Water pipes and hydrants** | Visible leaks or damaged exposed pipe/hydrant components | Reporting can help locate maintenance needs; images alone do not establish the leak source or water quality. |
+| **Telecom and fiber cables** | Low-hanging, tangled, or visibly broken cables and damaged poles | Communication infrastructure supports connectivity, including the intent of SDG Target 9.c. Photos cannot establish whether a cable is energized or identify its operator. |
 
----
+The map uses OpenStreetMap road corridors and optional road-section lines for pavement reports. Other asset types use a point location. ASTM D6433 is a pavement condition standard and is not used to certify bridges, utilities, drainage, lighting, or telecommunications.
 
-## 3. Competitive Advantage vs. Existing Solutions (Criterion 2 — 25% Weight)
+## 2. Sustainable Development Goal alignment
 
-| Failure Mode in Existing Civic Channels (e.g., 8888 Hotline, Social Media, Generic LGU Forms) | SuriOS Autonomous Engineering Solution |
+| Goal | Contribution SuriOS can support | Boundary |
+| :--- | :--- | :--- |
+| **SDG 9: Industry, Innovation, and Infrastructure** *(Primary)* | A shared way to record visible infrastructure defects, location, community evidence, and public response. Includes ICT-related telecom/fiber reports relevant to Target 9.c. | SuriOS reports and prioritizes concerns; qualified agencies inspect assets and decide maintenance. |
+| **SDG 11: Sustainable Cities and Communities** *(Supporting)* | Better records of defects that may affect access to streets, bridges, footbridges, and drainage. | The project has not measured changes in crashes, travel time, or access outcomes. |
+| **SDG 16: Peace, Justice, and Strong Institutions** *(Supporting)* | Linked official progress/resolution updates with explanations and available photo/document evidence. | An official status is a public record, not automated engineering certification. |
+
+## 3. How the workflow helps
+
+- Residents and staff attach photos/videos and an exact reported location.
+- The assessment separates image-visible observations from unverified user statements. User text alone does not raise severity or establish an emergency.
+- Severity uses a 1–10 triage scale. Critical scores (8–10) require clear visible serious danger and high confidence; localized minor defects can remain at 4 or lower when evidence supports that score.
+- Nearby reports are grouped only when evidence supports the same physical issue. Community likes and confirmations do not increase physical damage severity.
+- Official accounts can publish linked in-progress and resolved updates. Every linked post points to the government explanation for the shared report.
+
+The model cannot infer hidden structural damage, service status, ownership, water quality, electrical energization, cause, or repair completion from appearance alone. Assessment results require qualified on-site review.
+
+## 4. Pilot impact measures
+
+SuriOS does not yet claim a quantified cost saving or reduction in incidents. A pilot can measure:
+
+| Measure | What to record |
 | :--- | :--- |
-| **1. Passive "Black Hole" Forms:** Citizens type a complaint and receive zero feedback or engineering validation. | **Instant Dual-Sided Triage:** Within 1.5 seconds of snapping a photo, the citizen receives an ASTM D6433 distress report and an immediate **Two-Wheeler Danger Warning**. |
-| **2. Four-Wheel Car Bias:** Highway agencies treat a $50\text{mm}$ pothole or longitudinal trench cut as a minor cosmetic blemish. | **Two-Wheeler Lethality Index:** Elevates defects that trap narrow motorcycle/tricycle tires to **Critical Severity (8–10)** for emergency dispatch. |
-| **3. Duplicate Ticket Flooding:** 100 commuters reporting the same pothole outside LSPU overwhelms municipal staff. | **Haversine `~25m` Geo-Clustering:** Automatically merges proximate reports into a single canonical ticket with a **`+1 Community Confirmation`** priority multiplier. |
-| **4. Unfiltered Spam & Pranks:** Public forms get flooded with selfies, indoor photos, or blurry images. | **Multimodal Spam Gate (`HTTP 422`):** Rejects non-infrastructure images at the API edge before they ever touch the municipal database. |
-| **5. "Ghost Repairs" & Substandard Patching:** Uncompacted cold-mix is dumped in a wet hole and washes away in 48 hours. | **Gemini "Proof of Patch" Sign-Off:** Compares before/after imagery to verify flush compaction, edge emulsion sealing, and complete void elimination. |
+| **Time to acknowledgement** | Time from a public report to the first linked official update. |
+| **Time to resolution** | Time from report to an official resolved status, including the posted explanation/evidence. |
+| **Duplicate handling** | Reports linked as the same issue versus reports kept separate after review. |
+| **Asset coverage** | Reports by supported infrastructure type and location. |
+| **Assessment quality** | Agreement between AI triage and later qualified inspection, including score calibration. |
 
----
+Pavement lifecycle costs can be evaluated separately using local engineering and procurement data. Road estimates should not be generalized to bridges, utilities, drainage, lighting, or telecom assets.
 
-## 4. Economic Impact & Sustainability Model (Criterion 3 — 30% Weight)
+## 5. Presentation questions
 
-In highway civil engineering, pavement deterioration follows an exponential cost curve (the **Pavement Condition Index / PCI Decay Curve**):
-
-| Deterioration Phase | ASTM D6433 Distress Symptoms | Standard Municipal Remediation | Relative Cost per $\text{m}^2$ |
-| :--- | :--- | :--- | :--- |
-| **Phase 1: Early Surface Distress** | Hairline transverse/longitudinal cracks, minor weathering | Hot-poured crack sealing (`ASTM D6690`), fog seal | **1x ($\₱300 - \₱800 / \text{m}^2$)** |
-| **Phase 2: Moderate Structural Fatigue** | Shallow potholes ($<50\text{mm}$), localized alligator cracking | Saw-cut, emulsion tack coat, compacted hot/cold asphalt patch | **4x – 6x ($\₱1,800 - \₱3,500 / \text{m}^2$)** |
-| **Phase 3: Subgrade & Base Failure** | Deep craters ($>80\text{mm}$), severe rutting, base saturation | Full-depth reclamation, sub-base excavation & total repaving | **10x – 25x ($\₱8,500 - \₱20,000 / \text{m}^2$)** |
-
-> [!IMPORTANT]
-> **The 1:6 Municipal ROI:** Every **$\₱1$** spent repairing a road defect during Phase 1 or early Phase 2 saves the municipal engineering office **$\₱6$ to $\₱10$** in emergency Phase 3 reconstruction costs—while preventing costly hospitalizations and fatalities among two-wheeler riders.
-
----
-
-## 5. Pitch Q&A Defense Matrix (Criterion 4 — 20% Weight)
-
-Prepared, evidence-backed answers for technical and municipal panel questions:
-
-1. **Q: *"How do you prevent Gemini from hallucinating severity scores or breaking your backend with invalid JSON?"***
-   * **A:** We enforce a **two-layer deterministic guardrail**: First, `@google/genai` is configured with `responseMimeType: 'application/json'` and validated through a strict **Zod schema (`TriageAnalysisSchema`)** with safe fallbacks. Second, our **Hybrid Deterministic Severity Formula** cross-checks the extracted depth ($D$ in mm), distress base weight ($B_{\text{distress}}$), VRU threat factor, and community cluster count ($C$) so severity scoring is mathematically reproducible.
-2. **Q: *"What happens if a citizen uploads a photo of their dog, a selfie, or an indoor floor?"***
-   * **A:** Our system prompt and Zod schema evaluate `isValidInfrastructure` first. If `false`, `POST /api/triage` immediately halts, skips database insertion, and returns `HTTP 422 Unprocessable Entity` with a clear rejection reason.
-3. **Q: *"Why use a Progressive Web App (SvelteKit 3 + Svelte 5) instead of a native Android/iOS app?"***
-   * **A:** **Zero adoption friction.** A commuter who hits a dangerous pothole will not download a 150MB government app from the App Store. With SuriOS on `https://surios.site`, scanning a barangay QR code or tapping a link opens the camera and HTML5 GPS in under 2 seconds on any smartphone.
-4. **Q: *"How does this integrate with existing LGU / DPWH workflows that still rely on paper or spreadsheets?"***
-   * **A:** Our **Dispatch Canvas (`/dashboard`)** includes a one-click **CSV Work Order Manifest Export** containing exact ASTM D6433 codes, GPS coordinates, and required material checklists, bridging digital AI triage directly into existing municipal job orders.
+1. **How do you limit unsupported AI conclusions?** Structured outputs are validated with Zod. Image-visible defects and unverified reporter claims are separate fields. Reporter text alone cannot support critical severity; critical scores require visible serious-danger evidence and high confidence. The result is triage, not a certified inspection.
+2. **What if an upload is unrelated to public infrastructure?** The model checks for recognizable infrastructure in the media. If none is visible, the endpoint rejects it instead of creating a report.
+3. **Which assets are in scope?** Pavement, bridges/footbridges, drainage/flood canals, streetlights/utility poles, water pipes/hydrants, and telecom/fiber. Road lines and road-section geometry apply only to road reports; other assets use point coordinates.
+4. **How can residents see what happened?** Government accounts publish linked progress/resolution updates with explanations and available evidence. The report status opens that official post; it does not automatically certify repair quality.

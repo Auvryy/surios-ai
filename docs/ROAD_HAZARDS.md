@@ -1,6 +1,6 @@
 # Road hazards
 
-`/` opens `/community` for guests, citizens, and municipal accounts. The map is `/map`, labelled **Road hazards**. Existing root links containing `report`, `incident`, `highlight`, or `id` redirect to the matching map report. Authentication respects a requested internal destination; its default destination is the feed.
+`/` opens `/community` for guests, citizens, and municipal accounts. The map is `/map`, labelled **Hazard map**. This guide covers road-report matching, pavement severity, and OSM road sections; the map can also display other supported infrastructure reports as point hazards. Existing root links containing `report`, `incident`, `highlight`, or `id` redirect to the matching map report. Authentication respects a requested internal destination; its default destination is the feed.
 
 ## Map interface
 
@@ -9,7 +9,7 @@
 - The map fills the available viewport. Resizing the sidebar invalidates Leaflet's size without resetting the user's view.
 - Floating chips open the report list, filters/sort, layers, fit-visible action, refresh, and legend. Their panels can close again, leaving the map visible.
 - List entries show one thumbnail, title, severity, location, status, support, and evidence count. Selecting a pin opens a compact preview; **View N source posts** beside the severity metrics opens dated links to the original posts and their grouping reasons. These links open the exact saved post in the feed. Field-only reports explicitly say that no community post is linked. **More details** reveals the AI summary and proposed repair.
-- Search, status, damage type, critical severity, and rider-risk filters affect both pins and the list. Sort choices are priority, severity, newest, and support.
+- Search, status, damage type, critical severity, and public-exposure filters affect both pins and the list. Sort choices are priority, severity, newest, and support.
 - Overlapping pins are grouped visually by a 42-pixel map grid. The corner count means **separate hazards overlap on screen**. Clicking that pin opens those hazards in the list. Visual clustering never merges database reports.
 - Data comes only from stored reports. Hardcoded demo incidents, invented corridor PCI scores, and fabricated road-condition line colours are removed. Reference road outlines are neutral, optional context.
 - Visible maps refresh every 30 seconds and when the browser regains focus. Manual refresh is also available. An update failure keeps the last loaded data and shows an error.
@@ -38,18 +38,16 @@ The confidence value is the model's judgement, not a calibrated probability or p
 
 ## Severity, support, and priority are different
 
-### Severity: assessed damage/rider hazard, 1–10
+### Severity: estimated visible issue severity, 1–10
 
-The raw AI score is normalized using conservative product rules:
+The AI estimate is rounded and clamped to the 1–10 range. A risk label does not impose a severity floor:
 
-- Risk floors: LOW → 1, MODERATE → 4, CRITICAL → 8.
-- Rider-risk floors: NONE/LOW → 1, MODERATE → 4, HIGH → 6, CRITICAL → 8.
-- Final score = maximum of the AI score and both floors, bounded to 1–10.
 - Display bands: 1–3 LOW, 4–7 MODERATE, 8–10 CRITICAL.
+- For new assessments, scores 8–10 require clear visible serious danger and high confidence.
 
-This prevents contradictory labels such as severity 1 with critical rider risk. These are **SuriOS triage rules**, not a calculated or certified ASTM Pavement Condition Index. Image-based dimensions remain estimates requiring field inspection.
+These are **SuriOS triage estimates**, not a calculated or certified ASTM Pavement Condition Index. ASTM D6433 is used only for pavement. Image-based dimensions remain estimates requiring field inspection.
 
-For a matched open report, genuinely new media may raise its severity to the higher normalized assessment. Reusing only already known media cannot raise severity because a second model call happened to score the same image differently. The highest observed rider risk is retained; automatic grouping does not downgrade a report. Resolution and verified reinspection are separate municipal workflows.
+For a matched open report, genuinely new media may update its shared severity estimate. Reusing only already known media cannot raise severity because a second model call happened to score the same image differently. The highest observed public-exposure level is retained in a legacy database field; automatic grouping does not downgrade a report. Resolution and on-site reinspection remain public-sector workflows.
 
 ### Support: distinct participants, not number of likes/posts
 

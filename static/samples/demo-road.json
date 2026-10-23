@@ -1,0 +1,35 @@
+{
+  "source": "https://www.openstreetmap.org/way/30681947",
+  "attribution": "© OpenStreetMap contributors, ODbL",
+  "retrievedAt": "2026-10-23T12:36:44.817Z",
+  "road": {
+    "id": "30681947",
+    "name": "Pedro Guevarra Avenue",
+    "coordinates": [
+      [
+        14.2809541,
+        121.4154049
+      ],
+      [
+        14.2816119,
+        121.415252
+      ],
+      [
+        14.2816263,
+        121.4152489
+      ],
+      [
+        14.2818096,
+        121.4152097
+      ],
+      [
+        14.2819471,
+        121.4151828
+      ],
+      [
+        14.2820906,
+        121.4151478
+      ]
+    ]
+  }
+}

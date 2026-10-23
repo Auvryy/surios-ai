@@ -133,7 +133,7 @@ test('plain repost retries are idempotent and malformed, multi-image and video u
 	const form = new FormData(); form.set('id', randomUUID()); form.set('postId', posts[0]); form.set('body', 'Two images');
 	for (let i = 0; i < 2; i++) form.append('image', new Blob([new Uint8Array(photo)], { type: 'image/jpeg' }), `photo-${i}.jpg`);
 	const two = await fetch(`${baseURL}/api/community/reposts`, { method: 'POST', headers: { Origin: baseURL!, Cookie: `surios_session=${session}` }, body: form }); expect(two.status).toBe(400);
-	for (const [mimeType, buffer, status] of [['video/mp4', Buffer.from('video'), 400], ['image/jpeg', Buffer.from('fake image'), 400], ['image/jpeg', Buffer.alloc(4 * 1024 * 1024 + 1), 413]] as const) {
+	for (const [mimeType, buffer, status] of [['video/mp4', Buffer.from('video'), 400], ['image/jpeg', Buffer.from('fake image'), 400], ['image/jpeg', Buffer.alloc(5 * 1024 * 1024 + 1), 413]] as const) {
 		const response = await request.post('/api/community/reposts', { headers: await signIn(request), multipart: { id: randomUUID(), postId: posts[0], body: '', image: { name: 'attachment', mimeType, buffer } } }); expect(response.status()).toBe(status);
 	}
 	expect((await repost(request, randomUUID())).status()).toBe(404);

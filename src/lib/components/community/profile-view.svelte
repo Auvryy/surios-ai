@@ -70,7 +70,7 @@
 			{#if canEdit}<input bind:this={avatarInput} type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" tabindex="-1" aria-label="Upload new profile picture" onchange={(event) => changePhoto(event, 'avatar')} /><input bind:this={coverInput} type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" tabindex="-1" aria-label="Upload new cover photo" onchange={(event) => changePhoto(event, 'cover')} />{/if}
 		</section>
 		<div class="flex min-h-11 items-center justify-between border-b border-border px-1"><h2 class="text-sm font-semibold">Posts</h2>{#if canEdit}<a href="/report" class="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline">New post</a>{/if}</div>
-		{#each data.feed as item (`${item.kind}:${item.id}`)}{#if item.kind === 'post'}<PostCard post={item.post} {user} />{:else}<RepostCard repost={item.repost} {user} />{/if}{:else}<div class="rounded-xl border border-border bg-card p-8 text-center"><p class="text-sm text-muted-foreground">No posts yet.</p>{#if canEdit}<Button href="/report" class="mt-4 h-11">Share a road update</Button>{/if}</div>{/each}
+		{#each data.feed as item (`${item.kind}:${item.id}`)}{#if item.kind === 'post'}<PostCard post={item.post} {user} />{:else}<RepostCard repost={item.repost} {user} />{/if}{:else}<div class="rounded-xl border border-border bg-card p-8 text-center"><p class="text-sm text-muted-foreground">No posts yet.</p>{#if canEdit}<Button href="/report" class="mt-4 h-11">Share an infrastructure update</Button>{/if}</div>{/each}
 		{#if data.hasMore}<Button variant="outline" class="h-11 w-full" onclick={more} disabled={loading}>{loading ? 'Loading…' : 'Load more posts'}</Button>{/if}
 	</div>
 </div>
