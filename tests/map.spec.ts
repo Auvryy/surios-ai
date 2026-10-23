@@ -47,7 +47,7 @@ test('floating map filters and sorting drive compact collapsible report cards', 
 	await page.getByRole('button', { name: /^Filters/ }).click(); await page.getByRole('combobox', { name: 'Sort reports' }).selectOption('severity'); await page.getByRole('button', { name: 'Show matching reports', exact: true }).click();
 	await expect(list.getByRole('button', { name: /Open hazard:/ }).first()).toHaveAttribute('aria-label', `Open hazard: ${prefix} 1`);
 	await page.getByRole('button', { name: 'Close report list', exact: true }).click(); await expect(list).toBeHidden();
-	await page.getByRole('button', { name: 'Layers', exact: true }).click(); await page.getByRole('combobox', { name: 'Basemap style' }).selectOption('muted'); await page.getByRole('checkbox', { name: 'Reference roads', exact: true }).check(); await page.getByRole('button', { name: 'Close map controls' }).click();
+	await page.getByRole('button', { name: 'Layers', exact: true }).click(); await expect(page.getByRole('combobox', { name: 'Basemap style' })).toHaveCount(0); await expect(page.getByRole('region', { name: 'Map layers' })).toContainText('No API key required'); await expect(page.locator('.road-tiles img').first()).toHaveAttribute('src', /tile\.openstreetmap\.org/); await page.getByRole('checkbox', { name: 'Reference roads', exact: true }).check(); await page.getByRole('button', { name: 'Close map controls' }).click();
 	await page.getByRole('button', { name: 'Legend', exact: true }).click(); await expect(page.getByRole('region', { name: 'Map legend' })).toContainText('priority, not damage severity'); await page.getByRole('button', { name: 'Close map controls' }).click();
 	await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
 	for (const [width, height] of [[1440, 900], [768, 1024], [375, 812], [320, 740], [812, 375]]) {
@@ -65,6 +65,7 @@ test('deep-linked report details show separate severity, support, priority, and 
 	const detail = page.getByRole('region', { name: 'Hazard details' });
 	await expect(detail.getByRole('heading', { name: `${prefix} 0`, exact: true })).toBeVisible();
 	await expect(detail).toContainText('Severity'); await expect(detail).toContainText('Support'); await expect(detail).toContainText('Priority');
+	await expect(detail).toContainText('No community post is linked'); await expect(detail.getByRole('button', { name: /source posts?/ })).toHaveCount(0);
 	await detail.getByRole('button', { name: 'More details', exact: true }).click();
 	await page.getByText('Why this priority?', { exact: true }).click(); await expect(detail).toContainText('Reposting does not add damage severity.');
 	await page.getByRole('button', { name: 'Close hazard details', exact: true }).click(); await expect(detail).toBeHidden();

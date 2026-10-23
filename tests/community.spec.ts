@@ -191,8 +191,14 @@ test('nearby community posts share one map hazard and unique support without rai
 	const feed = await page.request.get(`/api/community/posts?q=${first.draftId}`); expect((await feed.json()).total).toBe(2);
 	await page.goto(`/map?report=${one.reportId}`); await page.waitForLoadState('networkidle');
 	const details = page.getByRole('region', { name: 'Hazard details' }); await expect(details).toContainText(`${title} A`);
-	await details.getByRole('button', { name: 'More details', exact: true }).click();
-	await expect(details.getByRole('link', { name: new RegExp(`${title} B`) })).toBeVisible();
+	await expect(details.getByRole('button', { name: 'More details', exact: true })).toHaveAttribute('aria-expanded', 'false');
+	await details.getByRole('button', { name: 'View 2 source posts', exact: true }).click();
+	const sourcePost = details.getByRole('link', { name: new RegExp(`${title} B`) });
+	await expect(sourcePost).toBeVisible();
+	await expect(sourcePost).toHaveAttribute('href', `/community?q=${two.id}#post-${two.id}`);
+	await sourcePost.click(); await expect(page.locator(`#post-${two.id}`)).toBeVisible();
+	await page.goto(`/map?report=${one.reportId}`); await page.waitForLoadState('networkidle');
+	await details.getByRole('button', { name: 'View 2 source posts', exact: true }).click();
 	await expect(details).toContainText('Repeated media does not increase severity.');
 	await page.getByRole('button', { name: 'Close hazard details', exact: true }).click();
 	await page.getByRole('button', { name: 'Filters', exact: true }).click(); await page.getByRole('textbox', { name: 'Search map reports' }).fill(first.draftId); await page.getByRole('button', { name: 'Show matching reports', exact: true }).click();
