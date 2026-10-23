@@ -20,8 +20,11 @@ AI severity and dimensions are estimates for triage, not certified measurements.
 
 - The selected cover appears first; remaining photos and videos follow; the location map is always last.
 - The right-hand vertical dock retains other attachments and the map tile. Previous/next controls and the expanded gallery expose every attachment, including videos.
-- Search matches saved titles, descriptions, locations, contributor names, distress categories, and post/report IDs. Shared links search by post ID so older posts remain reachable beyond the first batch. Literal `%`, `_`, and backslash characters are escaped before SQL pattern matching.
-- Search, media, contributor, critical, and confirmed filters are stored in the URL and work after refreshing. **Load more** adds batches of 20 up to 1,000 posts per filter; search queries the whole matching dataset rather than only the visible cards.
+- Search matches saved titles, descriptions, locations, contributor names, and readable distress categories. Multiple words can match different fields in any order; all meaningful words must match. Common English connective words (such as “near” and “the”) are ignored when other words are present. PostgreSQL English stemming matches forms such as “potholes”/“pothole” and “cracks”/“cracking”; literal substring matching supports partial names and local roads. This is deterministic database search, without fuzzy spelling correction or an external search API.
+- Searches default to **Most relevant**: exact IDs and title phrases rank first, followed by weighted title, road/location, contributor, and description/category matches. Without a query, the feed defaults to **Newest first**. Users can explicitly choose newest, oldest, highest severity (saved AI assessment), or most confirmed (unique post confirmations). Equal scores use creation time and post ID for stable ordering. Critical and Confirmed are filters, separate from sorting.
+- Exact post, linked-report, and assessment/draft IDs remain searchable, so evidence links reach older posts beyond the first batch. SQL parameters and escaped `%`, `_`, and backslash patterns keep user input literal. Punctuation-only queries produce no matches.
+- The posting prompt and Photos/Video/Location shortcuts are hidden while text search or a contributor filter is active, including empty results. Clearing the search restores the composer and preserves media, severity/confirmation filters, and the selected sort. Posting remains available through Report a Hazard.
+- Search, sort, media, contributor, critical, and confirmed filters are stored in the URL and work after refreshing. Changing a filter or sort resets pagination; loading more retains the current query and order. **Load more** adds batches of 20 up to 1,000 posts per filter; search queries the whole matching dataset rather than only the visible cards.
 - Confirmations are unique per user/post. Setting a confirmation repeatedly is idempotent. The linked report deduplicates authors and confirmations across grouped posts; repeatedly confirming the same hazard does not inflate its priority.
 - Comments and replies are authenticated, validated, saved, and rendered as text. Replies retain a parent comment from the same post. Author names and pictures link to public profiles; the same post cards and interactions appear on profile pages. See [Community profiles](./COMMUNITY_PROFILES.md).
 - `/liked` redirects to the signed-in user's saved confirmations.
@@ -69,3 +72,11 @@ Coverage includes:
 - Assessment failure preserving attachments and cover fallback after removing an attachment.
 
 The browser flow uses an explicitly controlled AI response backed by a real database draft. It does not prove model accuracy. Live Gemini image and mixed image/video calls must be checked separately with configured credentials and representative road evidence.
+
+## Focused search verification
+
+```bash
+npx playwright test --config playwright.search.config.ts
+```
+
+This suite reserves port 5187, disables outbound email, and creates uniquely identified temporary users, posts, confirmations, and one report in the configured local database, removing only those fixtures afterward. It covers multiword matching, weighted relevance, English stemming, literal wildcard handling, evidence IDs, all sort modes, combined filters, stable pagination, URL persistence, composer visibility, native search submission, and responsive widths. It does not require Gemini credentials.
