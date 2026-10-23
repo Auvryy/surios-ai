@@ -23,6 +23,7 @@ export interface FeedIncident {
 	communityConfirmations: number;
 	createdAt: string;
 	imageUrl?: string;
+	mediaKind?: 'photo' | 'video';
 }
 
 const defaultIncidents: FeedIncident[] = [
@@ -150,7 +151,8 @@ export const load: PageServerLoad = async () => {
 				status: (r.status as any) || 'REPORTED',
 				communityConfirmations: r.communityConfirmations || 1,
 				createdAt: 'Just now',
-				imageUrl: r.imagePath || undefined
+				imageUrl: r.imagePath || undefined,
+				mediaKind: /\.(mp4|webm|mov)$/i.test(r.imagePath) ? 'video' : 'photo'
 			}));
 
 			return {

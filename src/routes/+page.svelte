@@ -328,7 +328,7 @@
 				<div class="surios-card-popup">
 					${item.imageUrl ? `
 						<div class="surios-card-img-wrap">
-							<img src="${item.imageUrl}" alt="${item.title}" class="surios-card-img" />
+							${item.mediaKind === 'video' ? `<video src="${item.imageUrl}" controls playsinline preload="metadata" class="surios-card-img" aria-label="Road evidence video"></video>` : `<img src="${item.imageUrl}" alt="${item.title}" class="surios-card-img" />`}
 							<div class="surios-card-badge" style="background-color: ${severityColor}">
 								Severity: ${item.hazardSeverity}/10
 							</div>
@@ -1016,7 +1016,11 @@
 			<div class="flex-1 overflow-y-auto p-5 space-y-5 text-xs">
 				{#if selectedIncident.imageUrl}
 					<div class="rounded-lg overflow-hidden border border-border bg-muted/30">
-						<img src={selectedIncident.imageUrl} alt={selectedIncident.title} class="w-full h-48 object-cover" />
+						{#if selectedIncident.mediaKind === 'video'}
+							<video controls playsinline preload="metadata" class="w-full h-48 bg-black object-contain" aria-label="Road evidence video"><source src={selectedIncident.imageUrl} /><track kind="captions" /></video>
+						{:else}
+							<img src={selectedIncident.imageUrl} alt={selectedIncident.title} class="w-full h-48 object-cover" />
+						{/if}
 					</div>
 				{/if}
 

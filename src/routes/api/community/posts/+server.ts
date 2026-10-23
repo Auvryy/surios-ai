@@ -1,11 +1,11 @@
 import { error, json } from '@sveltejs/kit';
-import { and, eq, desc, ilike, or } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { db, communityDrafts, communityPosts, reports, users } from '$lib/server/db';
-import { loadCommunityPosts, requireCommunityUser } from '$lib/server/community';
+import { db, communityDrafts, communityPosts, reports } from '$lib/server/db';
+import { loadCommunityPosts, requireCommunityUser, communityFilters } from '$lib/server/community';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ locals }) => json({ posts: await loadCommunityPosts(locals.user?.id) });
+export const GET: RequestHandler = async ({ locals, url }) => json(await loadCommunityPosts(locals.user?.id, communityFilters(url)));
 const postSchema = z.object({
 	draftId: z.uuid(), coverId: z.uuid(), title: z.string().trim().min(3).max(120), body: z.string().trim().max(2000),
 	locationName: z.string().trim().min(3).max(200), latitude: z.number().finite().min(-90).max(90), longitude: z.number().finite().min(-180).max(180)

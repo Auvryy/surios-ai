@@ -31,7 +31,7 @@ export const POST: RequestHandler = async (event) => {
 		}
 		const [draft] = await db.insert(communityDrafts).values({ userId: user.id, media: files.map(({ media }) => media), analysis, expiresAt: new Date(Date.now() + 86400000) }).returning();
 		saved = [];
-		await cleanExpiredDrafts();
+		await cleanExpiredDrafts().catch(() => console.warn('[Community] Draft cleanup will retry on the next assessment.'));
 		return json({ draftId: draft.id, media: draft.media, analysis });
 	} finally {
 		active.delete(user.id);
