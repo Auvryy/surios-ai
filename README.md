@@ -50,17 +50,18 @@ npm run db:push
 ```bash
 npm run dev -- --host 0.0.0.0
 ```
-Open **`http://localhost:5173`**. The landing page is the community feed; **Hazard map** is available at `/map`.
+Open **`http://localhost:5173`** for the public landing page. The community feed is at `/community`, and the **Hazard map** is at `/map`.
 
 Government accounts keep the six shared destinations plus **Government updates** at `/dashboard`. Officials quote citizen posts with progress/resolution evidence and optional budget breakdowns. Existing databases should apply migrations through `0011_community-post-soft-delete.sql`. See the [government guide](docs/GOVERNMENT_WORKSPACE.md) for migration and explicit presentation seed commands.
 
-### 3. Pre-Seeded Municipal Demo Accounts (`/login`)
-In development, SuriOS provisions 3 demo accounts (all using password `Password123!`). Account switching is removed; use the normal login for seeded accounts. Production does not create demo users; public production registration creates citizen accounts only.
+### 3. Presentation Seed and Demo Accounts (`/login`)
+On a fresh local database, run `npm run db:seed:presentation` after `npm run db:push` to load the saved community demo snapshot, including reports, posts, road sections, comments, official updates, reactions, and their media. Production does not seed demo content on startup; for an Azure fresh database, follow the explicit migration and seed steps in the [Docker runbook](docs/DOCKER_RUNBOOK.md).
 
 | Role | Email | Password | Municipal Authority |
 | :--- | :--- | :--- | :--- |
 | **`ENGINEER`** | `engineer@surios.gov` | `Password123!` | Progress/resolution quote updates, evidence, budgets, office profile and export. |
 | **`OFFICER` (Inspector)** | `inspector@surios.gov` | `Password123!` | Progress/resolution quote updates, evidence, budgets, office profile and export. |
 | **`CITIZEN` (Reporter)** | `citizen@surios.gov` | `Password123!` | Public Commuter — Field hazard capture, community confirmation voting, and status tracking. |
+| **`ENGINEER` (Municipality)** | `municipality@surios.gov` | `Password123!` | Government quote updates, resolution evidence, and municipal profile. |
 
-Run `node --env-file-if-exists=.env scripts/seed-government.mjs` after the community seed to add the labeled municipal example. Demo login: `municipality@surios.gov` / `Password123!`.
+All four accounts are created by the presentation seed on a fresh database. The login page uses the normal email and password form; these credentials are for the demo environment.

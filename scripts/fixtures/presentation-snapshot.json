@@ -1,0 +1,2842 @@
+{
+  "version": 1,
+  "snapshotLabel": "Local SuriOS presentation database snapshot",
+  "users": [
+    {
+      "id": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "email": "citizen@surios.gov",
+      "name": "Alex Cruz",
+      "role": "CITIZEN",
+      "department": "Barangay Poblacion I Resident",
+      "badgeNumber": null,
+      "avatarUrl": "/media/cac71271-8bf9-4738-8354-172cf4f81703.jpg",
+      "coverUrl": "/media/5c291fa6-380e-4088-8b9b-6564bb1ff994.jpg",
+      "governmentProfile": null,
+      "settings": {
+        "theme": "dark",
+        "vruAlerts": true,
+        "dailyDigest": true,
+        "defaultMapView": "split",
+        "dpwhForwarding": false,
+        "potholeThreshold": 50,
+        "autoSnapCorridors": true,
+        "preferredCorridor": "ALL",
+        "vruWeightMultiplier": 1.5
+      },
+      "createdAt": "2026-10-20T12:42:22.750Z",
+      "updatedAt": "2026-10-23T06:25:59.025Z"
+    },
+    {
+      "id": "fc28734f-abb4-4935-a734-a09c06e14c3c",
+      "email": "engineer@surios.gov",
+      "name": "Engr. Maria Santos, PE",
+      "role": "ENGINEER",
+      "department": "Santa Cruz Infrastructure Bureau",
+      "badgeNumber": "SC-MEO-041",
+      "avatarUrl": null,
+      "coverUrl": null,
+      "governmentProfile": null,
+      "settings": {
+        "theme": "dark",
+        "vruAlerts": true,
+        "dailyDigest": true,
+        "defaultMapView": "split",
+        "dpwhForwarding": true,
+        "potholeThreshold": 65,
+        "autoSnapCorridors": true,
+        "preferredCorridor": "CORR-01",
+        "vruWeightMultiplier": 1.75
+      },
+      "createdAt": "2026-10-20T12:42:22.750Z",
+      "updatedAt": "2026-10-22T00:15:21.152Z"
+    },
+    {
+      "id": "9cf5e67d-a843-4f46-b57a-d933ad645986",
+      "email": "inspector@surios.gov",
+      "name": "Insp. Juan Reyes",
+      "role": "OFFICER",
+      "department": "Laguna Traffic Management & VRU Safety Unit",
+      "badgeNumber": "LTMO-VRU-108",
+      "avatarUrl": "/media/cd5e5179-ceba-4499-a645-887eb4a543f3.jpg",
+      "coverUrl": "/media/d8999659-dbc9-4c8e-9cd7-2bf4943e7972.jpg",
+      "governmentProfile": {
+        "bio": "More about me",
+        "level": "MUNICIPAL",
+        "jurisdiction": "Santa Cruz"
+      },
+      "settings": {
+        "theme": "dark",
+        "vruAlerts": true,
+        "dailyDigest": true,
+        "defaultMapView": "split",
+        "dpwhForwarding": false,
+        "potholeThreshold": 50,
+        "autoSnapCorridors": true,
+        "preferredCorridor": "ALL",
+        "vruWeightMultiplier": 1.5
+      },
+      "createdAt": "2026-10-20T12:42:22.750Z",
+      "updatedAt": "2026-10-23T14:59:40.182Z"
+    },
+    {
+      "id": "43dbfab2-62d0-48f3-872b-0b448b580db3",
+      "email": "municipality@surios.gov",
+      "name": "Demo · Santa Cruz Municipal Office",
+      "role": "ENGINEER",
+      "department": null,
+      "badgeNumber": null,
+      "avatarUrl": null,
+      "coverUrl": null,
+      "governmentProfile": {
+        "bio": "Demonstration municipal account. Progress updates, evidence documents and illustrative budgets shown here are sample data, not real government actions.",
+        "level": "MUNICIPAL",
+        "jurisdiction": "Santa Cruz, Laguna (demo)"
+      },
+      "settings": {
+        "theme": "light",
+        "emailComments": false,
+        "emailConfirmations": false
+      },
+      "createdAt": "2026-10-23T10:57:56.393Z",
+      "updatedAt": "2026-10-23T10:57:56.393Z"
+    }
+  ],
+  "reports": [
+    {
+      "id": "427bb3be-8d27-4cba-9425-8c198412b2ea",
+      "imagePath": "/uploads/1792588537764-9f0e0fa61829.jpeg",
+      "latitude": "14.28130000",
+      "longitude": "121.41730000",
+      "distressType": "other",
+      "hazardSeverity": 1,
+      "riskLevel": "LOW",
+      "vruLethality": "CRITICAL",
+      "vruDetails": "Front tire capture risk; deep crater with sharp vertical edges combined with surrounding alligator cracking presents severe potential for motorcycle and bicycle rider over-the-handlebar ejection at urban commuting speeds.",
+      "recommendedAction": "No municipal repair required.",
+      "materialsChecklist": [],
+      "status": "REPORTED",
+      "communityConfirmations": 1,
+      "resolvedImagePath": null,
+      "triagePayload": {
+        "summary": "Analysis complete.",
+        "urgency": "ROUTINE",
+        "riskLevel": "LOW",
+        "vruDetails": "Front tire capture risk; deep crater with sharp vertical edges combined with surrounding alligator cracking presents severe potential for motorcycle and bicycle rider over-the-handlebar ejection at urban commuting speeds.",
+        "distressType": "other",
+        "vruLethality": "CRITICAL",
+        "hazardSeverity": 1,
+        "rejectionReason": null,
+        "supportBaseline": 1,
+        "recommendedAction": "No municipal repair required.",
+        "materialsChecklist": [],
+        "estimatedDimensions": {
+          "depthEstimate": "N/A",
+          "surfaceAreaEstimate": "N/A"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-21T13:15:40.447Z",
+      "updatedAt": "2026-10-21T13:15:40.447Z"
+    },
+    {
+      "id": "2a5c7d2c-cd4a-4b9d-9fb0-9c0dc76f0380",
+      "imagePath": "/uploads/1792588557047-f736d17dfad5.jpeg",
+      "latitude": "14.28130000",
+      "longitude": "121.41730000",
+      "distressType": "other",
+      "hazardSeverity": 1,
+      "riskLevel": "LOW",
+      "vruLethality": "CRITICAL",
+      "vruDetails": "Front tire capture risk with sharp vertical lips surrounding the depression; high potential for motorcycle or bicycle rider over-the-handlebar ejection, especially when filled with water masking true depth.",
+      "recommendedAction": "No municipal repair required.",
+      "materialsChecklist": [],
+      "status": "REPORTED",
+      "communityConfirmations": 1,
+      "resolvedImagePath": null,
+      "triagePayload": {
+        "summary": "Analysis complete.",
+        "urgency": "ROUTINE",
+        "riskLevel": "LOW",
+        "vruDetails": "Front tire capture risk with sharp vertical lips surrounding the depression; high potential for motorcycle or bicycle rider over-the-handlebar ejection, especially when filled with water masking true depth.",
+        "distressType": "other",
+        "vruLethality": "CRITICAL",
+        "hazardSeverity": 1,
+        "rejectionReason": null,
+        "supportBaseline": 1,
+        "recommendedAction": "No municipal repair required.",
+        "materialsChecklist": [],
+        "estimatedDimensions": {
+          "depthEstimate": "N/A",
+          "surfaceAreaEstimate": "N/A"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-21T13:15:59.356Z",
+      "updatedAt": "2026-10-21T13:15:59.356Z"
+    },
+    {
+      "id": "abd48af0-ba99-4a6d-b0ea-320d73ac4432",
+      "imagePath": "/uploads/1792588787509-989b1e5237b0.jpeg",
+      "latitude": "14.28130000",
+      "longitude": "121.41730000",
+      "distressType": "pothole",
+      "hazardSeverity": 1,
+      "riskLevel": "LOW",
+      "vruLethality": "CRITICAL",
+      "vruDetails": "Substantial water-filled pothole conceals depth (>50mm estimated) with sharp vertical asphalt edges. High probability of front-tire capture, rim damage, and sudden over-the-handlebar ejection for two-wheelers and vulnerable road users.",
+      "recommendedAction": "No municipal repair required.",
+      "materialsChecklist": [],
+      "status": "REPORTED",
+      "communityConfirmations": 1,
+      "resolvedImagePath": null,
+      "triagePayload": {
+        "summary": "Analysis complete.",
+        "urgency": "ROUTINE",
+        "riskLevel": "LOW",
+        "vruDetails": "Substantial water-filled pothole conceals depth (>50mm estimated) with sharp vertical asphalt edges. High probability of front-tire capture, rim damage, and sudden over-the-handlebar ejection for two-wheelers and vulnerable road users.",
+        "distressType": "pothole",
+        "vruLethality": "CRITICAL",
+        "hazardSeverity": 1,
+        "rejectionReason": null,
+        "supportBaseline": 1,
+        "recommendedAction": "No municipal repair required.",
+        "materialsChecklist": [],
+        "estimatedDimensions": {
+          "depthEstimate": "N/A",
+          "surfaceAreaEstimate": "N/A"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-21T13:20:23.317Z",
+      "updatedAt": "2026-10-21T13:20:23.317Z"
+    },
+    {
+      "id": "10b1b6f6-5bed-4532-965b-5f3bb59b4641",
+      "imagePath": "/uploads/1792588901534-22b7b8b8bef9.jpeg",
+      "latitude": "14.28130000",
+      "longitude": "121.41730000",
+      "distressType": "pothole",
+      "hazardSeverity": 7,
+      "riskLevel": "CRITICAL",
+      "vruLethality": "HIGH",
+      "vruDetails": "Standing water conceals true cavity depth. Sharp fractured vertical asphalt lips create severe tire-snagging hazard, high risk of front-wheel deflection and rider ejection for motorcycles and bicycles.",
+      "recommendedAction": "Drain standing water, mark and saw-cut distress boundaries at least 150mm into sound surrounding pavement, excavate compromised base material, apply bituminous tack coat to base and vertical edges, fill with compacted hot-mix asphalt (HMA) in lifts not exceeding 50mm, and finish with vibratory plate compaction.",
+      "materialsChecklist": [
+        "Hot-mix asphalt (HMA) or high-performance polymer-modified cold patch",
+        "Bituminous emulsion tack coat (SS-1h / CSS-1h)",
+        "Asphalt diamond-blade saw or pavement breaker",
+        "Vibratory plate compactor",
+        "Sub-base aggregate (if uncompacted base is exposed)",
+        "Traffic safety cones and high-visibility signage"
+      ],
+      "status": "REPORTED",
+      "communityConfirmations": 1,
+      "resolvedImagePath": null,
+      "triagePayload": {
+        "summary": "Water-filled pothole surrounded by localized high-severity fatigue cracking with sharp drop-off lips, presenting severe kinematic collision risks to vulnerable road users.",
+        "urgency": "PRIORITY",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Standing water conceals true cavity depth. Sharp fractured vertical asphalt lips create severe tire-snagging hazard, high risk of front-wheel deflection and rider ejection for motorcycles and bicycles.",
+        "distressType": "pothole",
+        "vruLethality": "HIGH",
+        "hazardSeverity": 7,
+        "rejectionReason": null,
+        "supportBaseline": 1,
+        "recommendedAction": "Drain standing water, mark and saw-cut distress boundaries at least 150mm into sound surrounding pavement, excavate compromised base material, apply bituminous tack coat to base and vertical edges, fill with compacted hot-mix asphalt (HMA) in lifts not exceeding 50mm, and finish with vibratory plate compaction.",
+        "materialsChecklist": [
+          "Hot-mix asphalt (HMA) or high-performance polymer-modified cold patch",
+          "Bituminous emulsion tack coat (SS-1h / CSS-1h)",
+          "Asphalt diamond-blade saw or pavement breaker",
+          "Vibratory plate compactor",
+          "Sub-base aggregate (if uncompacted base is exposed)",
+          "Traffic safety cones and high-visibility signage"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "~50mm to 70mm",
+          "surfaceAreaEstimate": "~0.45m²"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-21T13:21:51.096Z",
+      "updatedAt": "2026-10-21T13:21:51.096Z"
+    },
+    {
+      "id": "1ac55411-9461-4f54-8738-f9bcf5b46146",
+      "imagePath": "/uploads/1792589063756-8b8a8dcd0e4e.jpeg",
+      "latitude": "14.27650000",
+      "longitude": "121.43120000",
+      "distressType": "alligator_cracking",
+      "hazardSeverity": 9,
+      "riskLevel": "CRITICAL",
+      "vruLethality": "CRITICAL",
+      "vruDetails": "Severe longitudinal tire-trap channel and loose, fragmented asphalt blocks. Two-wheeler front tires are prone to severe rut-lock, lateral displacement, and immediate rim deflection, posing extreme ejection and fatal spill risk in high-density motorcycle/tricycle traffic.",
+      "recommendedAction": "Emergency full-depth reclamation and patch: Saw-cut damaged perimeter beyond the fatigue boundary, excavate degraded wearing and base course, stabilize and compact granular sub-base, apply asphalt emulsion tack coat, and lay multi-lift hot-mix asphalt (HMA) with vibratory roller compaction.",
+      "materialsChecklist": [
+        "Hot-mix asphalt (HMA)",
+        "Crushed aggregate base course",
+        "Cationic bituminous tack coat (SS-1h/CSS-1h)",
+        "Concrete/asphalt saw with diamond blade",
+        "Pneumatic jackhammer/excavator",
+        "Vibratory plate compactor / tandem road roller",
+        "Traffic safety cones and high-visibility warning signage"
+      ],
+      "status": "REPORTED",
+      "communityConfirmations": 1,
+      "resolvedImagePath": null,
+      "triagePayload": {
+        "summary": "High-severity alligator cracking with advanced aggregate ravelling, pavement displacement, and pothole transformation along a rural arterial lane line, presenting an immediate fatal hazard to vulnerable road users.",
+        "urgency": "EMERGENCY",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Severe longitudinal tire-trap channel and loose, fragmented asphalt blocks. Two-wheeler front tires are prone to severe rut-lock, lateral displacement, and immediate rim deflection, posing extreme ejection and fatal spill risk in high-density motorcycle/tricycle traffic.",
+        "distressType": "alligator_cracking",
+        "vruLethality": "CRITICAL",
+        "hazardSeverity": 9,
+        "rejectionReason": null,
+        "supportBaseline": 1,
+        "recommendedAction": "Emergency full-depth reclamation and patch: Saw-cut damaged perimeter beyond the fatigue boundary, excavate degraded wearing and base course, stabilize and compact granular sub-base, apply asphalt emulsion tack coat, and lay multi-lift hot-mix asphalt (HMA) with vibratory roller compaction.",
+        "materialsChecklist": [
+          "Hot-mix asphalt (HMA)",
+          "Crushed aggregate base course",
+          "Cationic bituminous tack coat (SS-1h/CSS-1h)",
+          "Concrete/asphalt saw with diamond blade",
+          "Pneumatic jackhammer/excavator",
+          "Vibratory plate compactor / tandem road roller",
+          "Traffic safety cones and high-visibility warning signage"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "~60mm - 90mm",
+          "surfaceAreaEstimate": "~4.5m²"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-21T13:24:39.862Z",
+      "updatedAt": "2026-10-21T13:24:39.862Z"
+    },
+    {
+      "id": "223ffa87-6a98-462f-b99a-b3878d35ac7f",
+      "imagePath": "/media/3e765982-010c-4699-b497-8190dc8d4454.jpg",
+      "latitude": "14.28130000",
+      "longitude": "121.41730000",
+      "distressType": "pothole",
+      "hazardSeverity": 8,
+      "riskLevel": "CRITICAL",
+      "vruLethality": "HIGH",
+      "vruDetails": "Illustrative rider-risk assessment for demonstration; field inspection required.",
+      "recommendedAction": "Inspect the defect and traffic exposure before specifying a patch repair.",
+      "materialsChecklist": [
+        "Inspection equipment",
+        "Traffic cones"
+      ],
+      "status": "RESOLVED",
+      "communityConfirmations": 2,
+      "resolvedImagePath": null,
+      "triagePayload": {
+        "seedKey": "community-presentation-v1",
+        "summary": "Demo dataset: sample photo, illustrative location and assessment. This is not a verified report of current road conditions.",
+        "urgency": "PRIORITY",
+        "headline": "Demo · Pothole near the road edge",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Illustrative rider-risk assessment for demonstration; field inspection required.",
+        "civicAddress": "Demo pin · Santa Cruz, Laguna",
+        "distressType": "pothole",
+        "vruLethality": "HIGH",
+        "hazardSeverity": 8,
+        "rejectionReason": null,
+        "supportBaseline": 0,
+        "recommendedAction": "Inspect the defect and traffic exposure before specifying a patch repair.",
+        "materialsChecklist": [
+          "Inspection equipment",
+          "Traffic cones"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Not measured",
+          "surfaceAreaEstimate": "Not measured"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T04:57:14.541Z",
+      "updatedAt": "2026-10-23T12:14:29.076Z"
+    },
+    {
+      "id": "d74e6ec4-622f-4300-b7c5-e9d2cebb340e",
+      "imagePath": "/media/54b27053-6433-4a3b-86f9-1f8186832920.jpg",
+      "latitude": "14.28520000",
+      "longitude": "121.42110000",
+      "distressType": "alligator_cracking",
+      "hazardSeverity": 5,
+      "riskLevel": "MODERATE",
+      "vruLethality": "MODERATE",
+      "vruDetails": "Illustrative rider-risk assessment for demonstration; field inspection required.",
+      "recommendedAction": "Inspect the pavement base and drainage before selecting the repair.",
+      "materialsChecklist": [
+        "Inspection equipment",
+        "Traffic cones"
+      ],
+      "status": "REPORTED",
+      "communityConfirmations": 1,
+      "resolvedImagePath": null,
+      "triagePayload": {
+        "seedKey": "community-presentation-v1",
+        "summary": "Demo dataset: sample photo, illustrative location and assessment. This is not a verified report of current road conditions.",
+        "urgency": "PRIORITY",
+        "headline": "Demo · Fatigue cracking on the approach",
+        "riskLevel": "MODERATE",
+        "vruDetails": "Illustrative rider-risk assessment for demonstration; field inspection required.",
+        "civicAddress": "Demo pin · Santa Cruz, Laguna",
+        "distressType": "alligator_cracking",
+        "vruLethality": "MODERATE",
+        "hazardSeverity": 5,
+        "rejectionReason": null,
+        "supportBaseline": 0,
+        "recommendedAction": "Inspect the pavement base and drainage before selecting the repair.",
+        "materialsChecklist": [
+          "Inspection equipment",
+          "Traffic cones"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Not measured",
+          "surfaceAreaEstimate": "Not measured"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T04:57:14.541Z",
+      "updatedAt": "2026-10-23T04:57:14.541Z"
+    },
+    {
+      "id": "6e231dcc-27ec-468f-9cda-cd9c471d0f06",
+      "imagePath": "/media/930cb425-b676-4f24-af94-bb017fb48124.jpg",
+      "latitude": "14.28180960",
+      "longitude": "121.41520970",
+      "distressType": "alligator_cracking",
+      "hazardSeverity": 5,
+      "riskLevel": "MODERATE",
+      "vruLethality": "MODERATE",
+      "vruDetails": "Sample: uneven pavement can affect bicycle and motorcycle stability.",
+      "recommendedAction": "Inspect pavement base and drainage along the marked section before planning repairs.",
+      "materialsChecklist": [
+        "Inspection equipment",
+        "Traffic cones"
+      ],
+      "status": "REPORTED",
+      "communityConfirmations": 1,
+      "resolvedImagePath": null,
+      "triagePayload": {
+        "media": [
+          {
+            "id": "930cb425-b676-4f24-af94-bb017fb48124",
+            "url": "/media/930cb425-b676-4f24-af94-bb017fb48124.jpg",
+            "kind": "photo",
+            "name": "Demo road cracking photo.jpg",
+            "mimeType": "image/jpeg"
+          }
+        ],
+        "seedKey": "road-section-presentation-v1",
+        "summary": "Illustrative cracking along a mapped road section. Field inspection required; this is demo data.",
+        "urgency": "PRIORITY",
+        "headline": "Demo · Road-section cracking on Pedro Guevarra Avenue",
+        "riskLevel": "MODERATE",
+        "vruDetails": "Sample: uneven pavement can affect bicycle and motorcycle stability.",
+        "roadSegment": {
+          "id": "30681947",
+          "end": 129.3854027648121,
+          "name": "Pedro Guevarra Avenue",
+          "start": 0,
+          "length": 129.3854027648121,
+          "coordinates": [
+            [
+              14.2809541,
+              121.4154049
+            ],
+            [
+              14.2816119,
+              121.415252
+            ],
+            [
+              14.2816263,
+              121.4152489
+            ],
+            [
+              14.2818096,
+              121.4152097
+            ],
+            [
+              14.2819471,
+              121.4151828
+            ],
+            [
+              14.2820906,
+              121.4151478
+            ]
+          ]
+        },
+        "civicAddress": "Demo section · Pedro Guevarra Avenue, Santa Cruz, Laguna",
+        "distressType": "alligator_cracking",
+        "vruLethality": "MODERATE",
+        "hazardSeverity": 5,
+        "rejectionReason": null,
+        "supportBaseline": 0,
+        "recommendedAction": "Inspect pavement base and drainage along the marked section before planning repairs.",
+        "materialsChecklist": [
+          "Inspection equipment",
+          "Traffic cones"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Not measured",
+          "surfaceAreaEstimate": "Not measured"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T12:36:44.948Z",
+      "updatedAt": "2026-10-23T12:36:44.948Z"
+    },
+    {
+      "id": "44bf55d4-dd5d-4cdc-a244-7ab2484dcbd4",
+      "imagePath": "/media/95442b51-a3d6-4e54-b814-3f464b631e73.png",
+      "latitude": "14.27738540",
+      "longitude": "121.41186949",
+      "distressType": "pothole",
+      "hazardSeverity": 9,
+      "riskLevel": "CRITICAL",
+      "vruLethality": "CRITICAL",
+      "vruDetails": "Severe tire capture hazard; sharp vertical rim can cause instant tire blowout, front wheel lockup, and violent rider ejection for motorcycles and bicycles.",
+      "recommendedAction": "Perform saw-cut perimeter squared-off edge, clear loose aggregate, apply emulsion tack coat, fill with asphalt patching material, and compact thoroughly using a plate compactor.",
+      "materialsChecklist": [
+        "Asphalt cold/hot patch mix",
+        "Bituminous tack coat emulsion",
+        "Vibratory plate compactor",
+        "Pavement saw",
+        "Traffic safety cones"
+      ],
+      "status": "REPORTED",
+      "communityConfirmations": 1,
+      "resolvedImagePath": null,
+      "triagePayload": {
+        "media": [
+          {
+            "id": "95442b51-a3d6-4e54-b814-3f464b631e73",
+            "url": "/media/95442b51-a3d6-4e54-b814-3f464b631e73.png",
+            "kind": "photo",
+            "name": "14_Live_Verified_Mobile_Card.png",
+            "mimeType": "image/png"
+          }
+        ],
+        "summary": "Deep asphalt pothole near pedestrian crosswalk with exposed aggregate base. High-risk critical hazard for two-wheeler loss of control and vehicle damage requiring immediate emergency road repair.",
+        "urgency": "EMERGENCY",
+        "headline": "road hazard",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Severe tire capture hazard; sharp vertical rim can cause instant tire blowout, front wheel lockup, and violent rider ejection for motorcycles and bicycles.",
+        "roadSegment": {
+          "id": "40552069",
+          "end": 289.55284627601,
+          "name": "Quezon Avenue",
+          "start": 129.55284627601,
+          "length": 159.99999999999997,
+          "coordinates": [
+            [
+              14.276837107073284,
+              121.41138926183095
+            ],
+            [
+              14.2772933,
+              121.4117988
+            ],
+            [
+              14.2773961,
+              121.4118777
+            ],
+            [
+              14.2774538,
+              121.4119222
+            ],
+            [
+              14.2778138,
+              121.4121605
+            ],
+            [
+              14.2779579,
+              121.4122812
+            ],
+            [
+              14.277974415947169,
+              121.4122942090368
+            ]
+          ]
+        },
+        "civicAddress": "somehwere near here",
+        "distressType": "pothole",
+        "vruLethality": "CRITICAL",
+        "hazardSeverity": 9,
+        "rejectionReason": null,
+        "supportBaseline": 0,
+        "recommendedAction": "Perform saw-cut perimeter squared-off edge, clear loose aggregate, apply emulsion tack coat, fill with asphalt patching material, and compact thoroughly using a plate compactor.",
+        "materialsChecklist": [
+          "Asphalt cold/hot patch mix",
+          "Bituminous tack coat emulsion",
+          "Vibratory plate compactor",
+          "Pavement saw",
+          "Traffic safety cones"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "~80-100mm",
+          "surfaceAreaEstimate": "~0.35m²"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T13:01:58.508Z",
+      "updatedAt": "2026-10-23T13:01:58.538Z"
+    },
+    {
+      "id": "f2382f7a-96d3-4b62-aaaa-2c4598e2b7bd",
+      "imagePath": "/media/b254b575-e807-47ea-9509-d38dd723ac90.jpg",
+      "latitude": "14.27768811",
+      "longitude": "121.41207730",
+      "distressType": "drainage_culvert_failure",
+      "hazardSeverity": 8,
+      "riskLevel": "CRITICAL",
+      "vruLethality": "HIGH",
+      "vruDetails": "Open void at road margin poses severe tire entrapment hazard for motorcycles and e-bikes, risking sudden rider loss of control or ejection into traffic.",
+      "recommendedAction": "Cordon off site immediately. Clear broken slab fragments, reconstruct concrete rim/collar, and fit a new heavy-duty reinforced cover flush with pavement surface.",
+      "materialsChecklist": [
+        "Precast concrete replacement cover",
+        "High-strength concrete repair mortar",
+        "Steel rebar reinforcement",
+        "Formwork lumber",
+        "Traffic safety cones & warning tape"
+      ],
+      "status": "REPORTED",
+      "communityConfirmations": 1,
+      "resolvedImagePath": null,
+      "triagePayload": {
+        "media": [
+          {
+            "id": "b254b575-e807-47ea-9509-d38dd723ac90",
+            "url": "/media/b254b575-e807-47ea-9509-d38dd723ac90.jpg",
+            "kind": "photo",
+            "name": "side.jpg",
+            "mimeType": "image/jpeg"
+          }
+        ],
+        "summary": "Collapsed concrete utility chamber cover adjacent to the roadway lane creates a deep open pit hazard, posing critical danger to vulnerable road users and pedestrians.",
+        "urgency": "EMERGENCY",
+        "headline": "Sidwalk Hazard",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Open void at road margin poses severe tire entrapment hazard for motorcycles and e-bikes, risking sudden rider loss of control or ejection into traffic.",
+        "roadSegment": {
+          "id": "40552069",
+          "end": 500,
+          "name": "Quezon Avenue",
+          "start": 0,
+          "length": 500,
+          "coordinates": [
+            [
+              14.2759992,
+              121.4105575
+            ],
+            [
+              14.2760447,
+              121.4106249
+            ],
+            [
+              14.2761582,
+              121.4107406
+            ],
+            [
+              14.2763731,
+              121.4109605
+            ],
+            [
+              14.2764686,
+              121.4110468
+            ],
+            [
+              14.2765179,
+              121.4111027
+            ],
+            [
+              14.2772933,
+              121.4117988
+            ],
+            [
+              14.2773961,
+              121.4118777
+            ],
+            [
+              14.2774538,
+              121.4119222
+            ],
+            [
+              14.2778138,
+              121.4121605
+            ],
+            [
+              14.2779579,
+              121.4122812
+            ],
+            [
+              14.2781849,
+              121.41246
+            ],
+            [
+              14.2782156,
+              121.412484
+            ],
+            [
+              14.2782676,
+              121.4125195
+            ],
+            [
+              14.2784686,
+              121.4126597
+            ],
+            [
+              14.2785978,
+              121.4127526
+            ],
+            [
+              14.2786373,
+              121.4127809
+            ],
+            [
+              14.2790613,
+              121.4131171
+            ],
+            [
+              14.2792288,
+              121.4132479
+            ],
+            [
+              14.2795005684315,
+              121.41344820402821
+            ]
+          ]
+        },
+        "civicAddress": "this around here",
+        "distressType": "drainage_culvert_failure",
+        "vruLethality": "HIGH",
+        "hazardSeverity": 8,
+        "rejectionReason": null,
+        "supportBaseline": 0,
+        "recommendedAction": "Cordon off site immediately. Clear broken slab fragments, reconstruct concrete rim/collar, and fit a new heavy-duty reinforced cover flush with pavement surface.",
+        "materialsChecklist": [
+          "Precast concrete replacement cover",
+          "High-strength concrete repair mortar",
+          "Steel rebar reinforcement",
+          "Formwork lumber",
+          "Traffic safety cones & warning tape"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "~350mm",
+          "surfaceAreaEstimate": "~0.3m²"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T14:26:22.271Z",
+      "updatedAt": "2026-10-23T14:26:22.303Z"
+    },
+    {
+      "id": "c988cf74-fed2-4eda-a7f3-d558302580a7",
+      "imagePath": "/media/e6ea1190-6a2e-4d9f-955d-1102c840dd46.jpg",
+      "latitude": "14.27622245",
+      "longitude": "121.41675312",
+      "distressType": "alligator_cracking",
+      "hazardSeverity": 8,
+      "riskLevel": "CRITICAL",
+      "vruLethality": "HIGH",
+      "vruDetails": "Wide jagged gaps and vertical slab displacement create high tire entrapment and rider ejection risks for two-wheelers.",
+      "recommendedAction": "Demolish and remove damaged concrete slab, re-compact subgrade, install aggregate base, and re-pour reinforced concrete.",
+      "materialsChecklist": [
+        "Ready-mix Portland cement concrete",
+        "Steel rebar / wire mesh",
+        "Crushed aggregate base course",
+        "Wooden formwork",
+        "Vibratory plate compactor",
+        "Concrete saw"
+      ],
+      "status": "REPORTED",
+      "communityConfirmations": 1,
+      "resolvedImagePath": null,
+      "triagePayload": {
+        "media": [
+          {
+            "id": "e6ea1190-6a2e-4d9f-955d-1102c840dd46",
+            "url": "/media/e6ea1190-6a2e-4d9f-955d-1102c840dd46.jpg",
+            "kind": "photo",
+            "name": "sidwalk.jpg",
+            "mimeType": "image/jpeg"
+          }
+        ],
+        "summary": "Severely shattered concrete pavement slab displaying structural displacement and wide cracks, posing high tripping and two-wheeler instability hazards.",
+        "urgency": "PRIORITY",
+        "headline": "Sidewalk cracks",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Wide jagged gaps and vertical slab displacement create high tire entrapment and rider ejection risks for two-wheelers.",
+        "roadSegment": {
+          "id": "326049678",
+          "end": 500,
+          "name": "Pedro Guevarra Avenue",
+          "start": 0,
+          "length": 500,
+          "coordinates": [
+            [
+              14.2783739,
+              121.4160801
+            ],
+            [
+              14.2781006,
+              121.4161579
+            ],
+            [
+              14.2779295,
+              121.4162099
+            ],
+            [
+              14.2776608,
+              121.4162977
+            ],
+            [
+              14.2775705,
+              121.4163263
+            ],
+            [
+              14.2773946,
+              121.4163823
+            ],
+            [
+              14.2766913,
+              121.4166058
+            ],
+            [
+              14.2764369,
+              121.4166886
+            ],
+            [
+              14.276059,
+              121.4168023
+            ],
+            [
+              14.2759854,
+              121.4168245
+            ],
+            [
+              14.2758528,
+              121.4168644
+            ],
+            [
+              14.2756865,
+              121.4169223
+            ],
+            [
+              14.2756371,
+              121.4169394
+            ],
+            [
+              14.275591,
+              121.4169591
+            ],
+            [
+              14.2753483,
+              121.4171306
+            ],
+            [
+              14.2750189,
+              121.4173486
+            ],
+            [
+              14.2745623,
+              121.4177153
+            ],
+            [
+              14.27434288431521,
+              121.4179579870453
+            ]
+          ]
+        },
+        "civicAddress": "this around here",
+        "distressType": "alligator_cracking",
+        "vruLethality": "HIGH",
+        "hazardSeverity": 8,
+        "rejectionReason": null,
+        "supportBaseline": 0,
+        "recommendedAction": "Demolish and remove damaged concrete slab, re-compact subgrade, install aggregate base, and re-pour reinforced concrete.",
+        "materialsChecklist": [
+          "Ready-mix Portland cement concrete",
+          "Steel rebar / wire mesh",
+          "Crushed aggregate base course",
+          "Wooden formwork",
+          "Vibratory plate compactor",
+          "Concrete saw"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "~30-50mm vertical displacement",
+          "surfaceAreaEstimate": "~1.8m²"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T14:27:38.663Z",
+      "updatedAt": "2026-10-23T14:27:38.685Z"
+    },
+    {
+      "id": "95d010be-d477-421f-8502-a23639a70e8b",
+      "imagePath": "/media/27475580-96f8-4dde-a0b2-9540b3f2f70e.webp",
+      "latitude": "14.22946643",
+      "longitude": "121.36425019",
+      "distressType": "other",
+      "hazardSeverity": 5,
+      "riskLevel": "MODERATE",
+      "vruLethality": "MODERATE",
+      "vruDetails": "Cyclists or pedestrians risk wheel entrapment and loss of control in the missing paver channel.",
+      "recommendedAction": "Remove loose debris, re-level base bedding sand, and relay missing or damaged interlocking pavers securely.",
+      "materialsChecklist": [
+        "Interlocking pavers",
+        "Bedding sand",
+        "Compactor",
+        "Trowel",
+        "Sweeping broom"
+      ],
+      "status": "REPORTED",
+      "communityConfirmations": 1,
+      "resolvedImagePath": null,
+      "triagePayload": {
+        "media": [
+          {
+            "id": "27475580-96f8-4dde-a0b2-9540b3f2f70e",
+            "url": "/media/27475580-96f8-4dde-a0b2-9540b3f2f70e.webp",
+            "kind": "photo",
+            "name": "brick.webp",
+            "mimeType": "image/webp"
+          }
+        ],
+        "summary": "Missing and displaced interlocking pavers create a linear surface depression and localized stone loss requiring repair.",
+        "urgency": "PRIORITY",
+        "headline": "brick by brick",
+        "riskLevel": "MODERATE",
+        "vruDetails": "Cyclists or pedestrians risk wheel entrapment and loss of control in the missing paver channel.",
+        "roadSegment": {
+          "id": "23436191",
+          "end": 943.940442760353,
+          "name": "Unnamed road",
+          "start": 573.940442760353,
+          "length": 370,
+          "coordinates": [
+            [
+              14.230996987323506,
+              121.36357744613863
+            ],
+            [
+              14.2309409,
+              121.3636023
+            ],
+            [
+              14.2301769,
+              121.3639457
+            ],
+            [
+              14.2296371,
+              121.3641766
+            ],
+            [
+              14.2289093,
+              121.3644904
+            ],
+            [
+              14.2285931,
+              121.3646243
+            ],
+            [
+              14.2282545,
+              121.3647607
+            ],
+            [
+              14.2279499,
+              121.3648861
+            ],
+            [
+              14.227925151826888,
+              121.36489633024784
+            ]
+          ]
+        },
+        "civicAddress": "near here",
+        "distressType": "other",
+        "vruLethality": "MODERATE",
+        "hazardSeverity": 5,
+        "rejectionReason": null,
+        "supportBaseline": 0,
+        "severityEvidence": {
+          "confidence": "HIGH",
+          "limitations": "Exact depth and precise dimensions cannot be determined from a single photographic angle without scale.",
+          "visibleDefects": [
+            "Missing interlocking pavers",
+            "Exposed bedding base",
+            "Displaced stone fragments",
+            "Linear surface depression"
+          ],
+          "criticalDangerVisible": false
+        },
+        "recommendedAction": "Remove loose debris, re-level base bedding sand, and relay missing or damaged interlocking pavers securely.",
+        "materialsChecklist": [
+          "Interlocking pavers",
+          "Bedding sand",
+          "Compactor",
+          "Trowel",
+          "Sweeping broom"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Unmeasured",
+          "surfaceAreaEstimate": "Unmeasured"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T14:43:31.903Z",
+      "updatedAt": "2026-10-23T14:43:31.973Z"
+    },
+    {
+      "id": "830f1b99-f9ea-450b-91df-08d7a755a0c0",
+      "imagePath": "/media/417ab3d8-f656-4152-860c-bb28f2fe06d7.jpg",
+      "latitude": "14.27781180",
+      "longitude": "121.41423860",
+      "distressType": "pothole",
+      "hazardSeverity": 4,
+      "riskLevel": "MODERATE",
+      "vruLethality": "LOW",
+      "vruDetails": "Cyclists encountering the localized pothole near the curb face moderate risk of sudden wheel deflection.",
+      "recommendedAction": "Clean out debris, apply tack coat, and fill with hot-mix asphalt, compacting thoroughly to match the surrounding surface level.",
+      "materialsChecklist": [
+        "Hot-mix asphalt",
+        "Tack coat",
+        "Compactor",
+        "Shovel",
+        "Broom"
+      ],
+      "status": "IN_REPAIR",
+      "communityConfirmations": 1,
+      "resolvedImagePath": null,
+      "triagePayload": {
+        "media": [
+          {
+            "id": "417ab3d8-f656-4152-860c-bb28f2fe06d7",
+            "url": "/media/417ab3d8-f656-4152-860c-bb28f2fe06d7.jpg",
+            "kind": "photo",
+            "name": "pothole.jpg",
+            "mimeType": "image/jpeg"
+          }
+        ],
+        "summary": "A localized, shallow-to-moderate pothole near the roadway edge exhibits clear surface loss and minor adjacent cracking, presenting minimal immediate structural danger but requiring routine patching.",
+        "urgency": "ROUTINE",
+        "headline": "some small pothole here",
+        "riskLevel": "MODERATE",
+        "vruDetails": "Cyclists encountering the localized pothole near the curb face moderate risk of sudden wheel deflection.",
+        "roadSegment": {
+          "id": "961516008",
+          "end": 422,
+          "name": "Aguinaldo Street",
+          "start": 0,
+          "length": 422,
+          "coordinates": [
+            [
+              14.2759592,
+              121.4146351
+            ],
+            [
+              14.2760496,
+              121.4145982
+            ],
+            [
+              14.2764458,
+              121.4144906
+            ],
+            [
+              14.2766032,
+              121.4144478
+            ],
+            [
+              14.2767287,
+              121.4144279
+            ],
+            [
+              14.2767935,
+              121.4144176
+            ],
+            [
+              14.2771292,
+              121.4143702
+            ],
+            [
+              14.2772062,
+              121.4143593
+            ],
+            [
+              14.2776013,
+              121.4142979
+            ],
+            [
+              14.2776897,
+              121.4142842
+            ],
+            [
+              14.278207,
+              121.414091
+            ],
+            [
+              14.2786418,
+              121.4138909
+            ],
+            [
+              14.2790205,
+              121.4137888
+            ],
+            [
+              14.2790426,
+              121.4137828
+            ],
+            [
+              14.2791634,
+              121.4137486
+            ],
+            [
+              14.2792599,
+              121.4137007
+            ],
+            [
+              14.279316,
+              121.4136713
+            ],
+            [
+              14.2793727,
+              121.4136417
+            ],
+            [
+              14.279545023470119,
+              121.41348745925363
+            ]
+          ]
+        },
+        "civicAddress": "here about here",
+        "distressType": "pothole",
+        "vruLethality": "LOW",
+        "hazardSeverity": 4,
+        "rejectionReason": null,
+        "supportBaseline": 0,
+        "severityEvidence": {
+          "confidence": "HIGH",
+          "limitations": "Depth cannot be precisely determined without physical measurement.",
+          "visibleDefects": [
+            "Localized pothole near curb",
+            "Exposed base aggregate",
+            "Minor lip cracking around edge"
+          ],
+          "criticalDangerVisible": false
+        },
+        "recommendedAction": "Clean out debris, apply tack coat, and fill with hot-mix asphalt, compacting thoroughly to match the surrounding surface level.",
+        "materialsChecklist": [
+          "Hot-mix asphalt",
+          "Tack coat",
+          "Compactor",
+          "Shovel",
+          "Broom"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Unmeasured",
+          "surfaceAreaEstimate": "Approximately 20 cm by 25 cm"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T14:48:56.328Z",
+      "updatedAt": "2026-10-23T14:55:58.182Z"
+    }
+  ],
+  "observations": [
+    {
+      "id": "44cc8147-d9a5-4b5d-8e54-0470dc5cbe36",
+      "reportId": "223ffa87-6a98-462f-b99a-b3878d35ac7f",
+      "sourceId": "3273b91c-9c72-49e2-84da-ef542ee3a464",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "observerKey": "user:8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "analysis": {
+        "summary": "Demo dataset: sample photo, illustrative location and assessment. This is not a verified report of current road conditions.",
+        "urgency": "PRIORITY",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Illustrative rider-risk assessment for demonstration; field inspection required.",
+        "distressType": "pothole",
+        "vruLethality": "HIGH",
+        "hazardSeverity": 8,
+        "rejectionReason": null,
+        "recommendedAction": "Inspect the defect and traffic exposure before specifying a patch repair.",
+        "materialsChecklist": [
+          "Inspection equipment",
+          "Traffic cones"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Not measured",
+          "surfaceAreaEstimate": "Not measured"
+        },
+        "isValidInfrastructure": true
+      },
+      "media": [
+        {
+          "id": "3e765982-010c-4699-b497-8190dc8d4454",
+          "url": "/media/3e765982-010c-4699-b497-8190dc8d4454.jpg",
+          "kind": "photo",
+          "name": "pothole-severe.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "fingerprints": [
+        "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84"
+      ],
+      "match": {
+        "method": "new",
+        "reason": "Demo: initial observation for this seeded hazard.",
+        "confidence": 1
+      },
+      "createdAt": "2026-10-23T04:57:14.541Z"
+    },
+    {
+      "id": "517ebfc2-6fdd-465e-9b7b-3efd8b542946",
+      "reportId": "223ffa87-6a98-462f-b99a-b3878d35ac7f",
+      "sourceId": "2d8129aa-fc87-4cb9-8f98-0daa2ab39b4e",
+      "userId": "9cf5e67d-a843-4f46-b57a-d933ad645986",
+      "observerKey": "user:9cf5e67d-a843-4f46-b57a-d933ad645986",
+      "analysis": {
+        "summary": "Demo dataset: sample photo, illustrative location and assessment. This is not a verified report of current road conditions.",
+        "urgency": "PRIORITY",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Illustrative rider-risk assessment for demonstration; field inspection required.",
+        "distressType": "pothole",
+        "vruLethality": "HIGH",
+        "hazardSeverity": 8,
+        "rejectionReason": null,
+        "recommendedAction": "Inspect the defect and traffic exposure before specifying a patch repair.",
+        "materialsChecklist": [
+          "Inspection equipment",
+          "Traffic cones"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Not measured",
+          "surfaceAreaEstimate": "Not measured"
+        },
+        "isValidInfrastructure": true
+      },
+      "media": [
+        {
+          "id": "3e765982-010c-4699-b497-8190dc8d4454",
+          "url": "/media/3e765982-010c-4699-b497-8190dc8d4454.jpg",
+          "kind": "photo",
+          "name": "pothole-severe.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "fingerprints": [
+        "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84"
+      ],
+      "match": {
+        "method": "exact",
+        "reason": "Demo: the same photo and nearby pin link to the original hazard. Repeated media does not increase severity.",
+        "confidence": 1,
+        "newEvidence": false
+      },
+      "createdAt": "2026-10-23T04:57:14.541Z"
+    },
+    {
+      "id": "b6882da0-f725-489a-9b47-8dfe2eeba765",
+      "reportId": "d74e6ec4-622f-4300-b7c5-e9d2cebb340e",
+      "sourceId": "bde0e058-4254-4307-9a41-c8fbaf25d4fe",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "observerKey": "user:8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "analysis": {
+        "summary": "Demo dataset: sample photo, illustrative location and assessment. This is not a verified report of current road conditions.",
+        "urgency": "PRIORITY",
+        "riskLevel": "MODERATE",
+        "vruDetails": "Illustrative rider-risk assessment for demonstration; field inspection required.",
+        "distressType": "alligator_cracking",
+        "vruLethality": "MODERATE",
+        "hazardSeverity": 5,
+        "rejectionReason": null,
+        "recommendedAction": "Inspect the pavement base and drainage before selecting the repair.",
+        "materialsChecklist": [
+          "Inspection equipment",
+          "Traffic cones"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Not measured",
+          "surfaceAreaEstimate": "Not measured"
+        },
+        "isValidInfrastructure": true
+      },
+      "media": [
+        {
+          "id": "54b27053-6433-4a3b-86f9-1f8186832920",
+          "url": "/media/54b27053-6433-4a3b-86f9-1f8186832920.jpg",
+          "kind": "photo",
+          "name": "alligator-fatigue.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "fingerprints": [
+        "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a"
+      ],
+      "match": {
+        "method": "new",
+        "reason": "Demo: initial observation for this seeded hazard.",
+        "confidence": 1
+      },
+      "createdAt": "2026-10-23T04:57:14.541Z"
+    },
+    {
+      "id": "769a6bc5-ba42-459c-9381-e82f1cac639a",
+      "reportId": "6e231dcc-27ec-468f-9cda-cd9c471d0f06",
+      "sourceId": "11de0fc3-b3b3-442d-a629-d7243a524052",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "observerKey": "user:8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "analysis": {
+        "summary": "Illustrative cracking along a mapped road section. Field inspection required; this is demo data.",
+        "urgency": "PRIORITY",
+        "riskLevel": "MODERATE",
+        "vruDetails": "Sample: uneven pavement can affect bicycle and motorcycle stability.",
+        "distressType": "alligator_cracking",
+        "vruLethality": "MODERATE",
+        "hazardSeverity": 5,
+        "rejectionReason": null,
+        "recommendedAction": "Inspect pavement base and drainage along the marked section before planning repairs.",
+        "materialsChecklist": [
+          "Inspection equipment",
+          "Traffic cones"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Not measured",
+          "surfaceAreaEstimate": "Not measured"
+        },
+        "isValidInfrastructure": true
+      },
+      "media": [
+        {
+          "id": "930cb425-b676-4f24-af94-bb017fb48124",
+          "url": "/media/930cb425-b676-4f24-af94-bb017fb48124.jpg",
+          "kind": "photo",
+          "name": "Demo road cracking photo.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "fingerprints": [
+        "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a"
+      ],
+      "match": {
+        "method": "new",
+        "reason": "Explicitly labeled demo road-section evidence.",
+        "confidence": 1
+      },
+      "createdAt": "2026-10-23T12:36:44.948Z"
+    },
+    {
+      "id": "a35818e5-ab4a-4ed0-b5d7-d4c159ba0efc",
+      "reportId": "44bf55d4-dd5d-4cdc-a244-7ab2484dcbd4",
+      "sourceId": "43afb4c6-cc72-40a8-bc45-d9a7f1810614",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "observerKey": "user:8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "analysis": {
+        "summary": "Deep asphalt pothole near pedestrian crosswalk with exposed aggregate base. High-risk critical hazard for two-wheeler loss of control and vehicle damage requiring immediate emergency road repair.",
+        "urgency": "EMERGENCY",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Severe tire capture hazard; sharp vertical rim can cause instant tire blowout, front wheel lockup, and violent rider ejection for motorcycles and bicycles.",
+        "distressType": "pothole",
+        "vruLethality": "CRITICAL",
+        "hazardSeverity": 9,
+        "rejectionReason": null,
+        "recommendedAction": "Perform saw-cut perimeter squared-off edge, clear loose aggregate, apply emulsion tack coat, fill with asphalt patching material, and compact thoroughly using a plate compactor.",
+        "materialsChecklist": [
+          "Asphalt cold/hot patch mix",
+          "Bituminous tack coat emulsion",
+          "Vibratory plate compactor",
+          "Pavement saw",
+          "Traffic safety cones"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "~80-100mm",
+          "surfaceAreaEstimate": "~0.35m²"
+        },
+        "isValidInfrastructure": true
+      },
+      "media": [
+        {
+          "id": "95442b51-a3d6-4e54-b814-3f464b631e73",
+          "url": "/media/95442b51-a3d6-4e54-b814-3f464b631e73.png",
+          "kind": "photo",
+          "name": "14_Live_Verified_Mobile_Card.png",
+          "mimeType": "image/png"
+        }
+      ],
+      "fingerprints": [
+        "b44bfb72846b6b61cfa665a1f24dc94f9245c8eb6719788c7ea83e5affd91505"
+      ],
+      "match": {
+        "method": "new",
+        "reason": "No open report of this damage type near this location or overlapping road section.",
+        "confidence": 1,
+        "newEvidence": true
+      },
+      "createdAt": "2026-10-23T13:01:58.508Z"
+    },
+    {
+      "id": "f34bed77-10f1-40e5-b27c-69c678a05626",
+      "reportId": "f2382f7a-96d3-4b62-aaaa-2c4598e2b7bd",
+      "sourceId": "23369bed-5e50-4071-80d5-af4ad6e9b838",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "observerKey": "user:8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "analysis": {
+        "summary": "Collapsed concrete utility chamber cover adjacent to the roadway lane creates a deep open pit hazard, posing critical danger to vulnerable road users and pedestrians.",
+        "urgency": "EMERGENCY",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Open void at road margin poses severe tire entrapment hazard for motorcycles and e-bikes, risking sudden rider loss of control or ejection into traffic.",
+        "distressType": "drainage_culvert_failure",
+        "vruLethality": "HIGH",
+        "hazardSeverity": 8,
+        "rejectionReason": null,
+        "recommendedAction": "Cordon off site immediately. Clear broken slab fragments, reconstruct concrete rim/collar, and fit a new heavy-duty reinforced cover flush with pavement surface.",
+        "materialsChecklist": [
+          "Precast concrete replacement cover",
+          "High-strength concrete repair mortar",
+          "Steel rebar reinforcement",
+          "Formwork lumber",
+          "Traffic safety cones & warning tape"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "~350mm",
+          "surfaceAreaEstimate": "~0.3m²"
+        },
+        "isValidInfrastructure": true
+      },
+      "media": [
+        {
+          "id": "b254b575-e807-47ea-9509-d38dd723ac90",
+          "url": "/media/b254b575-e807-47ea-9509-d38dd723ac90.jpg",
+          "kind": "photo",
+          "name": "side.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "fingerprints": [
+        "8d7871ff13d00683e929065cec163f4c158d506bb09465818852f290f8fa010a"
+      ],
+      "match": {
+        "method": "new",
+        "reason": "No open report of this damage type near this location or overlapping road section.",
+        "confidence": 1,
+        "newEvidence": true
+      },
+      "createdAt": "2026-10-23T14:26:22.271Z"
+    },
+    {
+      "id": "e5412ec8-287a-44e0-b0ca-0e4b33e2fcd8",
+      "reportId": "c988cf74-fed2-4eda-a7f3-d558302580a7",
+      "sourceId": "6913e781-d5f4-47ee-8d1e-53d15592aa9c",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "observerKey": "user:8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "analysis": {
+        "summary": "Severely shattered concrete pavement slab displaying structural displacement and wide cracks, posing high tripping and two-wheeler instability hazards.",
+        "urgency": "PRIORITY",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Wide jagged gaps and vertical slab displacement create high tire entrapment and rider ejection risks for two-wheelers.",
+        "distressType": "alligator_cracking",
+        "vruLethality": "HIGH",
+        "hazardSeverity": 8,
+        "rejectionReason": null,
+        "recommendedAction": "Demolish and remove damaged concrete slab, re-compact subgrade, install aggregate base, and re-pour reinforced concrete.",
+        "materialsChecklist": [
+          "Ready-mix Portland cement concrete",
+          "Steel rebar / wire mesh",
+          "Crushed aggregate base course",
+          "Wooden formwork",
+          "Vibratory plate compactor",
+          "Concrete saw"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "~30-50mm vertical displacement",
+          "surfaceAreaEstimate": "~1.8m²"
+        },
+        "isValidInfrastructure": true
+      },
+      "media": [
+        {
+          "id": "e6ea1190-6a2e-4d9f-955d-1102c840dd46",
+          "url": "/media/e6ea1190-6a2e-4d9f-955d-1102c840dd46.jpg",
+          "kind": "photo",
+          "name": "sidwalk.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "fingerprints": [
+        "ebc19a7fe162b6414e673655a96860019133d5952178d913c6d12813ffaf867b"
+      ],
+      "match": {
+        "method": "new",
+        "reason": "No open report of this damage type near this location or overlapping road section.",
+        "confidence": 1,
+        "newEvidence": true
+      },
+      "createdAt": "2026-10-23T14:27:38.663Z"
+    },
+    {
+      "id": "90994c3e-3fd3-4dd8-bf8a-f30bfdb9449c",
+      "reportId": "95d010be-d477-421f-8502-a23639a70e8b",
+      "sourceId": "52a2ad67-00ea-4621-b660-fd1a194e1feb",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "observerKey": "user:8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "analysis": {
+        "summary": "Missing and displaced interlocking pavers create a linear surface depression and localized stone loss requiring repair.",
+        "urgency": "PRIORITY",
+        "riskLevel": "MODERATE",
+        "vruDetails": "Cyclists or pedestrians risk wheel entrapment and loss of control in the missing paver channel.",
+        "distressType": "other",
+        "vruLethality": "MODERATE",
+        "hazardSeverity": 5,
+        "rejectionReason": null,
+        "severityEvidence": {
+          "confidence": "HIGH",
+          "limitations": "Exact depth and precise dimensions cannot be determined from a single photographic angle without scale.",
+          "visibleDefects": [
+            "Missing interlocking pavers",
+            "Exposed bedding base",
+            "Displaced stone fragments",
+            "Linear surface depression"
+          ],
+          "criticalDangerVisible": false
+        },
+        "recommendedAction": "Remove loose debris, re-level base bedding sand, and relay missing or damaged interlocking pavers securely.",
+        "materialsChecklist": [
+          "Interlocking pavers",
+          "Bedding sand",
+          "Compactor",
+          "Trowel",
+          "Sweeping broom"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Unmeasured",
+          "surfaceAreaEstimate": "Unmeasured"
+        },
+        "isValidInfrastructure": true
+      },
+      "media": [
+        {
+          "id": "27475580-96f8-4dde-a0b2-9540b3f2f70e",
+          "url": "/media/27475580-96f8-4dde-a0b2-9540b3f2f70e.webp",
+          "kind": "photo",
+          "name": "brick.webp",
+          "mimeType": "image/webp"
+        }
+      ],
+      "fingerprints": [
+        "4f1f0f80cb197fd438913794d9ac6b5a0d4b46eb85dc0d6981d1f2b887cd6c68"
+      ],
+      "match": {
+        "method": "new",
+        "reason": "No open report of this damage type near this location or overlapping road section.",
+        "confidence": 1,
+        "newEvidence": true
+      },
+      "createdAt": "2026-10-23T14:43:31.903Z"
+    },
+    {
+      "id": "f6a34784-fa81-4b65-8eff-8885d9d9ea25",
+      "reportId": "830f1b99-f9ea-450b-91df-08d7a755a0c0",
+      "sourceId": "c61a99b8-9581-41e9-a0a4-f5b95984f680",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "observerKey": "user:8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "analysis": {
+        "summary": "A localized, shallow-to-moderate pothole near the roadway edge exhibits clear surface loss and minor adjacent cracking, presenting minimal immediate structural danger but requiring routine patching.",
+        "urgency": "ROUTINE",
+        "riskLevel": "MODERATE",
+        "vruDetails": "Cyclists encountering the localized pothole near the curb face moderate risk of sudden wheel deflection.",
+        "distressType": "pothole",
+        "vruLethality": "LOW",
+        "hazardSeverity": 4,
+        "rejectionReason": null,
+        "severityEvidence": {
+          "confidence": "HIGH",
+          "limitations": "Depth cannot be precisely determined without physical measurement.",
+          "visibleDefects": [
+            "Localized pothole near curb",
+            "Exposed base aggregate",
+            "Minor lip cracking around edge"
+          ],
+          "criticalDangerVisible": false
+        },
+        "recommendedAction": "Clean out debris, apply tack coat, and fill with hot-mix asphalt, compacting thoroughly to match the surrounding surface level.",
+        "materialsChecklist": [
+          "Hot-mix asphalt",
+          "Tack coat",
+          "Compactor",
+          "Shovel",
+          "Broom"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Unmeasured",
+          "surfaceAreaEstimate": "Approximately 20 cm by 25 cm"
+        },
+        "isValidInfrastructure": true
+      },
+      "media": [
+        {
+          "id": "417ab3d8-f656-4152-860c-bb28f2fe06d7",
+          "url": "/media/417ab3d8-f656-4152-860c-bb28f2fe06d7.jpg",
+          "kind": "photo",
+          "name": "pothole.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "fingerprints": [
+        "03098ed8dbeeb0dfbebc448859799bc84c604e93aeb1cc0825be60443e4785c8"
+      ],
+      "match": {
+        "method": "new",
+        "reason": "No open report of this damage type near this location or overlapping road section.",
+        "confidence": 1,
+        "newEvidence": true
+      },
+      "createdAt": "2026-10-23T14:48:56.328Z"
+    }
+  ],
+  "posts": [
+    {
+      "id": "88546291-7602-4cd8-9d29-174e0232dc0d",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "draftId": "bde0e058-4254-4307-9a41-c8fbaf25d4fe",
+      "reportId": "d74e6ec4-622f-4300-b7c5-e9d2cebb340e",
+      "title": "Demo · Fatigue cracking on the approach",
+      "body": "Demo dataset: sample photo, illustrative location and assessment. This is not a verified report of current road conditions.",
+      "locationName": "Demo pin · Santa Cruz, Laguna",
+      "latitude": "14.28520000",
+      "longitude": "121.42110000",
+      "media": [
+        {
+          "id": "54b27053-6433-4a3b-86f9-1f8186832920",
+          "url": "/media/54b27053-6433-4a3b-86f9-1f8186832920.jpg",
+          "kind": "photo",
+          "name": "alligator-fatigue.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "coverId": "54b27053-6433-4a3b-86f9-1f8186832920",
+      "analysis": {
+        "summary": "Demo dataset: sample photo, illustrative location and assessment. This is not a verified report of current road conditions.",
+        "urgency": "PRIORITY",
+        "riskLevel": "MODERATE",
+        "vruDetails": "Illustrative rider-risk assessment for demonstration; field inspection required.",
+        "distressType": "alligator_cracking",
+        "vruLethality": "MODERATE",
+        "hazardSeverity": 5,
+        "rejectionReason": null,
+        "recommendedAction": "Inspect the pavement base and drainage before selecting the repair.",
+        "materialsChecklist": [
+          "Inspection equipment",
+          "Traffic cones"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Not measured",
+          "surfaceAreaEstimate": "Not measured"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T04:57:14.541Z",
+      "roadSegment": null,
+      "deletedAt": null
+    },
+    {
+      "id": "9628e2c7-2557-4aa0-be78-4a3f709ed9a6",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "draftId": "3273b91c-9c72-49e2-84da-ef542ee3a464",
+      "reportId": "223ffa87-6a98-462f-b99a-b3878d35ac7f",
+      "title": "Demo · Pothole near the road edge",
+      "body": "Demo dataset: sample photo, illustrative location and assessment. This is not a verified report of current road conditions.",
+      "locationName": "Demo pin · Santa Cruz, Laguna",
+      "latitude": "14.28130000",
+      "longitude": "121.41730000",
+      "media": [
+        {
+          "id": "3e765982-010c-4699-b497-8190dc8d4454",
+          "url": "/media/3e765982-010c-4699-b497-8190dc8d4454.jpg",
+          "kind": "photo",
+          "name": "pothole-severe.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "coverId": "3e765982-010c-4699-b497-8190dc8d4454",
+      "analysis": {
+        "summary": "Demo dataset: sample photo, illustrative location and assessment. This is not a verified report of current road conditions.",
+        "urgency": "PRIORITY",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Illustrative rider-risk assessment for demonstration; field inspection required.",
+        "distressType": "pothole",
+        "vruLethality": "HIGH",
+        "hazardSeverity": 8,
+        "rejectionReason": null,
+        "recommendedAction": "Inspect the defect and traffic exposure before specifying a patch repair.",
+        "materialsChecklist": [
+          "Inspection equipment",
+          "Traffic cones"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Not measured",
+          "surfaceAreaEstimate": "Not measured"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T04:57:14.541Z",
+      "roadSegment": null,
+      "deletedAt": null
+    },
+    {
+      "id": "cd99bb12-af85-438f-8bb7-5f14aa370369",
+      "userId": "9cf5e67d-a843-4f46-b57a-d933ad645986",
+      "draftId": "2d8129aa-fc87-4cb9-8f98-0daa2ab39b4e",
+      "reportId": "223ffa87-6a98-462f-b99a-b3878d35ac7f",
+      "title": "Demo · Another post about the same pothole",
+      "body": "Demo dataset: sample photo, illustrative location and assessment. This is not a verified report of current road conditions.",
+      "locationName": "Demo pin · Santa Cruz, Laguna",
+      "latitude": "14.28131000",
+      "longitude": "121.41730000",
+      "media": [
+        {
+          "id": "3e765982-010c-4699-b497-8190dc8d4454",
+          "url": "/media/3e765982-010c-4699-b497-8190dc8d4454.jpg",
+          "kind": "photo",
+          "name": "pothole-severe.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "coverId": "3e765982-010c-4699-b497-8190dc8d4454",
+      "analysis": {
+        "summary": "Demo dataset: sample photo, illustrative location and assessment. This is not a verified report of current road conditions.",
+        "urgency": "PRIORITY",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Illustrative rider-risk assessment for demonstration; field inspection required.",
+        "distressType": "pothole",
+        "vruLethality": "HIGH",
+        "hazardSeverity": 8,
+        "rejectionReason": null,
+        "recommendedAction": "Inspect the defect and traffic exposure before specifying a patch repair.",
+        "materialsChecklist": [
+          "Inspection equipment",
+          "Traffic cones"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Not measured",
+          "surfaceAreaEstimate": "Not measured"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T04:57:14.541Z",
+      "roadSegment": null,
+      "deletedAt": null
+    },
+    {
+      "id": "5e73aa67-c8d2-4848-9a49-42d44099f885",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "draftId": "11de0fc3-b3b3-442d-a629-d7243a524052",
+      "reportId": "6e231dcc-27ec-468f-9cda-cd9c471d0f06",
+      "title": "Demo · Road-section cracking on Pedro Guevarra Avenue",
+      "body": "DEMONSTRATION ONLY. A sample road-section report to show Orie and the adjustable line. Road geometry is from OpenStreetMap; the photo, location of damage, and assessment are illustrative, not verified current road conditions.",
+      "locationName": "Demo section · Pedro Guevarra Avenue, Santa Cruz, Laguna",
+      "latitude": "14.28180960",
+      "longitude": "121.41520970",
+      "media": [
+        {
+          "id": "930cb425-b676-4f24-af94-bb017fb48124",
+          "url": "/media/930cb425-b676-4f24-af94-bb017fb48124.jpg",
+          "kind": "photo",
+          "name": "Demo road cracking photo.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "coverId": "930cb425-b676-4f24-af94-bb017fb48124",
+      "analysis": {
+        "summary": "Illustrative cracking along a mapped road section. Field inspection required; this is demo data.",
+        "urgency": "PRIORITY",
+        "riskLevel": "MODERATE",
+        "vruDetails": "Sample: uneven pavement can affect bicycle and motorcycle stability.",
+        "distressType": "alligator_cracking",
+        "vruLethality": "MODERATE",
+        "hazardSeverity": 5,
+        "rejectionReason": null,
+        "recommendedAction": "Inspect pavement base and drainage along the marked section before planning repairs.",
+        "materialsChecklist": [
+          "Inspection equipment",
+          "Traffic cones"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Not measured",
+          "surfaceAreaEstimate": "Not measured"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T12:36:44.948Z",
+      "roadSegment": {
+        "id": "30681947",
+        "end": 129.3854027648121,
+        "name": "Pedro Guevarra Avenue",
+        "start": 0,
+        "length": 129.3854027648121,
+        "coordinates": [
+          [
+            14.2809541,
+            121.4154049
+          ],
+          [
+            14.2816119,
+            121.415252
+          ],
+          [
+            14.2816263,
+            121.4152489
+          ],
+          [
+            14.2818096,
+            121.4152097
+          ],
+          [
+            14.2819471,
+            121.4151828
+          ],
+          [
+            14.2820906,
+            121.4151478
+          ]
+        ]
+      },
+      "deletedAt": null
+    },
+    {
+      "id": "5f8f0428-79e4-468d-a2b7-48645fcb05b0",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "draftId": "43afb4c6-cc72-40a8-bc45-d9a7f1810614",
+      "reportId": "44bf55d4-dd5d-4cdc-a244-7ab2484dcbd4",
+      "title": "road hazard",
+      "body": "",
+      "locationName": "somehwere near here",
+      "latitude": "14.27738540",
+      "longitude": "121.41186949",
+      "media": [
+        {
+          "id": "95442b51-a3d6-4e54-b814-3f464b631e73",
+          "url": "/media/95442b51-a3d6-4e54-b814-3f464b631e73.png",
+          "kind": "photo",
+          "name": "14_Live_Verified_Mobile_Card.png",
+          "mimeType": "image/png"
+        }
+      ],
+      "coverId": "95442b51-a3d6-4e54-b814-3f464b631e73",
+      "analysis": {
+        "summary": "Deep asphalt pothole near pedestrian crosswalk with exposed aggregate base. High-risk critical hazard for two-wheeler loss of control and vehicle damage requiring immediate emergency road repair.",
+        "urgency": "EMERGENCY",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Severe tire capture hazard; sharp vertical rim can cause instant tire blowout, front wheel lockup, and violent rider ejection for motorcycles and bicycles.",
+        "distressType": "pothole",
+        "vruLethality": "CRITICAL",
+        "hazardSeverity": 9,
+        "rejectionReason": null,
+        "recommendedAction": "Perform saw-cut perimeter squared-off edge, clear loose aggregate, apply emulsion tack coat, fill with asphalt patching material, and compact thoroughly using a plate compactor.",
+        "materialsChecklist": [
+          "Asphalt cold/hot patch mix",
+          "Bituminous tack coat emulsion",
+          "Vibratory plate compactor",
+          "Pavement saw",
+          "Traffic safety cones"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "~80-100mm",
+          "surfaceAreaEstimate": "~0.35m²"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T13:01:58.508Z",
+      "roadSegment": {
+        "id": "40552069",
+        "end": 289.55284627601,
+        "name": "Quezon Avenue",
+        "start": 129.55284627601,
+        "length": 159.99999999999997,
+        "coordinates": [
+          [
+            14.276837107073284,
+            121.41138926183095
+          ],
+          [
+            14.2772933,
+            121.4117988
+          ],
+          [
+            14.2773961,
+            121.4118777
+          ],
+          [
+            14.2774538,
+            121.4119222
+          ],
+          [
+            14.2778138,
+            121.4121605
+          ],
+          [
+            14.2779579,
+            121.4122812
+          ],
+          [
+            14.277974415947169,
+            121.4122942090368
+          ]
+        ]
+      },
+      "deletedAt": null
+    },
+    {
+      "id": "636b613c-a503-4e9a-86ab-39003361a1de",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "draftId": "23369bed-5e50-4071-80d5-af4ad6e9b838",
+      "reportId": "f2382f7a-96d3-4b62-aaaa-2c4598e2b7bd",
+      "title": "Sidwalk Hazard",
+      "body": "Collapsed concrete utility cover creating a deep open pit adjacent to the active roadway. Poses immediate catastrophic fall and crash hazard to pedestrians, cyclists, and light vehicle operators.",
+      "locationName": "this around here",
+      "latitude": "14.27768811",
+      "longitude": "121.41207730",
+      "media": [
+        {
+          "id": "b254b575-e807-47ea-9509-d38dd723ac90",
+          "url": "/media/b254b575-e807-47ea-9509-d38dd723ac90.jpg",
+          "kind": "photo",
+          "name": "side.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "coverId": "b254b575-e807-47ea-9509-d38dd723ac90",
+      "analysis": {
+        "summary": "Collapsed concrete utility chamber cover adjacent to the roadway lane creates a deep open pit hazard, posing critical danger to vulnerable road users and pedestrians.",
+        "urgency": "EMERGENCY",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Open void at road margin poses severe tire entrapment hazard for motorcycles and e-bikes, risking sudden rider loss of control or ejection into traffic.",
+        "distressType": "drainage_culvert_failure",
+        "vruLethality": "HIGH",
+        "hazardSeverity": 8,
+        "rejectionReason": null,
+        "recommendedAction": "Cordon off site immediately. Clear broken slab fragments, reconstruct concrete rim/collar, and fit a new heavy-duty reinforced cover flush with pavement surface.",
+        "materialsChecklist": [
+          "Precast concrete replacement cover",
+          "High-strength concrete repair mortar",
+          "Steel rebar reinforcement",
+          "Formwork lumber",
+          "Traffic safety cones & warning tape"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "~350mm",
+          "surfaceAreaEstimate": "~0.3m²"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T14:26:22.271Z",
+      "roadSegment": {
+        "id": "40552069",
+        "end": 500,
+        "name": "Quezon Avenue",
+        "start": 0,
+        "length": 500,
+        "coordinates": [
+          [
+            14.2759992,
+            121.4105575
+          ],
+          [
+            14.2760447,
+            121.4106249
+          ],
+          [
+            14.2761582,
+            121.4107406
+          ],
+          [
+            14.2763731,
+            121.4109605
+          ],
+          [
+            14.2764686,
+            121.4110468
+          ],
+          [
+            14.2765179,
+            121.4111027
+          ],
+          [
+            14.2772933,
+            121.4117988
+          ],
+          [
+            14.2773961,
+            121.4118777
+          ],
+          [
+            14.2774538,
+            121.4119222
+          ],
+          [
+            14.2778138,
+            121.4121605
+          ],
+          [
+            14.2779579,
+            121.4122812
+          ],
+          [
+            14.2781849,
+            121.41246
+          ],
+          [
+            14.2782156,
+            121.412484
+          ],
+          [
+            14.2782676,
+            121.4125195
+          ],
+          [
+            14.2784686,
+            121.4126597
+          ],
+          [
+            14.2785978,
+            121.4127526
+          ],
+          [
+            14.2786373,
+            121.4127809
+          ],
+          [
+            14.2790613,
+            121.4131171
+          ],
+          [
+            14.2792288,
+            121.4132479
+          ],
+          [
+            14.2795005684315,
+            121.41344820402821
+          ]
+        ]
+      },
+      "deletedAt": null
+    },
+    {
+      "id": "f040cc30-d24f-47c1-bee1-070ee7a72884",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "draftId": "6913e781-d5f4-47ee-8d1e-53d15592aa9c",
+      "reportId": "c988cf74-fed2-4eda-a7f3-d558302580a7",
+      "title": "Sidewalk cracks",
+      "body": "",
+      "locationName": "this around here",
+      "latitude": "14.27622245",
+      "longitude": "121.41675312",
+      "media": [
+        {
+          "id": "e6ea1190-6a2e-4d9f-955d-1102c840dd46",
+          "url": "/media/e6ea1190-6a2e-4d9f-955d-1102c840dd46.jpg",
+          "kind": "photo",
+          "name": "sidwalk.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "coverId": "e6ea1190-6a2e-4d9f-955d-1102c840dd46",
+      "analysis": {
+        "summary": "Severely shattered concrete pavement slab displaying structural displacement and wide cracks, posing high tripping and two-wheeler instability hazards.",
+        "urgency": "PRIORITY",
+        "riskLevel": "CRITICAL",
+        "vruDetails": "Wide jagged gaps and vertical slab displacement create high tire entrapment and rider ejection risks for two-wheelers.",
+        "distressType": "alligator_cracking",
+        "vruLethality": "HIGH",
+        "hazardSeverity": 8,
+        "rejectionReason": null,
+        "recommendedAction": "Demolish and remove damaged concrete slab, re-compact subgrade, install aggregate base, and re-pour reinforced concrete.",
+        "materialsChecklist": [
+          "Ready-mix Portland cement concrete",
+          "Steel rebar / wire mesh",
+          "Crushed aggregate base course",
+          "Wooden formwork",
+          "Vibratory plate compactor",
+          "Concrete saw"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "~30-50mm vertical displacement",
+          "surfaceAreaEstimate": "~1.8m²"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T14:27:38.663Z",
+      "roadSegment": {
+        "id": "326049678",
+        "end": 500,
+        "name": "Pedro Guevarra Avenue",
+        "start": 0,
+        "length": 500,
+        "coordinates": [
+          [
+            14.2783739,
+            121.4160801
+          ],
+          [
+            14.2781006,
+            121.4161579
+          ],
+          [
+            14.2779295,
+            121.4162099
+          ],
+          [
+            14.2776608,
+            121.4162977
+          ],
+          [
+            14.2775705,
+            121.4163263
+          ],
+          [
+            14.2773946,
+            121.4163823
+          ],
+          [
+            14.2766913,
+            121.4166058
+          ],
+          [
+            14.2764369,
+            121.4166886
+          ],
+          [
+            14.276059,
+            121.4168023
+          ],
+          [
+            14.2759854,
+            121.4168245
+          ],
+          [
+            14.2758528,
+            121.4168644
+          ],
+          [
+            14.2756865,
+            121.4169223
+          ],
+          [
+            14.2756371,
+            121.4169394
+          ],
+          [
+            14.275591,
+            121.4169591
+          ],
+          [
+            14.2753483,
+            121.4171306
+          ],
+          [
+            14.2750189,
+            121.4173486
+          ],
+          [
+            14.2745623,
+            121.4177153
+          ],
+          [
+            14.27434288431521,
+            121.4179579870453
+          ]
+        ]
+      },
+      "deletedAt": null
+    },
+    {
+      "id": "01ca3c92-8d09-4cb0-85be-01e29265a8a2",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "draftId": "52a2ad67-00ea-4621-b660-fd1a194e1feb",
+      "reportId": "95d010be-d477-421f-8502-a23639a70e8b",
+      "title": "brick by brick",
+      "body": "brick",
+      "locationName": "near here",
+      "latitude": "14.22946643",
+      "longitude": "121.36425019",
+      "media": [
+        {
+          "id": "27475580-96f8-4dde-a0b2-9540b3f2f70e",
+          "url": "/media/27475580-96f8-4dde-a0b2-9540b3f2f70e.webp",
+          "kind": "photo",
+          "name": "brick.webp",
+          "mimeType": "image/webp"
+        }
+      ],
+      "coverId": "27475580-96f8-4dde-a0b2-9540b3f2f70e",
+      "analysis": {
+        "summary": "Missing and displaced interlocking pavers create a linear surface depression and localized stone loss requiring repair.",
+        "urgency": "PRIORITY",
+        "riskLevel": "MODERATE",
+        "vruDetails": "Cyclists or pedestrians risk wheel entrapment and loss of control in the missing paver channel.",
+        "distressType": "other",
+        "vruLethality": "MODERATE",
+        "hazardSeverity": 5,
+        "rejectionReason": null,
+        "severityEvidence": {
+          "confidence": "HIGH",
+          "limitations": "Exact depth and precise dimensions cannot be determined from a single photographic angle without scale.",
+          "visibleDefects": [
+            "Missing interlocking pavers",
+            "Exposed bedding base",
+            "Displaced stone fragments",
+            "Linear surface depression"
+          ],
+          "criticalDangerVisible": false
+        },
+        "recommendedAction": "Remove loose debris, re-level base bedding sand, and relay missing or damaged interlocking pavers securely.",
+        "materialsChecklist": [
+          "Interlocking pavers",
+          "Bedding sand",
+          "Compactor",
+          "Trowel",
+          "Sweeping broom"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Unmeasured",
+          "surfaceAreaEstimate": "Unmeasured"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T14:43:31.903Z",
+      "roadSegment": {
+        "id": "23436191",
+        "end": 943.940442760353,
+        "name": "Unnamed road",
+        "start": 573.940442760353,
+        "length": 370,
+        "coordinates": [
+          [
+            14.230996987323506,
+            121.36357744613863
+          ],
+          [
+            14.2309409,
+            121.3636023
+          ],
+          [
+            14.2301769,
+            121.3639457
+          ],
+          [
+            14.2296371,
+            121.3641766
+          ],
+          [
+            14.2289093,
+            121.3644904
+          ],
+          [
+            14.2285931,
+            121.3646243
+          ],
+          [
+            14.2282545,
+            121.3647607
+          ],
+          [
+            14.2279499,
+            121.3648861
+          ],
+          [
+            14.227925151826888,
+            121.36489633024784
+          ]
+        ]
+      },
+      "deletedAt": null
+    },
+    {
+      "id": "da262e4d-66a6-4f42-a4db-50187f8c0da2",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "draftId": "c61a99b8-9581-41e9-a0a4-f5b95984f680",
+      "reportId": "830f1b99-f9ea-450b-91df-08d7a755a0c0",
+      "title": "some small pothole here",
+      "body": "",
+      "locationName": "here about here",
+      "latitude": "14.27781180",
+      "longitude": "121.41423860",
+      "media": [
+        {
+          "id": "417ab3d8-f656-4152-860c-bb28f2fe06d7",
+          "url": "/media/417ab3d8-f656-4152-860c-bb28f2fe06d7.jpg",
+          "kind": "photo",
+          "name": "pothole.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "coverId": "417ab3d8-f656-4152-860c-bb28f2fe06d7",
+      "analysis": {
+        "summary": "A localized, shallow-to-moderate pothole near the roadway edge exhibits clear surface loss and minor adjacent cracking, presenting minimal immediate structural danger but requiring routine patching.",
+        "urgency": "ROUTINE",
+        "riskLevel": "MODERATE",
+        "vruDetails": "Cyclists encountering the localized pothole near the curb face moderate risk of sudden wheel deflection.",
+        "distressType": "pothole",
+        "vruLethality": "LOW",
+        "hazardSeverity": 4,
+        "rejectionReason": null,
+        "severityEvidence": {
+          "confidence": "HIGH",
+          "limitations": "Depth cannot be precisely determined without physical measurement.",
+          "visibleDefects": [
+            "Localized pothole near curb",
+            "Exposed base aggregate",
+            "Minor lip cracking around edge"
+          ],
+          "criticalDangerVisible": false
+        },
+        "recommendedAction": "Clean out debris, apply tack coat, and fill with hot-mix asphalt, compacting thoroughly to match the surrounding surface level.",
+        "materialsChecklist": [
+          "Hot-mix asphalt",
+          "Tack coat",
+          "Compactor",
+          "Shovel",
+          "Broom"
+        ],
+        "estimatedDimensions": {
+          "depthEstimate": "Unmeasured",
+          "surfaceAreaEstimate": "Approximately 20 cm by 25 cm"
+        },
+        "isValidInfrastructure": true
+      },
+      "createdAt": "2026-10-23T14:48:56.328Z",
+      "roadSegment": {
+        "id": "961516008",
+        "end": 422,
+        "name": "Aguinaldo Street",
+        "start": 0,
+        "length": 422,
+        "coordinates": [
+          [
+            14.2759592,
+            121.4146351
+          ],
+          [
+            14.2760496,
+            121.4145982
+          ],
+          [
+            14.2764458,
+            121.4144906
+          ],
+          [
+            14.2766032,
+            121.4144478
+          ],
+          [
+            14.2767287,
+            121.4144279
+          ],
+          [
+            14.2767935,
+            121.4144176
+          ],
+          [
+            14.2771292,
+            121.4143702
+          ],
+          [
+            14.2772062,
+            121.4143593
+          ],
+          [
+            14.2776013,
+            121.4142979
+          ],
+          [
+            14.2776897,
+            121.4142842
+          ],
+          [
+            14.278207,
+            121.414091
+          ],
+          [
+            14.2786418,
+            121.4138909
+          ],
+          [
+            14.2790205,
+            121.4137888
+          ],
+          [
+            14.2790426,
+            121.4137828
+          ],
+          [
+            14.2791634,
+            121.4137486
+          ],
+          [
+            14.2792599,
+            121.4137007
+          ],
+          [
+            14.279316,
+            121.4136713
+          ],
+          [
+            14.2793727,
+            121.4136417
+          ],
+          [
+            14.279545023470119,
+            121.41348745925363
+          ]
+        ]
+      },
+      "deletedAt": null
+    }
+  ],
+  "comments": [
+    {
+      "id": "1d751fc4-83b5-4202-9c93-00f02cb368e9",
+      "postId": "9628e2c7-2557-4aa0-be78-4a3f709ed9a6",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "parentId": null,
+      "body": "kanino kaya to",
+      "createdAt": "2026-10-23T05:58:24.196Z"
+    },
+    {
+      "id": "dc7e2dc0-2062-4d99-8607-9acfd475d437",
+      "postId": "9628e2c7-2557-4aa0-be78-4a3f709ed9a6",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "parentId": "1d751fc4-83b5-4202-9c93-00f02cb368e9",
+      "body": "well well wel",
+      "createdAt": "2026-10-23T05:58:30.388Z"
+    },
+    {
+      "id": "fb8bdb3a-7154-4339-94f9-6ff8c6d30da6",
+      "postId": "9628e2c7-2557-4aa0-be78-4a3f709ed9a6",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "parentId": null,
+      "body": "ayoko kna",
+      "createdAt": "2026-10-23T05:58:38.977Z"
+    },
+    {
+      "id": "ef9fc344-c82a-4b00-9167-a4dbfa939e07",
+      "postId": "f040cc30-d24f-47c1-bee1-070ee7a72884",
+      "userId": "9cf5e67d-a843-4f46-b57a-d933ad645986",
+      "parentId": null,
+      "body": "wow i can't believe it is still here. we are considering this in the future!",
+      "createdAt": "2026-10-23T14:57:55.161Z"
+    }
+  ],
+  "reposts": [
+    {
+      "id": "3a0e81d0-0faf-4550-bda9-bce6a188227f",
+      "userId": "43dbfab2-62d0-48f3-872b-0b448b580db3",
+      "postId": "9628e2c7-2557-4aa0-be78-4a3f709ed9a6",
+      "body": "DEMO · Our sample municipal office has instructed maintenance on this reported pothole. The attached work instruction and estimated PHP 5,000 budget are illustrative. This update demonstrates In progress across linked posts.",
+      "media": [],
+      "governmentUpdate": {
+        "budget": [
+          {
+            "label": "Materials (demo)",
+            "amount": 2500
+          },
+          {
+            "label": "Labor (demo)",
+            "amount": 1500
+          },
+          {
+            "label": "Equipment and traffic control (demo)",
+            "amount": 1000
+          }
+        ],
+        "status": "IN_PROGRESS",
+        "demoKey": "government-quotes-v1",
+        "budgetType": "ESTIMATED",
+        "attachments": [
+          {
+            "id": "c43f0837-ccca-4a33-bdc1-5e068632af41",
+            "url": "/media/c43f0837-ccca-4a33-bdc1-5e068632af41.pdf",
+            "kind": "document",
+            "name": "Demo work instruction.pdf",
+            "mimeType": "application/pdf"
+          }
+        ]
+      },
+      "quotedRepostId": null,
+      "createdAt": "2026-10-22T10:57:56.490Z"
+    },
+    {
+      "id": "40a57e02-d2cd-419a-8f91-703fb73076fa",
+      "userId": "43dbfab2-62d0-48f3-872b-0b448b580db3",
+      "postId": "9628e2c7-2557-4aa0-be78-4a3f709ed9a6",
+      "body": "DEMO · Sample maintenance completed. All reports linked to this example pothole now show Resolved.\n\nIllustrative expenditure: PHP 5,000. Completion paper and sample gallery attached. Photos repeat sample road images to demonstrate the gallery; no real repair, certification or public spending is claimed.",
+      "media": [],
+      "governmentUpdate": {
+        "budget": [
+          {
+            "label": "Materials (demo)",
+            "amount": 2500
+          },
+          {
+            "label": "Labor (demo)",
+            "amount": 1500
+          },
+          {
+            "label": "Equipment and traffic control (demo)",
+            "amount": 1000
+          }
+        ],
+        "status": "RESOLVED",
+        "demoKey": "government-quotes-v1",
+        "budgetType": "ACTUAL",
+        "attachments": [
+          {
+            "id": "06364546-412a-465e-b313-bd6a12726f3c",
+            "url": "/media/06364546-412a-465e-b313-bd6a12726f3c.pdf",
+            "kind": "document",
+            "name": "Demo completion record.pdf",
+            "mimeType": "application/pdf"
+          },
+          {
+            "id": "e6972d3d-e280-4578-935e-9a38bf2fb579",
+            "url": "/media/e6972d3d-e280-4578-935e-9a38bf2fb579.jpg",
+            "kind": "photo",
+            "name": "Demo gallery sample 1 (not repair evidence).jpg",
+            "mimeType": "image/jpeg"
+          },
+          {
+            "id": "7f1e8782-a4a0-47f2-8a05-c214d69dcc3c",
+            "url": "/media/7f1e8782-a4a0-47f2-8a05-c214d69dcc3c.jpg",
+            "kind": "photo",
+            "name": "Demo gallery sample 2 (not repair evidence).jpg",
+            "mimeType": "image/jpeg"
+          },
+          {
+            "id": "0d9ece9c-428e-4f06-aefd-e919ad20f646",
+            "url": "/media/0d9ece9c-428e-4f06-aefd-e919ad20f646.jpg",
+            "kind": "photo",
+            "name": "Demo gallery sample 3 (not repair evidence).jpg",
+            "mimeType": "image/jpeg"
+          },
+          {
+            "id": "723a942e-f406-4f7b-bcf0-d4726f16d4c1",
+            "url": "/media/723a942e-f406-4f7b-bcf0-d4726f16d4c1.jpg",
+            "kind": "photo",
+            "name": "Demo gallery sample 4 (not repair evidence).jpg",
+            "mimeType": "image/jpeg"
+          },
+          {
+            "id": "b0c76461-963e-46fb-8c69-548293b57519",
+            "url": "/media/b0c76461-963e-46fb-8c69-548293b57519.jpg",
+            "kind": "photo",
+            "name": "Demo gallery sample 5 (not repair evidence).jpg",
+            "mimeType": "image/jpeg"
+          },
+          {
+            "id": "3ef75431-63fc-4d8d-88c5-6f2d7b410296",
+            "url": "/media/3ef75431-63fc-4d8d-88c5-6f2d7b410296.jpg",
+            "kind": "photo",
+            "name": "Demo gallery sample 6 (not repair evidence).jpg",
+            "mimeType": "image/jpeg"
+          },
+          {
+            "id": "bc158702-a699-4c8e-b489-c90482827d17",
+            "url": "/media/bc158702-a699-4c8e-b489-c90482827d17.jpg",
+            "kind": "photo",
+            "name": "Demo gallery sample 7 (not repair evidence).jpg",
+            "mimeType": "image/jpeg"
+          },
+          {
+            "id": "b24d7d68-54b8-4241-87d4-5ef4bc623c62",
+            "url": "/media/b24d7d68-54b8-4241-87d4-5ef4bc623c62.jpg",
+            "kind": "photo",
+            "name": "Demo gallery sample 8 (not repair evidence).jpg",
+            "mimeType": "image/jpeg"
+          },
+          {
+            "id": "82251ef0-1eb5-4b36-ad69-b5c8b2c4395c",
+            "url": "/media/82251ef0-1eb5-4b36-ad69-b5c8b2c4395c.jpg",
+            "kind": "photo",
+            "name": "Demo gallery sample 9 (not repair evidence).jpg",
+            "mimeType": "image/jpeg"
+          }
+        ],
+        "galleryVersion": 1
+      },
+      "quotedRepostId": null,
+      "createdAt": "2026-10-23T10:57:56.497Z"
+    },
+    {
+      "id": "99835404-eead-4894-9a29-fcd4c47e4300",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "postId": "da262e4d-66a6-4f42-a4db-50187f8c0da2",
+      "body": "can someone actually do this thing?",
+      "media": [],
+      "governmentUpdate": null,
+      "quotedRepostId": null,
+      "createdAt": "2026-10-23T14:51:05.278Z"
+    },
+    {
+      "id": "c2a667ec-6efa-466b-9c8d-e776aacc0f7b",
+      "userId": "9cf5e67d-a843-4f46-b57a-d933ad645986",
+      "postId": "da262e4d-66a6-4f42-a4db-50187f8c0da2",
+      "body": "we are waiting for the update but workers are now present",
+      "media": [],
+      "governmentUpdate": {
+        "budget": [],
+        "status": "IN_PROGRESS",
+        "budgetType": "ESTIMATED",
+        "attachments": [
+          {
+            "id": "af5ec647-49c8-4920-9980-20eca12662de",
+            "url": "/media/af5ec647-49c8-4920-9980-20eca12662de.jpg",
+            "kind": "photo",
+            "name": "worker.jpg",
+            "mimeType": "image/jpeg"
+          }
+        ]
+      },
+      "quotedRepostId": null,
+      "createdAt": "2026-10-23T14:55:58.179Z"
+    }
+  ],
+  "confirmations": [
+    {
+      "postId": "9628e2c7-2557-4aa0-be78-4a3f709ed9a6",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "createdAt": "2026-10-23T09:37:16.653Z"
+    },
+    {
+      "postId": "cd99bb12-af85-438f-8bb7-5f14aa370369",
+      "userId": "fc28734f-abb4-4935-a734-a09c06e14c3c",
+      "createdAt": "2026-10-23T12:14:29.060Z"
+    }
+  ],
+  "commentLikes": [
+    {
+      "commentId": "ef9fc344-c82a-4b00-9167-a4dbfa939e07",
+      "userId": "9cf5e67d-a843-4f46-b57a-d933ad645986",
+      "createdAt": "2026-10-23T14:57:57.038Z"
+    }
+  ],
+  "quoteComments": [],
+  "quoteLikes": [
+    {
+      "repostId": "40a57e02-d2cd-419a-8f91-703fb73076fa",
+      "userId": "fc28734f-abb4-4935-a734-a09c06e14c3c",
+      "createdAt": "2026-10-23T12:14:27.472Z"
+    },
+    {
+      "repostId": "99835404-eead-4894-9a29-fcd4c47e4300",
+      "userId": "8e24bd1f-b70b-4106-a920-c3ed0a8d3209",
+      "createdAt": "2026-10-23T14:51:10.988Z"
+    }
+  ],
+  "quoteCommentLikes": [],
+  "workOrderEvents": [
+    {
+      "id": "2cdc02d0-afcd-4ff6-9802-edbfb3bb0134",
+      "reportId": "223ffa87-6a98-462f-b99a-b3878d35ac7f",
+      "actorId": "43dbfab2-62d0-48f3-872b-0b448b580db3",
+      "event": "IN_PROGRESS",
+      "description": "DEMO · Our sample municipal office has instructed maintenance on this reported pothole. The attached work instruction and estimated PHP 5,000 budget are illustrative. This update demonstrates In progress across linked posts.",
+      "imagePath": "/media/c43f0837-ccca-4a33-bdc1-5e068632af41.pdf",
+      "createdAt": "2026-10-23T10:57:56.393Z"
+    },
+    {
+      "id": "f6b418eb-2931-4e71-a3f2-6242631e980c",
+      "reportId": "223ffa87-6a98-462f-b99a-b3878d35ac7f",
+      "actorId": "43dbfab2-62d0-48f3-872b-0b448b580db3",
+      "event": "RESOLVED",
+      "description": "DEMO · This sample pothole is marked resolved to demonstrate the complete workflow. The attached illustrative completion record and PHP 5,000 budget are not evidence of real repairs or actual government spending. All posts linked to this sample hazard now show Resolved.",
+      "imagePath": "/media/06364546-412a-465e-b313-bd6a12726f3c.pdf",
+      "createdAt": "2026-10-23T10:57:56.393Z"
+    },
+    {
+      "id": "127f94af-705b-44e8-872a-c3088b39e7b2",
+      "reportId": "830f1b99-f9ea-450b-91df-08d7a755a0c0",
+      "actorId": "9cf5e67d-a843-4f46-b57a-d933ad645986",
+      "event": "IN_PROGRESS",
+      "description": "we are waiting for the update but workers are now present",
+      "imagePath": "/media/af5ec647-49c8-4920-9980-20eca12662de.jpg",
+      "createdAt": "2026-10-23T14:55:58.170Z"
+    }
+  ],
+  "assets": [
+    {
+      "url": "/media/06364546-412a-465e-b313-bd6a12726f3c.pdf",
+      "file": "494a8e523a5413ab1c4eff6f72906bbe64ebb83385eca5a2166cb1bf59278862.pdf",
+      "sha256": "494a8e523a5413ab1c4eff6f72906bbe64ebb83385eca5a2166cb1bf59278862",
+      "bytes": 991
+    },
+    {
+      "url": "/media/0d9ece9c-428e-4f06-aefd-e919ad20f646.jpg",
+      "file": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84.jpg",
+      "sha256": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84",
+      "bytes": 125189
+    },
+    {
+      "url": "/media/27475580-96f8-4dde-a0b2-9540b3f2f70e.webp",
+      "file": "4f1f0f80cb197fd438913794d9ac6b5a0d4b46eb85dc0d6981d1f2b887cd6c68.webp",
+      "sha256": "4f1f0f80cb197fd438913794d9ac6b5a0d4b46eb85dc0d6981d1f2b887cd6c68",
+      "bytes": 35654
+    },
+    {
+      "url": "/media/3e765982-010c-4699-b497-8190dc8d4454.jpg",
+      "file": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84.jpg",
+      "sha256": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84",
+      "bytes": 125189
+    },
+    {
+      "url": "/media/3ef75431-63fc-4d8d-88c5-6f2d7b410296.jpg",
+      "file": "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a.jpg",
+      "sha256": "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a",
+      "bytes": 1214316
+    },
+    {
+      "url": "/media/417ab3d8-f656-4152-860c-bb28f2fe06d7.jpg",
+      "file": "03098ed8dbeeb0dfbebc448859799bc84c604e93aeb1cc0825be60443e4785c8.jpg",
+      "sha256": "03098ed8dbeeb0dfbebc448859799bc84c604e93aeb1cc0825be60443e4785c8",
+      "bytes": 44784
+    },
+    {
+      "url": "/media/54b27053-6433-4a3b-86f9-1f8186832920.jpg",
+      "file": "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a.jpg",
+      "sha256": "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a",
+      "bytes": 1214316
+    },
+    {
+      "url": "/media/5c291fa6-380e-4088-8b9b-6564bb1ff994.jpg",
+      "file": "ebd9044eda62c19eeb7be02995f5d6c91f70fd69732e43e7a13a28f1d4d453a3.jpg",
+      "sha256": "ebd9044eda62c19eeb7be02995f5d6c91f70fd69732e43e7a13a28f1d4d453a3",
+      "bytes": 83165
+    },
+    {
+      "url": "/media/723a942e-f406-4f7b-bcf0-d4726f16d4c1.jpg",
+      "file": "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a.jpg",
+      "sha256": "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a",
+      "bytes": 1214316
+    },
+    {
+      "url": "/media/7f1e8782-a4a0-47f2-8a05-c214d69dcc3c.jpg",
+      "file": "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a.jpg",
+      "sha256": "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a",
+      "bytes": 1214316
+    },
+    {
+      "url": "/media/82251ef0-1eb5-4b36-ad69-b5c8b2c4395c.jpg",
+      "file": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84.jpg",
+      "sha256": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84",
+      "bytes": 125189
+    },
+    {
+      "url": "/media/930cb425-b676-4f24-af94-bb017fb48124.jpg",
+      "file": "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a.jpg",
+      "sha256": "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a",
+      "bytes": 1214316
+    },
+    {
+      "url": "/media/95442b51-a3d6-4e54-b814-3f464b631e73.png",
+      "file": "b44bfb72846b6b61cfa665a1f24dc94f9245c8eb6719788c7ea83e5affd91505.png",
+      "sha256": "b44bfb72846b6b61cfa665a1f24dc94f9245c8eb6719788c7ea83e5affd91505",
+      "bytes": 242077
+    },
+    {
+      "url": "/media/af5ec647-49c8-4920-9980-20eca12662de.jpg",
+      "file": "69030fd7149af2c6ff4691c2c716e81dfdca5c2ae4fb1fabcb6dcae09ba003cc.jpg",
+      "sha256": "69030fd7149af2c6ff4691c2c716e81dfdca5c2ae4fb1fabcb6dcae09ba003cc",
+      "bytes": 50121
+    },
+    {
+      "url": "/media/b0c76461-963e-46fb-8c69-548293b57519.jpg",
+      "file": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84.jpg",
+      "sha256": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84",
+      "bytes": 125189
+    },
+    {
+      "url": "/media/b24d7d68-54b8-4241-87d4-5ef4bc623c62.jpg",
+      "file": "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a.jpg",
+      "sha256": "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a",
+      "bytes": 1214316
+    },
+    {
+      "url": "/media/b254b575-e807-47ea-9509-d38dd723ac90.jpg",
+      "file": "8d7871ff13d00683e929065cec163f4c158d506bb09465818852f290f8fa010a.jpg",
+      "sha256": "8d7871ff13d00683e929065cec163f4c158d506bb09465818852f290f8fa010a",
+      "bytes": 44966
+    },
+    {
+      "url": "/media/bc158702-a699-4c8e-b489-c90482827d17.jpg",
+      "file": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84.jpg",
+      "sha256": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84",
+      "bytes": 125189
+    },
+    {
+      "url": "/media/c43f0837-ccca-4a33-bdc1-5e068632af41.pdf",
+      "file": "a87f93a94c2e6b806ec1a6b5c43a8cfaf773fbd02ca63e28a09606752eab2a49.pdf",
+      "sha256": "a87f93a94c2e6b806ec1a6b5c43a8cfaf773fbd02ca63e28a09606752eab2a49",
+      "bytes": 993
+    },
+    {
+      "url": "/media/cac71271-8bf9-4738-8354-172cf4f81703.jpg",
+      "file": "ebd9044eda62c19eeb7be02995f5d6c91f70fd69732e43e7a13a28f1d4d453a3.jpg",
+      "sha256": "ebd9044eda62c19eeb7be02995f5d6c91f70fd69732e43e7a13a28f1d4d453a3",
+      "bytes": 83165
+    },
+    {
+      "url": "/media/cd5e5179-ceba-4499-a645-887eb4a543f3.jpg",
+      "file": "fed17139977045beca6e40e79cccc86a76066294f2f0c84e62715f42f6a446c5.jpg",
+      "sha256": "fed17139977045beca6e40e79cccc86a76066294f2f0c84e62715f42f6a446c5",
+      "bytes": 10925
+    },
+    {
+      "url": "/media/d8999659-dbc9-4c8e-9cd7-2bf4943e7972.jpg",
+      "file": "e26fdb8dccbc76f9e836452735451416bb80acbf4b19b1c1f396a7e6b4c32185.jpg",
+      "sha256": "e26fdb8dccbc76f9e836452735451416bb80acbf4b19b1c1f396a7e6b4c32185",
+      "bytes": 49645
+    },
+    {
+      "url": "/media/e6972d3d-e280-4578-935e-9a38bf2fb579.jpg",
+      "file": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84.jpg",
+      "sha256": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84",
+      "bytes": 125189
+    },
+    {
+      "url": "/media/e6ea1190-6a2e-4d9f-955d-1102c840dd46.jpg",
+      "file": "ebc19a7fe162b6414e673655a96860019133d5952178d913c6d12813ffaf867b.jpg",
+      "sha256": "ebc19a7fe162b6414e673655a96860019133d5952178d913c6d12813ffaf867b",
+      "bytes": 25469
+    },
+    {
+      "url": "/uploads/1792588537764-9f0e0fa61829.jpeg",
+      "file": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84.jpeg",
+      "sha256": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84",
+      "bytes": 125189
+    },
+    {
+      "url": "/uploads/1792588557047-f736d17dfad5.jpeg",
+      "file": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84.jpeg",
+      "sha256": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84",
+      "bytes": 125189
+    },
+    {
+      "url": "/uploads/1792588787509-989b1e5237b0.jpeg",
+      "file": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84.jpeg",
+      "sha256": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84",
+      "bytes": 125189
+    },
+    {
+      "url": "/uploads/1792588901534-22b7b8b8bef9.jpeg",
+      "file": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84.jpeg",
+      "sha256": "125331d748807d223fba3f7788a51f4864705ece3bdc9fdb6076ed4349bc9f84",
+      "bytes": 125189
+    },
+    {
+      "url": "/uploads/1792589063756-8b8a8dcd0e4e.jpeg",
+      "file": "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a.jpeg",
+      "sha256": "883992488a3c46c01caa4db1f49a8032906cd83ef0b91714671d270303ec2b8a",
+      "bytes": 1214316
+    }
+  ]
+}

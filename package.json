@@ -15,6 +15,7 @@
 		"db:studio": "drizzle-kit studio",
 		"test:community": "playwright test",
 		"db:seed:community": "node --env-file-if-exists=.env scripts/seed-community.mjs",
+		"db:seed:presentation": "node --env-file-if-exists=.env scripts/seed-presentation.mjs",
 		"preview:production": "node --env-file-if-exists=.env scripts/preview-production.mjs"
 	},
 	"devDependencies": {

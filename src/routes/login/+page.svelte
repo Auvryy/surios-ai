@@ -22,10 +22,6 @@
 		}
 	});
 
-	function fillCredentials(testEmail: string) {
-		email = testEmail;
-		password = 'Password123!';
-	}
 </script>
 
 <svelte:head>
@@ -121,40 +117,6 @@
 					</Button>
 				</form>
 
-				<!-- Instant Quick-Fill Test Credentials -->
-				<div class="pt-4 border-t border-border space-y-2">
-					<span class="text-[11px] font-medium text-muted-foreground block">
-						Quick Login (Demo Accounts):
-					</span>
-					<div class="grid grid-cols-3 gap-1.5">
-						<button
-							type="button"
-							onclick={() => fillCredentials('engineer@surios.gov')}
-							class="flex flex-col items-center justify-center p-2 rounded-md border border-border bg-muted/40 hover:bg-secondary text-left transition-colors cursor-pointer"
-						>
-							<span class="text-[11px] font-medium text-foreground">Engineer</span>
-							<span class="text-[9px] text-muted-foreground">Admin</span>
-						</button>
-
-						<button
-							type="button"
-							onclick={() => fillCredentials('inspector@surios.gov')}
-							class="flex flex-col items-center justify-center p-2 rounded-md border border-border bg-muted/40 hover:bg-secondary text-left transition-colors cursor-pointer"
-						>
-							<span class="text-[11px] font-medium text-foreground">Inspector</span>
-							<span class="text-[9px] text-muted-foreground">Officer</span>
-						</button>
-
-						<button
-							type="button"
-							onclick={() => fillCredentials('citizen@surios.gov')}
-							class="flex flex-col items-center justify-center p-2 rounded-md border border-border bg-muted/40 hover:bg-secondary text-left transition-colors cursor-pointer"
-						>
-							<span class="text-[11px] font-medium text-foreground">Citizen</span>
-							<span class="text-[9px] text-muted-foreground">Reporter</span>
-						</button>
-					</div>
-				</div>
 			</CardContent>
 
 			<CardFooter class="pt-2 pb-4 border-t border-border flex items-center justify-center text-xs text-muted-foreground">

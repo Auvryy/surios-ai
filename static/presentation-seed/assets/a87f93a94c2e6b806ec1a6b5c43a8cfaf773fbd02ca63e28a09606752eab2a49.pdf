@@ -1,0 +1,40 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 448 >>
+stream
+BT /F1 16 Tf 50 760 Td (DEMONSTRATION ONLY - SuriOS) Tj
+0 -28 Td (Demo work instruction) Tj
+0 -28 Td (Sample municipal road maintenance record) Tj
+0 -28 Td (Illustrative status: In progress) Tj
+0 -28 Td (Materials: PHP 2,500.00) Tj
+0 -28 Td (Labor: PHP 1,500.00) Tj
+0 -28 Td (Equipment and traffic control: PHP 1,000.00) Tj
+0 -28 Td (Total illustrative budget: PHP 5,000.00) Tj
+0 -28 Td (No actual work, spending or certification is claimed.) Tj ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+810
+%%EOF

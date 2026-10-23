@@ -29,6 +29,8 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/static ./static
+COPY --from=builder /app/scripts/seed-presentation.mjs ./scripts/seed-presentation.mjs
+COPY --from=builder /app/scripts/fixtures/presentation-snapshot.json ./scripts/fixtures/presentation-snapshot.json
 
 EXPOSE 3000
 
