@@ -82,10 +82,12 @@ test('loads stable additional batches without losing sort or filters', async ({ 
 	expect(second.hasMore).toBe(false);
 });
 
-test('confirmed results use the signed-in viewer and retain the other filters', async ({ page, baseURL }) => {
+test('legacy confirmed links show liked posts and ignore removed media filters', async ({ page, baseURL }) => {
 	await page.context().addCookies([{ name: 'surios_session', value: session, url: baseURL! }]);
 	expect((await search(page.request, marker, { tab: 'confirmed', sort: 'confirmations' })).posts.map((post: { id: string }) => post.id)).toEqual([ids[0]]);
-	expect((await search(page.request, marker, { tab: 'confirmed', media: 'video' })).total).toBe(0);
+	const liked = await search(page.request, marker, { tab: 'confirmed', media: 'video' });
+	expect(liked.posts.map((post: { id: string }) => post.id)).toEqual([ids[0]]);
+	expect(liked.filters.media).toBe('');
 });
 
 test('native search submission works without JavaScript and preserves active filters', async ({ browser, baseURL }) => {
@@ -99,7 +101,7 @@ test('native search submission works without JavaScript and preserves active fil
 		await expect(page.locator('article')).toHaveCount(2);
 		await expect(page.getByLabel('Sort posts')).toHaveValue('oldest');
 		await expect(page.getByLabel('Media type')).toHaveValue('photo');
-		await expect(page.getByRole('button', { name: 'What’s happening on your road?', exact: true })).toHaveCount(0);
+		await expect(page.getByRole('button', { name: 'What’s happening with local infrastructure?', exact: true })).toHaveCount(0);
 	} finally { await context.close(); }
 });
 
@@ -108,7 +110,7 @@ test('hides the composer during results, persists sorting, restores it on clear,
 	page.on('pageerror', (error) => errors.push(error.message));
 	await page.goto('/community');
 	await page.waitForLoadState('networkidle');
-	const composer = page.getByRole('button', { name: 'What’s happening on your road?', exact: true });
+	const composer = page.getByRole('button', { name: 'What’s happening with local infrastructure?', exact: true });
 	await expect(composer).toBeVisible();
 	await page.getByRole('searchbox', { name: 'Search community' }).fill(`school potholes ${marker}`);
 	await page.getByRole('button', { name: 'Search posts', exact: true }).click();
@@ -144,7 +146,7 @@ test('hides the composer during results, persists sorting, restores it on clear,
 	await expect(page).not.toHaveURL(/page=/);
 	await expect(page.locator('article').first()).toHaveAttribute('id', `post-${ids[24]}`);
 	await page.goto(`/community?q=${marker}nothing`);
-	await expect(page.getByRole('heading', { name: 'No matching road updates' })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'No matching updates' })).toBeVisible();
 	await expect(composer).toHaveCount(0);
 	expect(errors).toEqual([]);
 });

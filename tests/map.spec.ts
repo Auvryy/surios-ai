@@ -19,15 +19,15 @@ test.beforeAll(async () => {
 });
 test.afterAll(async () => { if (ids.length) await sql`delete from reports where id in ${sql(ids)}`; await sql.end(); });
 
-test('feed is the landing page; sidebar collapses, persists, and restores map space', async ({ page }) => {
-	await page.goto('/'); await page.waitForLoadState('networkidle'); await expect(page).toHaveURL(/\/community$/);
+test('sidebar collapses, persists, and restores map space', async ({ page }) => {
+	await page.goto('/community'); await page.waitForLoadState('networkidle'); await expect(page).toHaveURL(/\/community$/);
 	await page.setViewportSize({ width: 1440, height: 900 });
-	await page.getByRole('link', { name: 'Road hazards', exact: true }).click(); await page.locator('.leaflet-container').waitFor();
-	const before = await page.getByLabel('Road hazard map', { exact: true }).boundingBox();
+	await page.getByRole('link', { name: 'Hazard map', exact: true }).click(); await page.locator('.leaflet-container').waitFor();
+	const before = await page.getByRole('main').getByLabel('Hazard map', { exact: true }).boundingBox();
 	await page.getByRole('button', { name: 'Collapse navigation', exact: true }).click();
-	const after = await page.getByLabel('Road hazard map', { exact: true }).boundingBox(); expect(after!.width).toBeGreaterThan(before!.width);
+	const after = await page.getByRole('main').getByLabel('Hazard map', { exact: true }).boundingBox(); expect(after!.width).toBeGreaterThan(before!.width);
 	await page.reload(); await page.waitForLoadState('networkidle'); await expect(page.getByRole('button', { name: 'Expand navigation' })).toBeVisible();
-	await page.getByRole('button', { name: 'Expand navigation', exact: true }).click(); await expect(page.getByRole('link', { name: 'Road hazards', exact: true })).toBeVisible();
+	await page.getByRole('button', { name: 'Expand navigation', exact: true }).click(); await expect(page.getByRole('link', { name: 'Hazard map', exact: true })).toBeVisible();
 	await page.setViewportSize({ width: 375, height: 812 }); await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
 	await page.getByRole('link', { name: 'Community feed', exact: true }).click(); await expect(page).toHaveURL(/\/community$/);
 });
@@ -38,7 +38,7 @@ test('floating map filters and sorting drive compact collapsible report cards', 
 	await page.getByRole('button', { name: 'Filters', exact: true }).click();
 	await page.getByRole('textbox', { name: 'Search map reports' }).fill(prefix);
 	await page.getByRole('combobox', { name: 'Hazard status' }).selectOption('REPORTED');
-	await page.getByRole('combobox', { name: 'Damage type' }).selectOption('pothole');
+	await page.getByRole('combobox', { name: 'Issue type' }).selectOption('pothole');
 	await page.getByRole('button', { name: 'Show matching reports', exact: true }).click();
 	const list = page.getByRole('complementary', { name: 'Hazard report list' });
 	await expect(list.getByRole('button', { name: `Open hazard: ${prefix} 0`, exact: true })).toBeVisible();
@@ -52,7 +52,7 @@ test('floating map filters and sorting drive compact collapsible report cards', 
 	await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
 	for (const [width, height] of [[1440, 900], [768, 1024], [375, 812], [320, 740], [812, 375]]) {
 		await page.setViewportSize({ width, height }); expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
-		const bounds = await page.getByLabel('Road hazard map', { exact: true }).boundingBox(); expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(height + 1);
+		const bounds = await page.getByRole('main').getByLabel('Hazard map', { exact: true }).boundingBox(); expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(height + 1);
 		await page.getByRole('button', { name: 'Show report list', exact: true }).click();
 		const panel = await list.boundingBox(); expect(panel!.x).toBeGreaterThanOrEqual(0); expect(panel!.x + panel!.width).toBeLessThanOrEqual(width + 1); expect(panel!.y + panel!.height).toBeLessThanOrEqual(height);
 		await page.getByRole('button', { name: 'Close report list', exact: true }).click();

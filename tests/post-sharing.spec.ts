@@ -33,16 +33,19 @@ test('confirmed updates hide the duplicate posting box while feed and other filt
 	await page.goto('/liked'); await page.waitForLoadState('networkidle');
 	await expect(page).toHaveURL(/tab=liked/);
 	await expect(page.locator(`#post-${postId}`)).toBeVisible();
-	await expect(page.getByRole('button', { name: 'What’s happening on your road?', exact: true })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: 'What’s happening with local infrastructure?', exact: true })).toHaveCount(0);
 	for (const name of ['Photos', 'Video', 'Location']) await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0);
-	await page.reload(); await expect(page.getByRole('button', { name: 'What’s happening on your road?', exact: true })).toHaveCount(0);
+	await page.reload(); await expect(page.getByRole('button', { name: 'What’s happening with local infrastructure?', exact: true })).toHaveCount(0);
 	await page.waitForLoadState('networkidle');
-	await page.getByRole('button', { name: 'All updates', exact: true }).click();
-	await expect(page.getByRole('button', { name: 'What’s happening on your road?', exact: true })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'All updates', exact: true })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: 'Critical', exact: true })).toHaveCount(0);
+	await page.goto('/community');
+	await page.waitForLoadState('networkidle');
+	await expect(page.getByRole('button', { name: 'What’s happening with local infrastructure?', exact: true })).toBeVisible();
 	await page.getByRole('button', { name: 'Critical', exact: true }).click();
-	await expect(page.getByRole('button', { name: 'What’s happening on your road?', exact: true })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'What’s happening with local infrastructure?', exact: true })).toBeVisible();
 	await page.goto(`/community?q=${postId}`);
-	await expect(page.getByRole('button', { name: 'What’s happening on your road?', exact: true })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: 'What’s happening with local infrastructure?', exact: true })).toHaveCount(0);
 });
 
 test('Share opens a compact dialog with copy, Facebook, Messenger fallback and keyboard focus restoration', async ({ page, baseURL }) => {

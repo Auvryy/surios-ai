@@ -117,7 +117,9 @@ test('reposts persist one image, appear in feed/search/profile, and add no hazar
 	await expect(page.locator(`#repost-${id}`)).toBeVisible();
 	expect(await reportState()).toEqual(baseline);
 	const forbidden = await request.delete(`/api/community/reposts?id=${id}`, { headers: await signIn(request, otherSession) }); expect(forbidden.status()).toBe(404);
-	await page.locator(`#repost-${id}`).getByRole('button', { name: 'Undo repost', exact: true }).click();
+	await page.locator(`#repost-${id}`).getByLabel('More options for your repost').click();
+	page.once('dialog', dialog => dialog.accept());
+	await page.locator(`#repost-${id}`).getByRole('button', { name: 'Delete repost', exact: true }).click();
 	await expect(page.locator(`#repost-${id}`)).toHaveCount(0);
 	expect((await request.get(saved.media[0].url)).status()).toBe(404);
 	expect(await reportState()).toEqual(baseline);
