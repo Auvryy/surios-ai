@@ -5,7 +5,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { db, reports, reportObservations, communityPosts, communityDrafts, type Report } from './db';
 import { roadSectionsOverlap, type RoadSegment } from '$lib/types/roads';
-import { compareRoadEvidence } from './gemini';
+import { compareInfrastructureEvidence } from './gemini';
 import { distanceMeters, normalizeSeverity, hazardPriority, type MatchDecision } from '$lib/types/hazards';
 import type { TriageAnalysis } from '$lib/types/triage';
 import type { PostMedia } from '$lib/types/community';
@@ -51,7 +51,8 @@ function reportMedia(report: Report): PostMedia[] {
 	return mimeType ? [{ id: report.id, url: report.imagePath, kind: mimeType.startsWith('video/') ? 'video' : 'photo', name: 'Existing road evidence', mimeType }] : [];
 }
 async function candidatesAt(input: EvidenceInput, tx: Transaction | typeof db = db) {
-	const radius = input.roadSegment ? 525 : 25;
+	const roadSegment = input.analysis.infrastructureType === 'ROAD_PAVEMENT' ? input.roadSegment : null;
+	const radius = roadSegment ? 525 : 25;
 	const latitudeDelta = radius / 111000;
 	const longitudeDelta = latitudeDelta / Math.max(.001, Math.cos(input.latitude * Math.PI / 180));
 	const rows = await tx.select().from(reports).where(and(
@@ -60,10 +61,14 @@ async function candidatesAt(input: EvidenceInput, tx: Transaction | typeof db = 
 		between(reports.longitude, String(input.longitude - longitudeDelta), String(input.longitude + longitudeDelta))
 	)).orderBy(desc(reports.updatedAt)).limit(50);
 	return rows.map((report) => ({ report, distance: distanceMeters(input, { latitude: Number(report.latitude), longitude: Number(report.longitude) }) }))
-		.filter((item) => item.distance <= 25 || roadSectionsOverlap(input.roadSegment, (item.report.triagePayload as { roadSegment?: RoadSegment } | null)?.roadSegment)).sort((a, b) => a.distance - b.distance || a.report.id.localeCompare(b.report.id)).slice(0, 3);
+		.filter((item) => {
+			const metadata = item.report.triagePayload as { infrastructureType?: string; roadSegment?: RoadSegment } | null;
+			const sameInfrastructure = !input.analysis.infrastructureType || !metadata?.infrastructureType || input.analysis.infrastructureType === metadata.infrastructureType;
+			return sameInfrastructure && (item.distance <= 25 || (!!roadSegment && roadSectionsOverlap(roadSegment, metadata?.roadSegment)));
+		}).sort((a, b) => a.distance - b.distance || a.report.id.localeCompare(b.report.id)).slice(0, 3);
 }
-async function decideMatch(input: EvidenceInput, candidates: Awaited<ReturnType<typeof candidatesAt>>, fingerprints: string[], compare: typeof compareRoadEvidence) {
-	if (!candidates.length) return { reportId: null, method: 'new', confidence: 1, reason: 'No open report of this damage type near this location or overlapping road section.' } as const;
+async function decideMatch(input: EvidenceInput, candidates: Awaited<ReturnType<typeof candidatesAt>>, fingerprints: string[], compare: typeof compareInfrastructureEvidence) {
+	if (!candidates.length) return { reportId: null, method: 'new', confidence: 1, reason: 'No open report of this issue type near the reported location or on the same road section.' } as const;
 	const observations = await db.select().from(reportObservations).where(inArray(reportObservations.reportId, candidates.map((item) => item.report.id)));
 	const visualCandidates = [];
 	let incomingBytes = null;
@@ -76,9 +81,10 @@ async function decideMatch(input: EvidenceInput, candidates: Awaited<ReturnType<
 		let evidence = null;
 		for (const media of reportMedia(item.report)) { evidence = await mediaBytes(media); if (evidence) break; }
 		if (evidence) storedHashes.push(crypto.createHash('sha256').update(evidence.buffer).digest('hex'));
-		if (fingerprints.some((hash) => storedHashes.includes(hash))) return { reportId: item.report.id, method: 'exact', confidence: 1, newEvidence: fingerprints.some((hash) => !storedHashes.includes(hash)), reason: 'Shared evidence and damage type at the same location or overlapping section of the same road. Repeated media does not increase severity.' } as const;
+		if (fingerprints.some((hash) => storedHashes.includes(hash))) return { reportId: item.report.id, method: 'exact', confidence: 1, newEvidence: fingerprints.some((hash) => !storedHashes.includes(hash)), reason: 'Shared media identifies the same issue. Repeated media does not increase severity.' } as const;
 		if (evidence && bytes + evidence.buffer.length <= 50 * 1024 * 1024) bytes += evidence.buffer.length; else evidence = null;
-		visualCandidates.push({ id: item.report.id, distance: item.distance, distressType: item.report.distressType, summary: (item.report.triagePayload as { summary?: string } | null)?.summary || item.report.recommendedAction, media: evidence });
+		const metadata = item.report.triagePayload as { infrastructureType?: string; summary?: string } | null;
+		visualCandidates.push({ id: item.report.id, distance: item.distance, infrastructureType: metadata?.infrastructureType, distressType: item.report.distressType, summary: metadata?.summary || item.report.recommendedAction, media: evidence });
 	}
 	if (incomingBytes && visualCandidates.some((candidate) => candidate.media)) {
 		try {
@@ -90,7 +96,7 @@ async function decideMatch(input: EvidenceInput, candidates: Awaited<ReturnType<
 	}
 	return { reportId: null, method: 'unverified', confidence: 0, reason: 'Visual similarity was unavailable or uncertain; saved separately.' } as const;
 }
-export async function recordHazardEvidence(input: EvidenceInput, compare: typeof compareRoadEvidence = compareRoadEvidence) {
+export async function recordHazardEvidence(input: EvidenceInput, compare: typeof compareInfrastructureEvidence = compareInfrastructureEvidence) {
 	// Reject expired drafts and answer retries before any optional AI comparison.
 	const [existingObservation] = await db.select().from(reportObservations).where(eq(reportObservations.sourceId, input.sourceId));
 	if (existingObservation) {

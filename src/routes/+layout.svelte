@@ -28,9 +28,9 @@
 	const groups = $derived([
 		{ title: 'Community', items: [
 			{ name: isGovUser ? 'Feed' : 'Community feed', href: '/community', icon: AwardIcon },
-			{ name: 'Road hazards', href: '/map', icon: MapPinIcon },
+			{ name: 'Hazard map', href: '/map', icon: MapPinIcon },
 			{ name: 'Report a hazard', href: '/report', icon: CameraIcon },
-			{ name: 'Liked updates', href: '/liked', icon: HeartIcon }
+			{ name: 'Liked posts', href: '/liked', icon: HeartIcon }
 		] },
 		...(isGovUser ? [{ title: 'Government', items: [
 			{ name: 'Government updates', href: '/dashboard', icon: LayoutDashboardIcon }
@@ -50,7 +50,7 @@
 </script>
 <svelte:head><link rel="icon" href="/orie.png" /></svelte:head>
 {#snippet brand(compact = false)}
-	<a href="/community" aria-label="SuriOS community feed" class="flex min-h-11 items-center gap-2.5 rounded-lg"><img src="/orie.png" alt="Orie" class="size-9 shrink-0 object-contain" />{#if !compact}<span class="min-w-0"><span class="block text-sm font-bold">SuriOS</span><span class="block text-[10px] text-muted-foreground">Road safety, together</span></span>{/if}</a>
+	<a href="/community" aria-label="SuriOS community feed" class="flex min-h-11 items-center gap-2.5 rounded-lg"><img src="/orie.png" alt="Orie" class="size-9 shrink-0 object-contain" />{#if !compact}<span class="min-w-0"><span class="block text-sm font-bold">SuriOS</span><span class="block text-[10px] text-muted-foreground">Community infrastructure</span></span>{/if}</a>
 {/snippet}
 {#snippet navigation(compact = false)}
 	<nav aria-label="{compact ? 'Collapsed' : 'Main'} navigation" class="space-y-5 px-2 py-4">
@@ -72,7 +72,7 @@
 			<div class="min-h-0 flex-1 overflow-y-auto">{@render navigation(collapsed)}</div>{@render account(collapsed)}
 		</aside>
 		<div data-app-header class="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background px-3 md:hidden">
-			<div class="flex items-center gap-2"><Sheet bind:open={mobileOpen}><SheetTrigger>{#snippet child({ props })}<Button variant="ghost" size="icon" class="size-10" aria-label="Open navigation" {...props}><MenuIcon class="size-4" /></Button>{/snippet}</SheetTrigger><SheetContent side="left" class="flex w-72 max-w-[90vw] flex-col p-0"><SheetHeader class="border-b border-border px-4 py-3"><SheetTitle>SuriOS</SheetTitle></SheetHeader><div class="min-h-0 flex-1 overflow-y-auto">{@render navigation()}</div>{@render account()}</SheetContent></Sheet>{@render brand(true)}<span class="text-sm font-semibold">{isMapPage ? 'Road hazards' : 'SuriOS'}</span></div><ThemeToggle />
+			<div class="flex items-center gap-2"><Sheet bind:open={mobileOpen}><SheetTrigger>{#snippet child({ props })}<Button variant="ghost" size="icon" class="size-10" aria-label="Open navigation" {...props}><MenuIcon class="size-4" /></Button>{/snippet}</SheetTrigger><SheetContent side="left" class="flex w-72 max-w-[90vw] flex-col p-0"><SheetHeader class="border-b border-border px-4 py-3"><SheetTitle>SuriOS</SheetTitle></SheetHeader><div class="min-h-0 flex-1 overflow-y-auto">{@render navigation()}</div>{@render account()}</SheetContent></Sheet>{@render brand(true)}<span class="text-sm font-semibold">{isMapPage ? 'Hazard map' : 'SuriOS'}</span></div><ThemeToggle />
 		</div>
 		<main class="min-w-0 flex-1 {isMapPage ? 'map-workspace overflow-hidden' : ''}">{@render children()}</main>
 	</div>

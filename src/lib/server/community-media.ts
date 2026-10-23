@@ -16,7 +16,7 @@ const types: Record<string, { extension: string; kind: 'photo' | 'video' }> = {
 };
 export async function readUploadForm(request: Request) {
 	const reader = request.body?.getReader();
-	if (!reader) error(400, 'Choose road photos or a short video.');
+	if (!reader) error(400, 'Choose photos or a short video.');
 	let size = 0;
 	const chunks: Uint8Array[] = [];
 	while (true) {

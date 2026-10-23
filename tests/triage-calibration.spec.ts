@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { AIAssessmentSchema, TriageAnalysisSchema } from '../src/lib/types/triage';
 import { normalizeSeverity } from '../src/lib/types/hazards';
 const base = TriageAnalysisSchema.parse({ isValidInfrastructure: true, hazardSeverity: 2, riskLevel: 'LOW', vruLethality: 'LOW' });
-const mild = { ...base, severityEvidence: { visibleDefects: ['Fine surface cracks without visible displacement.'], criticalDangerVisible: false, confidence: 'HIGH' as const, limitations: 'Depth is unmeasured.' } };
+const mild = { ...base, infrastructureType: 'ROAD_PAVEMENT' as const, severityEvidence: { visibleDefects: ['Fine surface cracks without visible displacement.'], reportedConditions: [], criticalDangerVisible: false, confidence: 'HIGH' as const, limitations: 'Depth is unmeasured.' } };
 test('minor damage remains low even when generic risk labels exaggerate it', () => {
 	for (const score of [1,2,3,4]) {
 		const result = normalizeSeverity({ ...base, hazardSeverity: score, riskLevel: 'CRITICAL', vruLethality: 'CRITICAL' });

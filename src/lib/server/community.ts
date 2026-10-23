@@ -1,7 +1,7 @@
 import { hydrateQuotes } from './quote-social';
 import { queuePostEmail } from './email';
 import { z } from 'zod';
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { communitySearch, communitySorts, normalizeSearch, type CommunitySort } from './community-search';
 import { error, type RequestEvent } from '@sveltejs/kit';
 import { db, communityPosts, communityComments, communityConfirmations, users, reports, reportObservations } from './db';
@@ -22,9 +22,9 @@ export function communityFilters(url: URL): CommunityFilters {
 	const requestedSort = communitySorts.find((sort) => sort === (params.get('sort') === 'confirmations' ? 'likes' : params.get('sort')));
 	return {
 		q,
-		sort: requestedSort === 'relevance' && !q ? 'newest' : requestedSort || (q ? 'relevance' : 'newest'),
+		sort: ['liked', 'confirmed'].includes(params.get('tab') || '') ? (q ? 'relevance' : 'newest') : requestedSort === 'relevance' && !q ? 'newest' : requestedSort || (q ? 'relevance' : 'newest'),
 		tab: params.get('tab') === 'confirmed' ? 'liked' : ['critical', 'liked'].includes(params.get('tab') || '') ? params.get('tab')! : '',
-		media: ['photo', 'video'].includes(params.get('media') || '') ? params.get('media')! : '',
+		media: ['liked', 'confirmed'].includes(params.get('tab') || '') ? '' : ['photo', 'video'].includes(params.get('media') || '') ? params.get('media')! : '',
 		author: z.uuid().safeParse(params.get('author')).success ? params.get('author')! : '',
 		currentPage: Math.min(50, Math.max(1, Math.floor(Number(params.get('page')) || 1)))
 	};
@@ -58,7 +58,7 @@ async function hydratePosts(rows: CommunityRow[], userId?: string) {
 	return uniqueRows.map(({ post, author, grouping }): CommunityPost => ({
 		roadSegment: post.roadSegment, grouping, id: post.id, title: post.title, body: post.body, locationName: post.locationName,
 		latitude: Number(post.latitude), longitude: Number(post.longitude), media: post.media, coverId: post.coverId,
-		analysis: post.analysis, reportId: post.reportId, reportStatus: (awaitedStatuses.get(post.reportId) || 'REPORTED'), reportSeverity: statuses.find((report) => report.id === post.reportId)?.severity, reportRiskLevel: statuses.find((report) => report.id === post.reportId)?.risk, governmentUpdateLink: (() => { const update = officialUpdates.find((update) => update.reportId === post.reportId); return update ? `/community/post/${update.postId}?repost=${update.id}#repost-${update.id}` : null; })(), createdAt: post.createdAt.toISOString(), author,
+		analysis: post.analysis, reportId: post.reportId, reportStatus: (awaitedStatuses.get(post.reportId) || 'REPORTED'), reportSeverity: statuses.find((report) => report.id === post.reportId)?.severity, reportRiskLevel: statuses.find((report) => report.id === post.reportId)?.risk, governmentUpdateLink: (() => { const update = officialUpdates.find((update) => update.reportId === post.reportId); return update ? `/community/post/${update.postId}?repost=${update.id}#repost-${update.id}` : null; })(), createdAt: post.createdAt.toISOString(), deletedAt: post.deletedAt?.toISOString() || null, author,
 		confirmations: confirmations.filter((item) => item.postId === post.id).length,
 		userConfirmed: confirmations.some((item) => item.postId === post.id && item.userId === userId),
 		reposts: reposts.filter((item) => item.postId === post.id).length,
@@ -92,7 +92,7 @@ export async function loadCommunityPosts(userId?: string, filters: CommunityFilt
 	const reposter = alias(users, 'reposter');
 	const repostSearch = filters.q ? communitySearch(filters.q, sql`concat_ws(' ', ${communityReposts.body}, ${reposter.name})`) : null;
 	const mediaMatch = sql`exists (select 1 from jsonb_array_elements(${communityPosts.media}) as attachment where attachment->>'kind' = ${filters.media})`;
-	const where = and(...common, likedPost, ...(search ? [search.where] : []), ...(filters.author ? [eq(communityPosts.userId, filters.author)] : []), ...(filters.media ? [mediaMatch] : []));
+	const where = and(isNull(communityPosts.deletedAt), ...common, likedPost, ...(search ? [search.where] : []), ...(filters.author ? [eq(communityPosts.userId, filters.author)] : []), ...(filters.media ? [mediaMatch] : []));
 	const repostWhere = and(...common, likedQuote, ...(filters.originalsOnly ? [sql`false`] : []), ...(repostSearch ? [repostSearch.where] : []), ...(filters.author ? [eq(communityReposts.userId, filters.author)] : []), ...(filters.media ? [sql`(${mediaMatch} or exists (select 1 from jsonb_array_elements(${communityReposts.media}) as attachment where attachment->>'kind' = ${filters.media}) or exists (select 1 from jsonb_array_elements(coalesce(${communityReposts.governmentUpdate}->'attachments', '[]'::jsonb)) as attachment where attachment->>'kind' = ${filters.media}))`] : []));
 	const limit = filters.currentPage * 20;
 	const sort = filters.sort || (search ? 'relevance' : 'newest');
@@ -134,7 +134,7 @@ export async function loadCommunityPosts(userId?: string, filters: CommunityFilt
 
 export async function updateConfirmation(postId: string, userId: string, confirmed: boolean) {
 	return db.transaction(async (tx) => {
-		const [post] = await tx.select().from(communityPosts).where(eq(communityPosts.id, postId)).for('update');
+		const [post] = await tx.select().from(communityPosts).where(and(eq(communityPosts.id, postId), isNull(communityPosts.deletedAt))).for('update');
 		if (!post) error(404, 'Post not found.');
 		if (confirmed) {
 			const [added] = await tx.insert(communityConfirmations).values({ postId, userId }).onConflictDoNothing().returning();

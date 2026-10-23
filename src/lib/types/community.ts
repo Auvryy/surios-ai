@@ -27,6 +27,7 @@ export interface CommunityPost {
 	governmentUpdateLink: string | null;
 	grouping?: MatchDecision | null;
 	createdAt: string;
+	deletedAt?: string | null;
 	author: { id: string; name: string; avatarUrl: string | null; role: string };
 	confirmations: number;
 	userConfirmed: boolean;

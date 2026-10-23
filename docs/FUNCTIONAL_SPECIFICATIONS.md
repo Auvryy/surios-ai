@@ -1,7 +1,7 @@
 # SuriOS — Master Functional & Engineering Specifications
 
 **Role:** System Orchestrator Blueprint  
-**Mission:** UN SDG 9 (Industry, Innovation, and Infrastructure) & SDG 11 (Sustainable Cities) — Municipal Civil Infrastructure Defect Triage, Two-Wheeler (VRU) Safety Profiling, and Accountable Public Works Dispatch.
+**Mission:** UN SDG 9 (Industry, Innovation, and Infrastructure) — community reporting, evidence-grounded triage, and accountable public-sector response across public infrastructure.
 
 > [!IMPORTANT]
 > Government scope has been consolidated per user direction. [GOVERNMENT_WORKSPACE.md](./GOVERNMENT_WORKSPACE.md) describes the implemented Government updates page: official quotes with progress/resolution status, photo/PDF evidence, itemized budgets and municipal/barangay profiles. It supersedes the crew assignment, material calculator and separate verification/analytics plans.
@@ -14,14 +14,18 @@ SuriOS is structured around a **Two-Persona Swiss Minimalist Sidebar Shell** (`s
 
 | Route | Module Name | Target Persona | 5-Word Functional Mandate | Current Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **`/community`** | **Civic Feed** | Shared (Community & Gov) | *Single-column social road hazard stream.* | **Active** — Centered feed (`max-w-2xl`), vertical inset media dock, `+1 Confirmed` upvoting. |
-| **`/liked`** | **Liked History** | Community (`CITIZEN`) | *Track confirmed hazards repair progress.* | **Active** — Citizen watchlist tracking DPWH repair states (`REPORTED` $\rightarrow$ `DISPATCHED` $\rightarrow$ `RESOLVED`). |
-| **`/report`** | **Report a hazard** | Community (`CITIZEN`) | *A compact prompt to post road evidence.* | **Active** — Shared composer, photos/video, AI review, precise location, persistent posts. |
-| **`/map`** | **Road hazards** | Shared (Community & Gov) | *Real-time geolocated road hazard map.* | **Active** — Stored hazard pins, compact collapsible controls, consistent severity, and linked evidence. |
+| **`/community`** | **Civic Feed** | Shared (Community & Gov) | *Single-column public infrastructure updates.* | **Active** — Centered feed, media galleries, reactions, discussion, and linked map locations. |
+| **`/liked`** | **Liked posts** | Signed-in users | *Browse posts you have liked.* | **Active** — Like-only feed view. |
+| **`/report`** | **Report an issue** | Community (`CITIZEN`) | *Capture evidence and its location.* | **Active** — Shared composer, photos/video, AI review, precise location, persistent posts. |
+| **`/map`** | **Hazard map** | Shared (Community & Gov) | *Browse geolocated public infrastructure reports.* | **Active** — Stored hazard pins, linked evidence and status; road-section lines apply only to mapped road reports. |
 | **`/dashboard`** | **Government updates** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *Quote, document, budget, resolve, export.* | **Active** — Public official quotes, shared-report status, evidence and budget breakdowns. |
 | **`/verification`, `/analytics`** | **Retired demo pages** | All | *Consolidated into official quote updates.* | Redirect to `/dashboard` for government users and `/community` otherwise. |
 | **`/profile`, `/community?profile=[id]`** | **Community profile** | Own / Public | *Name, profile picture, cover photo and posts.* | **Active** — Owner editing, public author profiles, shared posts and replies. |
 | **`/settings`** | **Account settings** | Signed-in users | *Email notifications and password security.* | **Active** — Saved email preferences, password change, and email reset links. |
+
+### Current assessment scope
+
+Reports can cover road pavement, bridges and footbridges, drainage channels and flood canals, streetlights and utility poles, water pipes and hydrants, and telecom/fiber cables. The current OpenStreetMap road corridors and road-section lines apply to pavement reports; other assets use their reported point location. ASTM D6433 describes pavement assessment only. The visual model separates visible defects from unverified reporter claims and cannot establish hidden condition, operating status, ownership, water quality or electrical state from appearance alone.
 
 ---
 
@@ -31,8 +35,8 @@ Authentication is powered by native Node.js cryptographic primitives (`node:cryp
 
 | Capability / Function | Anonymous Guest | `CITIZEN` | `OFFICER` (Field Inspector) | `ENGINEER` / `ADMIN` (LGU Chief) |
 | :--- | :---: | :---: | :---: | :---: |
-| View Road hazards (`/map`) | ✅ | ✅ | ✅ | ✅ |
-| Submit Field Hazard Report (`/report` & `POST /api/triage`) | ✅ | ✅ | ✅ | ✅ |
+| View Hazard map (`/map`) | ✅ | ✅ | ✅ | ✅ |
+| Submit public infrastructure report (`/report` & community API) | ✅ | ✅ | ✅ | ✅ |
 | Confirm / Upvote Existing Proximate Defect (`+1 Confirmation`) | ❌ | ✅ | ✅ | ✅ |
 | Access Government updates (`/dashboard`) | ❌ *(303 `/login`)* | ❌ *(303 `/community`)* | ✅ | ✅ |
 | Publish In progress quote with evidence | ❌ | ❌ | ✅ | ✅ |
@@ -49,7 +53,7 @@ To ensure SuriOS is an authentic civil engineering platform rather than a generi
 
 ### A. Severity and risk consistency
 
-The implemented severity is the AI's 1–10 estimate with product risk floors: LOW/MODERATE/CRITICAL impose minimums 1/4/8; rider risk NONE/LOW/MODERATE/HIGH/CRITICAL imposes 1/1/4/6/8. Final severity is the maximum, clamped to 1–10. Display bands are 1–3 LOW, 4–7 MODERATE, and 8–10 CRITICAL. These are triage estimates, not a measured ASTM PCI.
+The implemented severity is the AI's integer estimate clamped to 1–10. Risk labels are derived from the score and do not impose severity floors. Display bands are 1–3 LOW, 4–7 MODERATE, and 8–10 CRITICAL. New assessments require explicit visible serious-danger evidence and high confidence for scores 8–10. These are triage estimates, not certified inspections; ASTM D6433 applies only to pavement.
 
 ### B. Independent support and priority
 
@@ -75,15 +79,15 @@ Both community publishing and field capture use this logic. A transaction and ca
 - Severity is normalized using section 3. Both field capture and community publishing use the same 25-metre candidate search, hash/AI comparison, unique support, and transactional persistence.
 - Address lookup can label the location, but the submitted pin is preserved.
 - Success includes `reportId` (display ticket), `rawId` (canonical UUID), `grouped`, `match`, canonical `severity`, `support`, `priority`, `imageUrl`, coordinates, and the individual AI `analysis`.
-- Errors never return a successful pending ticket. Invalid files/coordinates keep the form available; 422 identifies non-road evidence; unavailable AI/storage returns an error.
+- Errors never return a successful pending ticket. Invalid files/coordinates keep the form available; 422 identifies media that does not show recognizable public infrastructure; unavailable AI/storage returns an error.
 
-### 4.2. Road hazards (`/map`)
+### 4.2. Hazard map (`/map`)
 
-The landing page is the community feed (`/community`); `/` redirects there. Road hazards is a separate full-map workspace backed by stored reports only.
+The landing page is the community feed (`/community`); `/` redirects there. Hazard map is a separate full-map workspace backed by stored reports only.
 
 `src/lib/server/map-hazards.ts` loads up to 1,000 recently updated reports, their linked posts, and observation metadata. It normalizes legacy risk labels for display, computes priority, and supplies real timestamps and support counts. It does not inject demo incidents or invented corridor condition values.
 
-The map exposes compact floating report/filter/layer/legend controls. Pins and list cards share search, status, damage, severity, and rider-risk filters, with independent sort options. Overlapping pins are visually clustered without changing report identity. A selected pin has a compact preview that expands for details and linked evidence. Data refreshes every 30 seconds while visible.
+The map exposes compact floating report/filter/layer/legend controls. Pins and list cards share search, status, issue type, severity, and public-exposure filters, with independent sort options. Overlapping pins are visually clustered without changing report identity. A selected pin has a compact preview that expands for details and linked evidence. Solid road lines show only explicitly reported pavement sections; dashed reference roads are geographic context, not condition readings. Data refreshes every 30 seconds while visible.
 
 The shared sidebar can collapse and remember its state. Mobile navigation remains a drawer. Map resizing preserves the current view. Legacy root map links redirect to `/map?report=...`.
 

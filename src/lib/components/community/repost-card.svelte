@@ -13,6 +13,7 @@
 	import ClockIcon from '@lucide/svelte/icons/clock-3';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import DownloadIcon from '@lucide/svelte/icons/download';
+import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import { pesos, budgetTotal, type CommunityRepost } from '$lib/types/community';
 	let { repost, user, detail = false, mediaId = '' }: { repost: CommunityRepost; user: { id: string; role?: string } | null; detail?: boolean; mediaId?: string } = $props();
 	let card = $state<HTMLElement>();
@@ -40,8 +41,8 @@
 		try { const response = await fetch(`/api/community/reposts/${repost.id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'like', liked: !repost.userLiked }) }); const result = await response.json(); if (!response.ok) throw new Error(result.message || 'Could not save reaction.'); await invalidateAll(); }
 		catch (cause) { issue = cause instanceof Error ? cause.message : 'Could not save reaction.'; } finally { busy = false; }
 	}
-	async function undo() {
-		if (busy) return; busy = true; issue = '';
+	async function deleteRepost() {
+		if (busy || !window.confirm('Delete your repost?')) return; busy = true; issue = '';
 		try { const response = await fetch(`/api/community/reposts?id=${repost.id}`, { method: 'DELETE' }); if (!response.ok) throw new Error((await response.json()).message || 'Could not remove repost.'); await invalidateAll(); }
 		catch (cause) { issue = cause instanceof Error ? cause.message : 'Could not remove repost.'; } finally { busy = false; }
 	}
@@ -50,7 +51,7 @@
 <article bind:this={card} id="repost-{repost.id}" data-repost-id={repost.id} class="scroll-mt-4 overflow-hidden rounded-xl border border-border bg-card" class:cursor-pointer={!detail}>
 	<header class="flex items-start justify-between gap-3 px-3 pt-4 pb-3 sm:px-4">
 		<a href="/community?profile={repost.author.id}" class="flex min-w-0 items-center gap-2.5"><Avatar name={repost.author.name} src={repost.author.avatarUrl} /><span class="min-w-0"><span class="block truncate text-sm font-semibold">{repost.author.name}</span><span class="mt-0.5 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">{#if !official}<Repeat2Icon aria-hidden="true" class="size-3" />{/if}{official ? 'Government update' : 'Reposted'}<span aria-hidden="true">·</span>{new Date(repost.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}</span></span></a>
-		{#if official}<a data-government-status={currentStatus} href={repost.post.governmentUpdateLink || href} class="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold {currentStatus === 'RESOLVED' ? 'border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500 dark:text-emerald-950' : 'border-amber-500 bg-amber-100 text-amber-950 dark:bg-amber-400 dark:text-amber-950'}">{#if currentStatus === 'RESOLVED'}<CheckCircleIcon aria-hidden="true" class="size-3.5" />Resolved{:else}<ClockIcon aria-hidden="true" class="size-3.5" />In progress{/if}</a>{:else if user?.id === repost.author.id}<button type="button" disabled={busy} onclick={undo} class="min-h-11 shrink-0 rounded-lg px-2 text-xs text-muted-foreground hover:bg-secondary">Undo repost</button>{/if}
+			{#if official}<a data-government-status={currentStatus} href={repost.post.governmentUpdateLink || href} class="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold {currentStatus === 'RESOLVED' ? 'border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500 dark:text-emerald-950' : 'border-amber-500 bg-amber-100 text-amber-950 dark:bg-amber-400 dark:text-amber-950'}">{#if currentStatus === 'RESOLVED'}<CheckCircleIcon aria-hidden="true" class="size-3.5" />Resolved{:else}<ClockIcon aria-hidden="true" class="size-3.5" />In progress{/if}</a>{:else if user?.id === repost.author.id}<details class="relative shrink-0"><summary class="flex size-11 cursor-pointer list-none items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary focus-visible:outline-2 focus-visible:outline-primary" aria-label="More options for your repost"><EllipsisIcon aria-hidden="true" class="size-5" /></summary><div class="absolute right-0 top-full z-20 min-w-40 rounded-lg border border-border bg-popover p-1 shadow-md"><button type="button" disabled={busy} onclick={deleteRepost} class="flex min-h-11 w-full items-center rounded-md px-3 text-left text-sm text-destructive hover:bg-secondary">Delete repost</button></div></details>{/if}
 	</header>
 	<div class="space-y-3 px-3 pb-3 sm:px-4">
 		{#if official && currentStatus !== official.status}<p class="text-[11px] text-muted-foreground">Posted as {official.status === 'RESOLVED' ? 'Resolved' : 'In progress'} · Status reflects the latest government update.</p>{/if}

@@ -130,6 +130,7 @@ export const communityPosts = pgTable('community_posts', {
 	media: jsonb('media').$type<PostMedia[]>().notNull(),
 	coverId: text('cover_id').notNull(),
 	analysis: jsonb('analysis').$type<TriageAnalysis>().notNull(),
+	deletedAt: timestamp('deleted_at', { withTimezone: true }),
 	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 }, (table) => [index('community_posts_created_idx').on(table.createdAt), index('community_posts_user_idx').on(table.userId)]);
 

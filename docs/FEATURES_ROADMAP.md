@@ -65,7 +65,7 @@ Phase 2 transforms static/mock inside content into a 100% live, database-driven 
 1. **Upgrade `/report` (Citizen & Inspector Field Shutter) with Rich Triage Telemetry:**
    * **Current Gap:** `/report` currently shows a simple *"Report Dispatched Successfully"* confirmation card without displaying the rich Gemini AI diagnosis returned by `POST /api/triage`.
    * **Improvement Plan:**
-     * Render the full **ASTM D6433 Diagnosis Card** upon submission: Distress Category, Hazard Severity ($1-10$), Two-Wheeler Lethality Alert banner, Estimated Depth/Area, and Recommended Repair Materials.
+     * Render the road-pavement **ASTM D6433 Diagnosis Card** upon submission: pavement distress category, evidence-based severity, visible public-exposure notes, and any supported repair guidance. Keep this standard scoped to pavement and do not infer hidden measurements.
      * Handle HTTP `422` non-infrastructure rejections gracefully by showing the exact `rejectionReason` from Gemini Vision so the user knows why a non-road photo was blocked.
      * Add a direct **"View Pin on Live Map Feed"** button that navigates to `/?highlight={reportId}`.
 

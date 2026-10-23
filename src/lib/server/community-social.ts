@@ -14,7 +14,7 @@ export async function saveRepost(request: Request, userId: string) {
 	const parsed = z.object({ id: z.uuid(), postId: z.uuid(), body: z.string().trim().max(1000), quotedRepostId: z.uuid().nullable() }).safeParse({ id: form.get('id'), postId: form.get('postId'), body: form.get('body') || '', quotedRepostId: form.get('quotedRepostId') || null });
 	if (!parsed.success) error(400, 'Choose a post and write up to 1,000 characters.');
 	const input = parsed.data;
-	const [source] = await db.select({ id: communityPosts.id, reportId: communityPosts.reportId }).from(communityPosts).where(eq(communityPosts.id, input.postId));
+	const [source] = await db.select({ id: communityPosts.id, reportId: communityPosts.reportId }).from(communityPosts).where(and(eq(communityPosts.id, input.postId), isNull(communityPosts.deletedAt)));
 	if (!source) error(404, 'Original post not found.');
 	if (input.quotedRepostId) {
 		const [parent] = await db.select().from(communityReposts).where(and(eq(communityReposts.id, input.quotedRepostId), eq(communityReposts.postId, input.postId)));
