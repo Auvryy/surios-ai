@@ -10,7 +10,7 @@
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import ThumbsUpIcon from '@lucide/svelte/icons/thumbs-up';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
-	import Share2Icon from '@lucide/svelte/icons/share-2';
+	import PostShare from './post-share.svelte';
 	import Repeat2Icon from '@lucide/svelte/icons/repeat-2';
 	import HeartIcon from '@lucide/svelte/icons/heart';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
@@ -22,7 +22,6 @@
 	let commentInput = $state('');
 	let busy = $state(false);
 	let actionError = $state('');
-	let message = $state('');
 	let repostOpen = $state(false);
 	let replyTarget = $state<CommunityComment | null>(null);
 	const threadUrl = $derived(`/community/post/${post.id}`);
@@ -68,10 +67,6 @@
 		} catch (cause) { actionError = cause instanceof Error ? cause.message : 'Unable to save.'; }
 		finally { busy = false; }
 	}
-	async function share() {
-		try { await navigator.clipboard.writeText(`${window.location.origin}${threadUrl}`); message = 'Post link copied.'; }
-		catch { message = 'Unable to copy the link. Copy this page’s address from your browser.'; }
-	}
 	async function repost() { if (await signedIn()) repostOpen = true; }
 	function timeAgo(date: string) {
 		const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(date)) / 60000));
@@ -87,7 +82,6 @@
 	<div class="space-y-1 px-3 pb-3 sm:px-4"><h2 class="text-sm font-semibold leading-snug"><a href={threadUrl} class="rounded-sm hover:underline">{post.title}</a></h2>{#if post.body}<p class="break-words text-sm leading-5 text-muted-foreground" class:line-clamp-2={!detail}>{post.body}</p>{#if !detail && post.body.length > 150}<a href={threadUrl} class="inline-flex min-h-8 items-center text-xs font-semibold hover:underline">Read full post</a>{/if}{/if}</div>
 	<PostMedia {post} {detail} {mediaId} />
 
-	{#if message}<p role="status" class="px-3 py-2 text-xs text-muted-foreground">{message}</p>{/if}
 	<div class="space-y-2 px-3 py-2 sm:px-4">
 		<a href="https://www.openstreetmap.org/?mlat={post.latitude}&mlon={post.longitude}#map=17/{post.latitude}/{post.longitude}" target="_blank" rel="noreferrer" class="flex items-start gap-1.5 text-xs text-muted-foreground hover:underline"><MapPinIcon aria-hidden="true" class="mt-0.5 size-3.5 shrink-0 text-primary" />{post.locationName}</a>
 		<details class="rounded-lg bg-primary/5 px-3"><summary class="flex min-h-10 cursor-pointer items-center gap-2 text-xs font-medium"><SparklesIcon aria-hidden="true" class="size-3.5 text-primary" />AI assessed · {post.analysis.distressType.replaceAll('_', ' ')}<span class="ml-auto text-muted-foreground">Details</span></summary><div class="space-y-2 pb-3 text-xs leading-5 text-muted-foreground"><p>{post.analysis.summary}</p><p><strong class="font-medium text-foreground">Rider risk:</strong> {post.analysis.vruLethality.toLowerCase()} · {post.analysis.vruDetails}</p><p><strong class="font-medium text-foreground">Suggested repair:</strong> {post.analysis.recommendedAction}</p><p>AI estimates require on-site inspection.</p><a class="inline-flex min-h-10 items-center gap-1 font-medium text-primary hover:underline" href="/map?report={post.reportId}"><MapPinIcon aria-hidden="true" class="size-3.5" />View hazard on map · {post.reportId.slice(0, 8).toUpperCase()}</a>{#if post.grouping}<p>{post.grouping.reason}</p>{/if}</div></details>
@@ -98,7 +92,7 @@
 		<button class="feed-action {post.userConfirmed ? 'text-primary' : ''}" aria-pressed={post.userConfirmed} disabled={busy} onclick={() => interact({ action: 'confirm', confirmed: !post.userConfirmed })}><ThumbsUpIcon aria-hidden="true" class="size-4" />{post.userConfirmed ? 'Confirmed' : 'Confirm'}</button>
 		<a class="feed-action" href="{threadUrl}#comments"><MessageSquareIcon aria-hidden="true" class="size-4" />Comment</a>
 		<button class="feed-action {post.userReposted ? 'text-primary' : ''}" onclick={repost}><Repeat2Icon aria-hidden="true" class="size-4" />{isGovernment(user?.role) ? 'Update' : 'Repost'}</button>
-		<button class="feed-action" onclick={share}><Share2Icon aria-hidden="true" class="size-4" />Share</button>
+		<PostShare title={post.title} path={threadUrl} />
 	</div>
 	{#if actionError}<p role="alert" class="px-3 pb-3 text-sm text-destructive">{actionError}</p>{/if}
 	{#if comments.length || detail}<section id={detail ? 'comments' : undefined} aria-label={detail ? 'Comments' : 'Top comment'} class="space-y-3 border-t border-border bg-muted/20 p-3 sm:p-4">

@@ -99,7 +99,7 @@ See [ROAD_HAZARDS.md](./ROAD_HAZARDS.md) and [COMMUNITY_POSTING.md](./COMMUNITY_
 
 The six shared destinations remain, plus one Government updates page. Officials
 quote a source community post via `POST /api/community/reposts`, supplying status
-`IN_PROGRESS` or `RESOLVED`, details, 1–4 photo/PDF evidence files and an optional
+`IN_PROGRESS` or `RESOLVED`, details, staged photo/PDF evidence files and an optional
 itemized PHP budget labeled estimated or actual. Crew assignment and the material
 calculator are retired; their old named form actions return 405.
 
@@ -110,7 +110,7 @@ quotes do not increase hazard severity, support or source observation counts.
 Profiles show municipality/barangay identity and distinct-report statistics.
 
 See [GOVERNMENT_WORKSPACE.md](./GOVERNMENT_WORKSPACE.md) for storage, limits,
-permissions, migration 0008, CSV export and the labeled presentation dataset.
+permissions, migrations 0008–0009, quote conversations, CSV export and the labeled presentation dataset.
 Separate verification/analytics pages remain retired redirects.
 
 ### 4.5. Shared community pages

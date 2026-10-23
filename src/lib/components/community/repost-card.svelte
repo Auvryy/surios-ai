@@ -8,7 +8,7 @@
 	import Repeat2Icon from '@lucide/svelte/icons/repeat-2';
 	import HeartIcon from '@lucide/svelte/icons/heart';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
-	import Share2Icon from '@lucide/svelte/icons/share-2';
+	import PostShare from './post-share.svelte';
 	import CheckCircleIcon from '@lucide/svelte/icons/circle-check';
 	import ClockIcon from '@lucide/svelte/icons/clock-3';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
@@ -18,7 +18,6 @@
 	let card = $state<HTMLElement>();
 	let busy = $state(false);
 	let issue = $state('');
-	let message = $state('');
 	let repostOpen = $state(false);
 	const official = $derived(repost.governmentUpdate);
 	const photos = $derived(official ? official.attachments.filter((file) => file.kind === 'photo') : repost.media);
@@ -41,7 +40,6 @@
 		try { const response = await fetch(`/api/community/reposts/${repost.id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'like', liked: !repost.userLiked }) }); const result = await response.json(); if (!response.ok) throw new Error(result.message || 'Could not save reaction.'); await invalidateAll(); }
 		catch (cause) { issue = cause instanceof Error ? cause.message : 'Could not save reaction.'; } finally { busy = false; }
 	}
-	async function share() { try { const url = new URL(href, window.location.origin).href; if (navigator.share) await navigator.share({ title: `${repost.author.name} — SuriOS`, url }); else { await navigator.clipboard.writeText(url); message = 'Post link copied.'; } } catch (cause) { if (!(cause instanceof Error && cause.name === 'AbortError')) issue = 'Copy this page’s link to share the update.'; } }
 	async function undo() {
 		if (busy) return; busy = true; issue = '';
 		try { const response = await fetch(`/api/community/reposts?id=${repost.id}`, { method: 'DELETE' }); if (!response.ok) throw new Error((await response.json()).message || 'Could not remove repost.'); await invalidateAll(); }
@@ -63,8 +61,8 @@
 		<QuotePreview post={repost.post} quote={repost.quotedRepost} />
 	</div>
 	<div class="flex flex-wrap items-center justify-between gap-2 px-3 pb-2 text-[11px] text-muted-foreground sm:px-4"><span>{repost.likes} {repost.likes === 1 ? 'reaction' : 'reactions'}</span><a href="{href.split('#')[0]}#quote-comments-{repost.id}" class="inline-flex min-h-8 items-center hover:underline">{repost.comments.length} comments · {repost.reposts} reposts</a></div>
-	<div class="mx-3 grid grid-cols-4 border-t border-border py-1 sm:mx-4"><button type="button" class="quote-action {repost.userLiked ? 'text-primary' : ''}" aria-pressed={repost.userLiked} disabled={busy} onclick={react}><HeartIcon aria-hidden="true" class="size-4" />{repost.userLiked ? 'Liked' : 'Like'}</button><a class="quote-action" href="{href.split('#')[0]}#quote-comments-{repost.id}"><MessageSquareIcon aria-hidden="true" class="size-4" />Comment</a><button type="button" class="quote-action" onclick={async () => { if (await signedIn()) repostOpen = true; }}><Repeat2Icon aria-hidden="true" class="size-4" />Repost</button><button type="button" class="quote-action" onclick={share}><Share2Icon aria-hidden="true" class="size-4" />Share</button></div>
-	{#if issue}<p role="alert" class="px-3 pb-3 text-sm text-destructive">{issue}</p>{/if}{#if message}<p role="status" class="px-3 pb-3 text-xs text-muted-foreground">{message}</p>{/if}
+	<div class="mx-3 grid grid-cols-4 border-t border-border py-1 sm:mx-4"><button type="button" class="quote-action {repost.userLiked ? 'text-primary' : ''}" aria-pressed={repost.userLiked} disabled={busy} onclick={react}><HeartIcon aria-hidden="true" class="size-4" />{repost.userLiked ? 'Liked' : 'Like'}</button><a class="quote-action" href="{href.split('#')[0]}#quote-comments-{repost.id}"><MessageSquareIcon aria-hidden="true" class="size-4" />Comment</a><button type="button" class="quote-action" onclick={async () => { if (await signedIn()) repostOpen = true; }}><Repeat2Icon aria-hidden="true" class="size-4" />Repost</button><PostShare title={`${repost.author.name} — SuriOS`} path={href} /></div>
+	{#if issue}<p role="alert" class="px-3 pb-3 text-sm text-destructive">{issue}</p>{/if}
 	<QuoteDiscussion {repost} {user} {detail} {href} />
 </article>
 {#if repostOpen}<RepostComposer bind:open={repostOpen} post={repost.post} quote={repost} {user} />{/if}

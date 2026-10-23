@@ -72,7 +72,7 @@ test('Share opens a compact dialog with copy, Facebook, Messenger fallback and k
 	expect(await page.evaluate(() => (window as typeof window & { copiedLinks: string[] }).copiedLinks)).toEqual([expected, expected]);
 	for (const [width, height] of [[320, 740], [375, 812], [812, 375], [1440, 1000]]) {
 		await page.setViewportSize({ width, height });
-		const box = await dialog.boundingBox(); expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.y).toBeGreaterThanOrEqual(0); expect(box!.width).toBeLessThanOrEqual(width); expect(box!.height).toBeLessThanOrEqual(height);
+		await expect.poll(async () => { const box = await dialog.boundingBox(); return !!box && box.x >= 0 && box.y >= 0 && box.x + box.width <= width && box.y + box.height <= height; }).toBe(true);
 		expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
 	}
 	await page.screenshot({ path: '.svelte-kit/review/post-share-desktop.png' });

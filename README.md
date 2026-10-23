@@ -28,7 +28,7 @@
 | **[`docs/DESIGN_SYSTEM.md`](./docs/DESIGN_SYSTEM.md)** | Zero AI-Slop Charter, OKLCH semantic tokens, and `shadcn-svelte` component architecture. |
 | **[`docs/SYSTEM_GOALS.md`](./docs/SYSTEM_GOALS.md)** | UN SDG 9/11/16 alignment, 1:6 preventative maintenance ROI curve, and Pitch Q&A Defense Matrix. |
 | **[`docs/ROAD_HAZARDS.md`](./docs/ROAD_HAZARDS.md)** | Feed-first navigation, collapsible map controls, severity, community support, priority, and AI-assisted evidence grouping. |
-| **[`docs/GOVERNMENT_WORKSPACE.md`](./docs/GOVERNMENT_WORKSPACE.md)** | Government quote updates, linked-post resolution, evidence, budgets, office profiles, demo seed and migration 0008. |
+| **[`docs/GOVERNMENT_WORKSPACE.md`](./docs/GOVERNMENT_WORKSPACE.md)** | Government quote updates, linked-post resolution, evidence, budgets, office profiles, gallery, quote conversations, sharing, demo seed and migrations 0008–0009. |
 | **[`docs/ACCOUNT_SETTINGS.md`](./docs/ACCOUNT_SETTINGS.md)** | Essential settings, email preferences/delivery, password changes, recovery, and mail setup. |
 | **[`docs/COMMUNITY_PROFILES.md`](./docs/COMMUNITY_PROFILES.md)** | Public profiles, profile/cover photos, author navigation, and saved replies. |
 | **[`docs/COMMUNITY_POSTING.md`](./docs/COMMUNITY_POSTING.md)** | Saved community posts, AI assessment, media covers, search, migrations, and browser verification. |
@@ -51,7 +51,7 @@ npm run dev -- --host 0.0.0.0
 ```
 Open **`http://localhost:5173`**. The landing page is the community feed; **Road hazards** is available at `/map`.
 
-Government accounts keep the six shared destinations plus **Government updates** at `/dashboard`. Officials quote citizen posts with progress/resolution evidence and optional budget breakdowns. Existing databases must apply migrations through `0008_government-updates.sql`. See the [government guide](docs/GOVERNMENT_WORKSPACE.md) for migration and explicit presentation seed commands.
+Government accounts keep the six shared destinations plus **Government updates** at `/dashboard`. Officials quote citizen posts with progress/resolution evidence and optional budget breakdowns. Existing databases must apply migrations through `0009_quote-interactions.sql`. See the [government guide](docs/GOVERNMENT_WORKSPACE.md) for migration and explicit presentation seed commands.
 
 ### 3. Pre-Seeded Municipal Demo Accounts (`/login`)
 In development, SuriOS provisions 3 demo accounts (all using password `Password123!`). Production does not create demo users or expose demo persona switching; public production registration creates citizen accounts only.

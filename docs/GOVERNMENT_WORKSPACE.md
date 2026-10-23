@@ -37,7 +37,9 @@ amber In progress chips distinguish the current status.
 Quotes have their own saved likes, comments/replies, comment likes and repost
 targets. A repost of an official update quotes that government author/content,
 rather than silently sharing only the original citizen report. These actions
-do not change source confirmations or hazard evidence. Guest write actions,
+do not change source confirmations or hazard evidence. The shared Share dialog
+offers copying the exact quote permalink, Facebook and Messenger/device sharing
+without posting anything automatically. Guest write actions,
 cross-origin writes and cross-thread replies are refused.
 
 The Photos filter includes official repair photos even when the quoted source

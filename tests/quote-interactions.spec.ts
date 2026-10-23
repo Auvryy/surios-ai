@@ -58,7 +58,7 @@ test('an official can publish nine photos with +5 overflow, inspect every photo,
 	await expect(quote.locator('[data-gallery-overflow]')).toContainText('+5');
 	await expect(quote.locator('[data-government-status]')).toHaveText('Resolved');
 	await expect(quote.locator('[data-government-status]')).toHaveClass(/bg-emerald-600/);
-	await expect(quote.locator('[data-quoted-source] img')).toHaveCount(2);
+	await expect(quote.locator('[data-quoted-source] a > img')).toHaveCount(2);
 	await expect(quote.getByRole('link',{name:'Open original report map',exact:true})).toBeVisible();
 	await expect(quote.getByRole('img',{name:'Map of Test Road',exact:true})).toHaveClass(/leaflet-container/);
 	const [saved]=await sql`select government_update from community_reposts where id=${officialId}`;expect(saved.government_update.attachments).toHaveLength(9);for(const media of saved.government_update.attachments)evidenceUrls.add(media.url);
@@ -116,4 +116,20 @@ test('guest interactions, cross-origin reactions and cross-thread replies are re
 	const parent=await request.post(`/api/community/reposts/${id}`,{headers:headers(1),data:{action:'comment',body:'A quote-specific comment.'}});const commentId=(await parent.json()).id;
 	const cross=await request.post(`/api/community/reposts/${other}`,{headers:headers(1),data:{action:'comment',body:'Wrong thread',parentId:commentId}});expect(cross.status()).toBe(400);
 	const like=await request.post(`/api/community/reposts/${other}/comments/${commentId}`,{headers:headers(1),data:{liked:true}});expect(like.status()).toBe(404);
+});
+
+test('the shared Share dialog copies the government quote permalink, including its specific update',async({page,request,baseURL})=>{
+	const id=await makeOfficial(request);
+	await page.addInitScript(()=>{
+		const state=window as typeof window & { quoteLinks:string[] };state.quoteLinks=[];
+		Object.defineProperty(navigator,'share',{configurable:true,value:undefined});
+		Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async(text:string)=>{state.quoteLinks.push(text);}}});
+	});
+	await page.goto(`/community/post/${post}?repost=${id}`);await page.waitForLoadState('networkidle');
+	await page.locator(`#repost-${id}`).getByRole('button',{name:'Share',exact:true}).click();
+	const dialog=page.getByRole('dialog',{name:'Share post',exact:true});await expect(dialog).toBeVisible();
+	await dialog.getByRole('button',{name:'Copy link',exact:true}).click();await expect(dialog.getByRole('status')).toHaveText('Link copied.');
+	const expected=`${baseURL}/community/post/${post}?repost=${id}#repost-${id}`;
+	expect(await page.evaluate(()=>(window as typeof window & {quoteLinks:string[]}).quoteLinks)).toEqual([expected]);
+	const facebook=await dialog.getByRole('link',{name:'Facebook',exact:true}).getAttribute('href');expect(new URL(facebook!).searchParams.get('u')).toBe(expected);
 });
