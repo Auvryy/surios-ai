@@ -15,6 +15,13 @@
       "when": 1792499866956,
       "tag": "0001_lumpy_magus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792722634145,
+      "tag": "0002_community-posting",
+      "breakpoints": true
     }
   ]
 }

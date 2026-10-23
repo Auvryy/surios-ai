@@ -12,13 +12,14 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      BODY_SIZE_LIMIT: 16M
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-surios_secure_pw}@db:5432/surios
       GEMINI_API_KEY: ${GEMINI_API_KEY}
     depends_on:
       db:
         condition: service_healthy
     volumes:
-      - surios_uploads:/app/uploads
+      - surios_uploads:/app/static/uploads
 
   db:
     image: postgres:16-alpine
