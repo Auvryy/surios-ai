@@ -47,25 +47,59 @@ When logged into your Azure Virtual Machine via SSH (`ssh andy@<azure-ip>`):
 ### Step 1: Pull Latest Code from GitHub
 ```bash
 cd /path/to/surios-ai
-git pull origin main
+git fetch origin
+git checkout main
+git pull --ff-only origin main
 ```
 
-### Step 2: Build and Start Production Containers in Background
+To deploy this presentation branch directly before merging it, use `feat/presentation-seed` in those three Git commands instead of `main`.
+
+### Step 2: Start PostgreSQL
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml up -d db
 ```
 
-### Step 3: Check Production Containers
+### Fresh Azure database: apply schema and load the presentation snapshot
+
+Use this section only when creating a new, empty production database. It creates the same demo reports, feed posts, road sections, comments, official updates, reactions, and referenced media as the checked-in snapshot. It does not run automatically at app startup.
+
+Apply each checked-in migration in order from the repository checkout:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d db
+for migration in drizzle/*.sql; do
+  docker compose -f docker-compose.prod.yml exec -T db psql -v ON_ERROR_STOP=1 -U postgres -d surios < "$migration"
+done
+```
+
+Build the web image and run the importer as a one-off container against the empty schema:
+
+```bash
+docker compose -f docker-compose.prod.yml run --build --rm web node scripts/seed-presentation.mjs
+```
+
+The importer is safe to rerun after a complete import. It refuses to mix the snapshot into a database containing different reports or community content. For a fresh Compose installation, use a new database volume; do not delete a volume that contains data you need. Demo sign-in: `citizen@surios.gov` or `municipality@surios.gov`, password `Password123!`.
+
+For an existing production database, preserve its named volume and apply only migrations that have not already been applied before restarting the updated application. Do not run the full initialization loop or the presentation seed against an existing database with different content.
+
+### Step 3: Build and start the production web container
+```bash
+docker compose -f docker-compose.prod.yml up -d web
+```
+
+When updating an existing deployment, use `docker compose -f docker-compose.prod.yml up -d --build web` after applying any pending migrations.
+
+### Step 4: Check Production Containers
 ```bash
 docker compose -f docker-compose.prod.yml ps
 ```
 
-### Step 4: View Production Web Logs (Live Stream)
+### Step 5: View Production Web Logs (Live Stream)
 ```bash
 docker compose -f docker-compose.prod.yml logs -f web
 ```
 
-### Step 5: Stop Production Containers
+### Step 6: Stop Production Containers
 ```bash
 docker compose -f docker-compose.prod.yml down
 ```

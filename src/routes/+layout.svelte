@@ -22,6 +22,7 @@
 	let mobileOpen = $state(false);
 	let collapsed = $state(untrack(() => data.sidebarCollapsed));
 	$effect(() => { collapsed = data.sidebarCollapsed; });
+	const isLandingPage = $derived(page.url.pathname === '/');
 	const isAuthPage = $derived(['/login', '/register', '/forgot-password', '/reset-password'].includes(page.url.pathname));
 	const isMapPage = $derived(page.url.pathname === '/map');
 	const isGovUser = $derived(['ENGINEER', 'OFFICER', 'ADMIN'].includes(data.user?.role || ''));
@@ -63,7 +64,9 @@
 		<div class="flex items-center {compact ? 'flex-col gap-1' : 'justify-between px-1'}">{#if !compact}<span class="text-xs text-muted-foreground">Appearance</span>{/if}<ThemeToggle />{#if data.user}<form method="POST" action="/logout"><Button type="submit" variant="ghost" size="icon" class="size-10" aria-label="Sign out" title="Sign out"><LogOutIcon class="size-4" /></Button></form>{/if}</div>
 	</div>
 {/snippet}
-{#if isAuthPage}
+{#if isLandingPage}
+	<div class="min-h-svh bg-background text-foreground">{@render children()}</div>
+{:else if isAuthPage}
 	<div class="min-h-svh bg-background text-foreground"><header class="flex h-14 items-center justify-between border-b border-border px-5">{@render brand()}<ThemeToggle /></header><main>{@render children()}</main></div>
 {:else}
 	<div class="min-h-svh bg-background text-foreground md:flex">
