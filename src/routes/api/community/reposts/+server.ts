@@ -1,5 +1,5 @@
 import { error, json } from '@sveltejs/kit';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { requireCommunityUser } from '$lib/server/community';
 import { saveRepost } from '$lib/server/community-social';
@@ -18,8 +18,8 @@ export const DELETE: RequestHandler = async (event) => {
 	const user = requireCommunityUser(event);
 	const id = event.url.searchParams.get('id');
 	if (!z.uuid().safeParse(id).success) error(400, 'Invalid repost.');
-	const [removed] = await db.delete(communityReposts).where(and(eq(communityReposts.id, id!), eq(communityReposts.userId, user.id))).returning();
-	if (!removed) error(404, 'Repost not found.');
+	const [removed] = await db.delete(communityReposts).where(and(eq(communityReposts.id, id!), eq(communityReposts.userId, user.id), isNull(communityReposts.governmentUpdate))).returning();
+	if (!removed) error(404, 'Repost not found. Official government updates are retained as a public record.');
 	await removeMedia(removed.media);
 	return json({ removed: true });
 };

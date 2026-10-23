@@ -19,6 +19,8 @@ export interface CommunityPost {
 	coverId: string;
 	analysis: TriageAnalysis;
 	reportId: string;
+	reportStatus: string;
+	governmentUpdateLink: string | null;
 	grouping?: MatchDecision | null;
 	createdAt: string;
 	author: { id: string; name: string; avatarUrl: string | null; role: string };
@@ -47,6 +49,24 @@ export interface CommunityRepost {
 	createdAt: string;
 	author: CommunityPost['author'];
 	post: CommunityPost;
+	governmentUpdate?: GovernmentUpdate | null;
 }
 
 export type CommunityFeedItem = { kind: 'post'; id: string; post: CommunityPost } | { kind: 'repost'; id: string; repost: CommunityRepost };
+
+export interface BudgetItem { label: string; amount: number }
+export interface GovernmentAttachment { id: string; url: string; name: string; mimeType: string; kind: 'photo' | 'document' }
+export interface GovernmentUpdate {
+	status: 'IN_PROGRESS' | 'RESOLVED';
+	budget: BudgetItem[];
+	budgetType: 'ESTIMATED' | 'ACTUAL';
+	attachments: GovernmentAttachment[];
+}
+export interface GovernmentProfile { level: 'MUNICIPAL' | 'BARANGAY'; jurisdiction: string; bio: string }
+export interface PublicProfile {
+	id: string; name: string; avatarUrl: string | null; coverUrl: string | null; role: string;
+	governmentProfile: GovernmentProfile | null;
+}
+export const isGovernment = (role?: string) => ['ENGINEER', 'OFFICER', 'ADMIN'].includes(role || '');
+export const budgetTotal = (items: BudgetItem[]) => items.reduce((total, item) => total + Math.round(item.amount * 100), 0) / 100;
+export const pesos = (amount: number) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);

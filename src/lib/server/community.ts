@@ -15,7 +15,7 @@ export function requireCommunityUser(event: RequestEvent) {
 	return event.locals.user;
 }
 
-export interface CommunityFilters { q: string; tab: string; media: string; author: string; currentPage: number; sort?: CommunitySort }
+export interface CommunityFilters { q: string; tab: string; media: string; author: string; currentPage: number; originalsOnly?: boolean; sort?: CommunitySort }
 export function communityFilters(url: URL): CommunityFilters {
 	const params = url.searchParams;
 	const q = normalizeSearch(params.get('q') || '');
@@ -40,7 +40,12 @@ async function hydratePosts(rows: CommunityRow[], userId?: string) {
 	const uniqueRows = [...new Map(rows.map((row) => [row.post.id, row])).values()];
 	if (!uniqueRows.length) return [] as CommunityPost[];
 	const ids = uniqueRows.map(({ post }) => post.id);
-	const [confirmations, comments, reposts] = await Promise.all([
+	const [officialUpdates, statuses, confirmations, comments, reposts] = await Promise.all([
+		db.select({ reportId: communityPosts.reportId, id: communityReposts.id, postId: communityReposts.postId }).from(communityReposts)
+			.innerJoin(communityPosts, eq(communityPosts.id, communityReposts.postId))
+			.where(and(inArray(communityPosts.reportId, uniqueRows.map(({ post }) => post.reportId)), sql`${communityReposts.governmentUpdate} is not null`))
+			.orderBy(desc(communityReposts.createdAt), desc(communityReposts.id)),
+		db.select({ id: reports.id, status: reports.status }).from(reports).where(inArray(reports.id, uniqueRows.map(({ post }) => post.reportId))),
 		db.select().from(communityConfirmations).where(inArray(communityConfirmations.postId, ids)),
 		db.select({ comment: communityComments, author: { id: users.id, name: users.name, avatarUrl: users.avatarUrl },
 			likes: sql<number>`(select count(*)::int from ${communityCommentLikes} where ${communityCommentLikes.commentId} = ${communityComments.id})`,
@@ -49,10 +54,11 @@ async function hydratePosts(rows: CommunityRow[], userId?: string) {
 		}).from(communityComments).innerJoin(users, eq(users.id, communityComments.userId)).where(inArray(communityComments.postId, ids)),
 		db.select({ postId: communityReposts.postId, userId: communityReposts.userId }).from(communityReposts).where(inArray(communityReposts.postId, ids))
 	]);
+	const awaitedStatuses = new Map(statuses.map((report) => [report.id, report.status]));
 	return uniqueRows.map(({ post, author, grouping }): CommunityPost => ({
 		grouping, id: post.id, title: post.title, body: post.body, locationName: post.locationName,
 		latitude: Number(post.latitude), longitude: Number(post.longitude), media: post.media, coverId: post.coverId,
-		analysis: post.analysis, reportId: post.reportId, createdAt: post.createdAt.toISOString(), author,
+		analysis: post.analysis, reportId: post.reportId, reportStatus: (awaitedStatuses.get(post.reportId) || 'REPORTED'), governmentUpdateLink: (() => { const update = officialUpdates.find((update) => update.reportId === post.reportId); return update ? `/community/post/${update.postId}?repost=${update.id}#repost-${update.id}` : null; })(), createdAt: post.createdAt.toISOString(), author,
 		confirmations: confirmations.filter((item) => item.postId === post.id).length,
 		userConfirmed: confirmations.some((item) => item.postId === post.id && item.userId === userId),
 		reposts: reposts.filter((item) => item.postId === post.id).length,
@@ -69,8 +75,11 @@ export async function loadCommunityPost(id: string, userId?: string) {
 		.innerJoin(users, eq(users.id, communityPosts.userId)).leftJoin(reportObservations, eq(reportObservations.sourceId, communityPosts.draftId)).where(eq(communityPosts.id, id));
 	const [post] = await hydratePosts(rows, userId);
 	if (!post) error(404, 'Post not found.');
-	const reposts = await db.select({ repost: communityReposts, author: authorFields }).from(communityReposts).innerJoin(users, eq(users.id, communityReposts.userId)).where(eq(communityReposts.postId, id)).orderBy(desc(communityReposts.createdAt), desc(communityReposts.id));
-	return { post, reposts: reposts.map(({ repost, author }): CommunityRepost => ({ ...repost, createdAt: repost.createdAt.toISOString(), author, post })) };
+	const siblings = await db.select({ id: communityPosts.id }).from(communityPosts).where(eq(communityPosts.reportId, post.reportId));
+	const reposts = await db.select({ repost: communityReposts, author: authorFields }).from(communityReposts).innerJoin(users, eq(users.id, communityReposts.userId)).where(sql`(${communityReposts.postId} = ${id} or (${inArray(communityReposts.postId, siblings.map((sibling) => sibling.id))} and ${communityReposts.governmentUpdate} is not null))`).orderBy(desc(communityReposts.createdAt), desc(communityReposts.id));
+	const originalRows = await db.select({ post: communityPosts, grouping: reportObservations.match, author: authorFields }).from(communityPosts).innerJoin(users, eq(users.id, communityPosts.userId)).leftJoin(reportObservations, eq(reportObservations.sourceId, communityPosts.draftId)).where(inArray(communityPosts.id, siblings.map((sibling) => sibling.id)));
+	const originals = await hydratePosts(originalRows, userId);
+	return { post, reposts: reposts.map(({ repost, author }): CommunityRepost => ({ ...repost, createdAt: repost.createdAt.toISOString(), author, post: originals.find((original) => original.id === repost.postId)! })) };
 }
 
 export async function loadCommunityPosts(userId?: string, filters: CommunityFilters = { q: '', tab: '', media: '', author: '', currentPage: 1 }) {
@@ -82,7 +91,7 @@ export async function loadCommunityPosts(userId?: string, filters: CommunityFilt
 	const repostSearch = filters.q ? communitySearch(filters.q, sql`concat_ws(' ', ${communityReposts.body}, ${reposter.name})`) : null;
 	const mediaMatch = sql`exists (select 1 from jsonb_array_elements(${communityPosts.media}) as attachment where attachment->>'kind' = ${filters.media})`;
 	const where = and(...common, ...(search ? [search.where] : []), ...(filters.author ? [eq(communityPosts.userId, filters.author)] : []), ...(filters.media ? [mediaMatch] : []));
-	const repostWhere = and(...common, ...(repostSearch ? [repostSearch.where] : []), ...(filters.author ? [eq(communityReposts.userId, filters.author)] : []), ...(filters.media ? [sql`(${mediaMatch} or exists (select 1 from jsonb_array_elements(${communityReposts.media}) as attachment where attachment->>'kind' = ${filters.media}))`] : []));
+	const repostWhere = and(...common, ...(filters.originalsOnly ? [sql`false`] : []), ...(repostSearch ? [repostSearch.where] : []), ...(filters.author ? [eq(communityReposts.userId, filters.author)] : []), ...(filters.media ? [sql`(${mediaMatch} or exists (select 1 from jsonb_array_elements(${communityReposts.media}) as attachment where attachment->>'kind' = ${filters.media}) or exists (select 1 from jsonb_array_elements(coalesce(${communityReposts.governmentUpdate}->'attachments', '[]'::jsonb)) as attachment where attachment->>'kind' = ${filters.media}))`] : []));
 	const limit = filters.currentPage * 20;
 	const sort = filters.sort || (search ? 'relevance' : 'newest');
 	const confirmationCount = sql<number>`(select count(*) from ${communityConfirmations} where ${communityConfirmations.postId} = ${communityPosts.id})`;
