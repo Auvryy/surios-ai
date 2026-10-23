@@ -64,16 +64,17 @@ test('rejects unauthenticated requests, unsafe origins, and invalid files before
 	expect(invalid.status()).toBe(400);
 });
 
-test('composer saves selected cover, media, report, confirmations, comments, and searchable posts (controlled AI response)', async ({ page }) => {
+test('report composer saves selected cover, media, map pin, confirmations, comments, and searchable posts (controlled AI response)', async ({ page }) => {
 	await login(page.request);
-	await page.goto('/community'); await page.waitForLoadState('networkidle');
+	await page.goto('/report'); await page.waitForLoadState('networkidle');
 	const draft = await makeDraft(page);
 	await page.route('**/api/community/assess', (route) => route.fulfill({ status: 200, json: { draftId: draft.draftId, media: draft.media, analysis } }));
 	const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-	await page.getByRole('button', { name: 'What’s happening on your road?', exact: true }).click();
+	await page.getByLabel('Upload hazard images', { exact: true }).setInputFiles(draft.sources.slice(0, 1).map(({ name, mimeType, buffer }) => ({ name, mimeType, buffer })));
+	await expect(page.getByAltText('Selected cover', { exact: true })).toBeVisible();
 	await page.getByLabel('Headline', { exact: true }).fill(`E2E road update ${draft.draftId}`);
 	await page.getByLabel('What happened?', { exact: true }).fill('Road damage near the school gate.');
-	await page.getByLabel('Attach media', { exact: true }).setInputFiles(draft.sources.map(({ name, mimeType, buffer }) => ({ name, mimeType, buffer })));
+	await page.getByLabel('Attach media', { exact: true }).setInputFiles(draft.sources.slice(1).map(({ name, mimeType, buffer }) => ({ name, mimeType, buffer })));
 	await page.getByRole('button', { name: 'Use side.jpg as cover', exact: true }).click();
 	await expect(page.getByRole('button', { name: 'Use side.jpg as cover', exact: true })).toHaveAttribute('aria-pressed', 'true');
 	await page.getByRole('button', { name: 'Use road.webm as cover', exact: true }).click();
