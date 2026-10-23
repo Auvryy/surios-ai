@@ -26,7 +26,7 @@
 	let mobileOpen = $state(false);
 	let collapsed = $state(untrack(() => data.sidebarCollapsed));
 	$effect(() => { collapsed = data.sidebarCollapsed; });
-	const isAuthPage = $derived(['/login', '/register'].includes(page.url.pathname));
+	const isAuthPage = $derived(['/login', '/register', '/forgot-password', '/reset-password'].includes(page.url.pathname));
 	const isMapPage = $derived(page.url.pathname === '/map');
 	const isGovUser = $derived(['ENGINEER', 'OFFICER', 'ADMIN'].includes(data.user?.role || ''));
 	const groups = $derived([

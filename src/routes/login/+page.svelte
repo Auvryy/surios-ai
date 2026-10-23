@@ -93,6 +93,7 @@
 							<label for="password" class="text-xs font-medium text-foreground">
 								Password
 							</label>
+							<a href="/forgot-password" class="inline-flex min-h-11 items-center text-xs text-muted-foreground hover:text-primary">Forgot password?</a>
 						</div>
 						<Input
 							id="password"
