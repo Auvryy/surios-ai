@@ -1,7 +1,7 @@
 import type { MatchDecision } from '$lib/types/hazards';
 import type { PostMedia } from '$lib/types/community';
 import type { TriageAnalysis } from '$lib/types/triage';
-import { pgTable, text, integer, numeric, timestamp, jsonb, uuid, primaryKey, index } from 'drizzle-orm/pg-core';
+import { type AnyPgColumn, pgTable, text, integer, numeric, timestamp, jsonb, uuid, primaryKey, index } from 'drizzle-orm/pg-core';
 
 export interface UserSettings {
 	theme?: 'dark' | 'light' | 'system';
@@ -31,6 +31,8 @@ export const users = pgTable('users', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	email: text('email').notNull().unique(),
 	name: text('name').notNull(),
+	avatarUrl: text('avatar_url'),
+	coverUrl: text('cover_url'),
 	passwordHash: text('password_hash').notNull(),
 	role: text('role').notNull().default('CITIZEN'), // 'CITIZEN' | 'OFFICER' | 'ENGINEER' | 'ADMIN'
 	department: text('department'),
@@ -125,6 +127,7 @@ export const communityConfirmations = pgTable('community_confirmations', {
 
 export const communityComments = pgTable('community_comments', {
 	id: uuid('id').defaultRandom().primaryKey(),
+	parentId: uuid('parent_id').references((): AnyPgColumn => communityComments.id, { onDelete: 'cascade' }),
 	postId: uuid('post_id').notNull().references(() => communityPosts.id, { onDelete: 'cascade' }),
 	userId: uuid('user_id').notNull().references(() => users.id),
 	body: text('body').notNull(),

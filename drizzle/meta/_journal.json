@@ -29,6 +29,13 @@
       "when": 1792728732301,
       "tag": "0003_report-observations",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792734124499,
+      "tag": "0004_community-profiles",
+      "breakpoints": true
     }
   ]
 }
