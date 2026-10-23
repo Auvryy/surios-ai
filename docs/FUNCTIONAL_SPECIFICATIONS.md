@@ -22,7 +22,7 @@ SuriOS is structured around a **Two-Persona Swiss Minimalist Sidebar Shell** (`s
 | **`/verification`** | **Proof of Patch QA** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *AI-verified asphalt repair sign-off archive.* | **Active** — Before/After photo QA, ASTM D2950 compaction density & DPWH seal. |
 | **`/analytics`** | **Road Analytics** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *Longitudinal road degradation trend analytics.* | **Active** — 5-year PCI decay curves, monsoon correlation & preventative ROI calculator. |
 | **`/profile`, `/community?profile=[id]`** | **Community profile** | Own / Public | *Name, profile picture, cover photo and posts.* | **Active** — Owner editing, public author profiles, shared posts and replies. |
-| **`/settings`** | **System Settings** | Shared (All Logged-In) | *Workspace preferences and alert thresholds.* | **Active** — Theme toggle, VRU alert switches, and ASTM threshold calibration. |
+| **`/settings`** | **Account settings** | Signed-in users | *Email notifications and password security.* | **Active** — Saved email preferences, password change, and email reset links. |
 
 ---
 
@@ -155,3 +155,7 @@ See [ROAD_HAZARDS.md](./ROAD_HAZARDS.md) and [COMMUNITY_POSTING.md](./COMMUNITY_
 ### Community profiles
 
 See [COMMUNITY_PROFILES.md](./COMMUNITY_PROFILES.md) for public profiles, photo editing, author links, and persisted comment replies. Apply migration 0004 before starting this version.
+
+### Account settings and recovery
+
+See [ACCOUNT_SETTINGS.md](./ACCOUNT_SETTINGS.md) for the minimal settings layout, SMTP-backed notifications, password changes/recovery, and migration 0005.

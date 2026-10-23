@@ -5,26 +5,14 @@ import { type AnyPgColumn, pgTable, text, integer, numeric, timestamp, jsonb, uu
 
 export interface UserSettings {
 	theme?: 'dark' | 'light' | 'system';
-	vruAlerts: boolean;
-	dailyDigest: boolean;
-	dpwhForwarding: boolean;
-	potholeThreshold: number; // in mm, default 50
-	vruWeightMultiplier: number; // default 1.5
-	autoSnapCorridors: boolean;
-	defaultMapView: 'split' | 'full';
-	preferredCorridor: string;
+	emailComments: boolean;
+	emailConfirmations: boolean;
 }
 
 export const defaultUserSettings: UserSettings = {
 	theme: 'light',
-	vruAlerts: true,
-	dailyDigest: true,
-	dpwhForwarding: false,
-	potholeThreshold: 50,
-	vruWeightMultiplier: 1.5,
-	autoSnapCorridors: true,
-	defaultMapView: 'split',
-	preferredCorridor: 'ALL'
+	emailComments: false,
+	emailConfirmations: false
 };
 
 export const users = pgTable('users', {
@@ -147,3 +135,25 @@ export const reportObservations = pgTable('report_observations', {
 	match: jsonb('match').$type<MatchDecision>().notNull(),
 	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 }, (table) => [index('report_observations_report_idx').on(table.reportId)]);
+
+export const passwordResets = pgTable('password_resets', {
+	tokenHash: text('token_hash').primaryKey(),
+	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+	usedAt: timestamp('used_at', { withTimezone: true }),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => [index('password_resets_user_idx').on(table.userId)]);
+
+export const emailOutbox = pgTable('email_outbox', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	topic: text('topic').notNull(),
+	eventKey: text('event_key').notNull().unique(),
+	subject: text('subject').notNull(),
+	body: text('body').notNull(),
+	status: text('status').notNull().default('pending'),
+	attempts: integer('attempts').notNull().default(0),
+	nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }).defaultNow().notNull(),
+	sentAt: timestamp('sent_at', { withTimezone: true }),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => [index('email_outbox_due_idx').on(table.status, table.nextAttemptAt)]);

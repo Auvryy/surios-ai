@@ -1,3 +1,4 @@
+import { startEmailWorker } from '$lib/server/email';
 import { redirect } from '@sveltejs/kit';
 import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 import {
@@ -9,6 +10,7 @@ import {
 
 export const init: ServerInit = async () => {
 	await ensureInitialSeedUsers();
+	startEmailWorker();
 };
 
 export const handle: Handle = async ({ event, resolve }) => {

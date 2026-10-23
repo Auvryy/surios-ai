@@ -1,3 +1,4 @@
+import { queuePostEmail } from './email';
 import { z } from 'zod';
 import { and, desc, eq, inArray, sql, ilike, or } from 'drizzle-orm';
 import { error, type RequestEvent } from '@sveltejs/kit';
@@ -64,8 +65,13 @@ export async function updateConfirmation(postId: string, userId: string, confirm
 		await lockReports(tx);
 		const [post] = await tx.select().from(communityPosts).where(eq(communityPosts.id, postId)).for('update');
 		if (!post) error(404, 'Post not found.');
-		if (confirmed) await tx.insert(communityConfirmations).values({ postId, userId }).onConflictDoNothing();
-		else await tx.delete(communityConfirmations).where(and(eq(communityConfirmations.postId, postId), eq(communityConfirmations.userId, userId)));
+		if (confirmed) {
+			const [added] = await tx.insert(communityConfirmations).values({ postId, userId }).onConflictDoNothing().returning();
+			if (added) {
+				const [actor] = await tx.select({ name: users.name }).from(users).where(eq(users.id, userId));
+				await queuePostEmail(tx, { recipients: [post.userId], actorId: userId, actorName: actor.name, postId, postTitle: post.title, eventKey: `confirmation:${postId}:${userId}`, topic: 'confirmations' });
+			}
+		} else await tx.delete(communityConfirmations).where(and(eq(communityConfirmations.postId, postId), eq(communityConfirmations.userId, userId)));
 		const [result] = await tx.select({ count: sql<number>`count(*)::int` }).from(communityConfirmations).where(eq(communityConfirmations.postId, postId));
 		await refreshReportSupport(tx, post.reportId);
 		return { confirmations: result.count, userConfirmed: confirmed };
