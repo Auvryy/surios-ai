@@ -28,7 +28,7 @@ You must strictly preserve this technology stack. Do **not** suggest, introduce,
 | **Frontend Framework** | **Svelte 5** | **Runes syntax only (`$state`, `$derived`, `$effect`, `$props`, `$bindable`).** <br>❌ NEVER use legacy Svelte 3/4 stores (`writable`, `derived`, `subscribe`). <br>❌ NEVER use legacy `export let`. |
 | **Meta-Framework** | **SvelteKit** (TypeScript) | Form actions in `+page.server.ts`, API endpoints in `+server.ts`. Client-side SPA navigation via progressive enhancement (`use:enhance`). |
 | **Styling & UI** | **Tailwind CSS v4 + shadcn-svelte** | Bits UI primitives, Lucide icons (`@lucide/svelte`). Minimalist, accessible, high-trust civic tech styling. |
-| **AI Vision Engine** | **Google Gemini API** (`@google/genai`) | Model: `gemini-3.5-flash`. Structured output with strict Zod schema validation. |
+| **AI Vision Engine** | **Google Gemini API** (`@google/genai`) | Default assessment/matching model: `gemini-3.5-flash-lite` (MINIMAL thinking; no automatic larger-model fallback). Structured output with strict Zod schema validation. |
 | **Database** | **PostgreSQL** | Coordinate storage, triage payloads (`JSONB`), ticket lifecycle status. |
 | **Container & Infra** | **Docker & Docker Compose** | Ubuntu Azure Virtual Machine behind Nginx reverse proxy (subdomain routing, SSL termination on 80/443). |
 

@@ -23,7 +23,15 @@ export const VruLethalitySchema = z.enum([
 
 export const UrgencySchema = z.enum(['ROUTINE', 'PRIORITY', 'EMERGENCY']);
 
+export const SeverityEvidenceSchema = z.object({
+	visibleDefects: z.array(z.string().trim().min(1).max(160)).max(4),
+	criticalDangerVisible: z.boolean(),
+	confidence: z.enum(['LOW', 'MEDIUM', 'HIGH']),
+	limitations: z.string().max(240)
+});
+
 export const TriageAnalysisSchema = z.object({
+	severityEvidence: SeverityEvidenceSchema.optional(),
 	isValidInfrastructure: z
 		.boolean()
 		.describe('True if image depicts public road/civil infrastructure; false if non-road spam or indoor photo.'),
@@ -56,6 +64,13 @@ export const TriageAnalysisSchema = z.object({
 		.default([]),
 	urgency: z.preprocess((val) => typeof val === 'string' ? val.toUpperCase() : val, UrgencySchema).default('ROUTINE'),
 	summary: z.string().default('Analysis complete.')
+});
+
+// New AI results require an auditable explanation; older saved assessments remain readable.
+export const AIAssessmentSchema = TriageAnalysisSchema.extend({ severityEvidence: SeverityEvidenceSchema }).superRefine((analysis, context) => {
+	if (analysis.hazardSeverity >= 8 && (!analysis.severityEvidence.criticalDangerVisible || analysis.severityEvidence.confidence !== 'HIGH' || !analysis.severityEvidence.visibleDefects.length)) {
+		context.addIssue({ code: 'custom', path: ['hazardSeverity'], message: 'Critical severity requires clearly visible serious danger, high confidence, and specific supporting evidence.' });
+	}
 });
 
 export type DistressType = z.infer<typeof DistressTypeSchema>;
