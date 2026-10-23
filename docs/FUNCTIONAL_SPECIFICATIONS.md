@@ -16,7 +16,7 @@ SuriOS is structured around a **Two-Persona Swiss Minimalist Sidebar Shell** (`s
 | :--- | :--- | :--- | :--- | :--- |
 | **`/community`** | **Civic Feed** | Shared (Community & Gov) | *Single-column social road hazard stream.* | **Active** — Centered feed (`max-w-2xl`), vertical inset media dock, `+1 Confirmed` upvoting. |
 | **`/liked`** | **Liked History** | Community (`CITIZEN`) | *Track confirmed hazards repair progress.* | **Active** — Citizen watchlist tracking DPWH repair states (`REPORTED` $\rightarrow$ `DISPATCHED` $\rightarrow$ `RESOLVED`). |
-| **`/report`** | **Camera Report** | Community (`CITIZEN`) | *Camera triage for civil defects.* | **Active** — Mobile camera shutter, GPS lock, `/api/triage` integration. |
+| **`/report`** | **Report a hazard** | Community (`CITIZEN`) | *A compact prompt to post road evidence.* | **Active** — Shared composer, photos/video, AI review, precise location, persistent posts. |
 | **`/map`** | **Road hazards** | Shared (Community & Gov) | *Real-time geolocated road hazard map.* | **Active** — Stored hazard pins, compact collapsible controls, consistent severity, and linked evidence. |
 | **`/dashboard`** | **Triage & Resolve** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *Municipal maintenance work order board.* | **Active** — Unified filter pills, inline crew dispatch, status resolution, and CSV export. |
 | **`/verification`** | **Proof of Patch QA** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *AI-verified asphalt repair sign-off archive.* | **Active** — Before/After photo QA, ASTM D2950 compaction density & DPWH seal. |
@@ -90,7 +90,7 @@ The shared sidebar can collapse and remember its state. Mobile navigation remain
 
 ### 4.3. Field Report Capture (`/report`)
 
-The capture page supports camera/file selection, sample evidence, GPS location, AI diagnosis, non-road rejection, and a link to the canonical map pin. A non-rejection error preserves the form rather than claiming the image failed the infrastructure check. The community composer additionally supports multiple images/video, a selectable cover, precise map placement, AI review before publishing, and persistent feed posts.
+The report page opens with a compact posting prompt and Photos, Video, and Location actions. Each opens the same community composer, with multiple images/video, a selectable cover, precise map placement, AI review before publishing, and persistent feed posts linked to canonical map pins. Posting requires sign-in. Publishing opens the exact saved post in the feed. The old module introduction, fixed nearby-confirmation banner, pitch demos, and separate single-photo form have been removed. The legacy `/api/triage` field-capture endpoint remains available; it is no longer the report page’s submission flow.
 
 See [ROAD_HAZARDS.md](./ROAD_HAZARDS.md) and [COMMUNITY_POSTING.md](./COMMUNITY_POSTING.md) for the implemented contracts and verification instructions.
 
