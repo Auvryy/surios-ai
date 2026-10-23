@@ -1,150 +1,248 @@
-<div class="map-window" role="group" aria-label="Illustrative SuriOS hazard map interface">
-	<div class="window-bar">
-		<div class="window-brand">
-			<img src="/orie.png" alt="" width="25" height="25" />
-			<span>Hazard map</span>
+<script lang="ts">
+	import type { LayerGroup, Map as LeafletMap } from 'leaflet';
+	import type { PublicMapHazard, PublicMapSnapshot } from '$lib/types/public-map';
+
+	type Props = { snapshot: PublicMapSnapshot };
+	let { snapshot: initialSnapshot }: Props = $props();
+	let latestSnapshot = $state.raw<PublicMapSnapshot | null>(null);
+	let snapshot = $derived(latestSnapshot ?? initialSnapshot);
+	let container: HTMLDivElement;
+	let map = $state<LeafletMap | null>(null);
+	let leaflet: typeof import('leaflet') | undefined;
+	let markerLayer: LayerGroup | undefined;
+	let refreshing = $state(false);
+	let refreshError = $state(false);
+	let mapError = $state(false);
+	let hasFittedReports = false;
+
+	function statusLabel(status: string) {
+		if (status === 'RESOLVED') return 'Resolved';
+		if (['DISPATCHED', 'IN_REPAIR', 'AWAITING_REVIEW'].includes(status)) return 'In progress';
+		return 'Reported';
+	}
+
+	function statusColor(status: string) {
+		if (status === 'RESOLVED') return '#3d805c';
+		if (['DISPATCHED', 'IN_REPAIR', 'AWAITING_REVIEW'].includes(status)) return '#547ea8';
+		return '#df602f';
+	}
+
+	function popupFor(hazards: PublicMapHazard[]) {
+		const content = document.createElement('div');
+		content.className = 'landing-hazard-popup';
+		if (hazards.length > 1) {
+			const heading = document.createElement('strong');
+			heading.className = 'landing-popup-heading';
+			heading.textContent = `${hazards.length} nearby hazards`;
+			content.append(heading);
+		}
+
+		for (const hazard of hazards.slice(0, 6)) {
+			const link = document.createElement('a');
+			link.className = 'landing-popup-item';
+			link.href = `/map?report=${encodeURIComponent(hazard.id)}`;
+			const title = document.createElement('strong');
+			title.textContent = hazard.title;
+			const meta = document.createElement('span');
+			meta.textContent = `${statusLabel(hazard.status)} · Severity ${hazard.severity}/10`;
+			const location = document.createElement('span');
+			location.textContent = hazard.location;
+			link.append(title, meta, location);
+			content.append(link);
+		}
+
+		if (hazards.length > 6) {
+			const more = document.createElement('span');
+			more.className = 'landing-popup-more';
+			more.textContent = `+${hazards.length - 6} more · open the full map`;
+			content.append(more);
+		}
+		return content;
+	}
+
+	function drawMarkers(hazards: PublicMapHazard[]) {
+		if (!map || !leaflet || !markerLayer) return;
+		markerLayer.clearLayers();
+		const clusters = new Map<string, PublicMapHazard[]>();
+		for (const hazard of hazards) {
+			const point = map.project([hazard.latitude, hazard.longitude], map.getZoom());
+			const key = `${Math.round(point.x / 42)}:${Math.round(point.y / 42)}`;
+			clusters.set(key, [...(clusters.get(key) || []), hazard]);
+		}
+
+		for (const group of clusters.values()) {
+			const ordered = group.slice().sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+			const latest = ordered[0];
+			const count = group.length > 1 ? `<i>${group.length}</i>` : '';
+			const icon = leaflet.divIcon({
+				className: 'landing-map-icon',
+				html: `<span class="landing-map-pin" style="--pin-color:${statusColor(latest.status)}"><span>${latest.severity}</span>${count}</span>`,
+				iconSize: [34, 34],
+				iconAnchor: [17, 17]
+			});
+			leaflet.marker([latest.latitude, latest.longitude], {
+				icon,
+				keyboard: true,
+				title: group.length > 1 ? `${group.length} nearby hazards` : `${latest.title} · ${statusLabel(latest.status)}`
+			}).bindPopup(popupFor(ordered), { maxWidth: 250 }).addTo(markerLayer);
+		}
+
+		if (!hasFittedReports) {
+			hasFittedReports = true;
+			if (hazards.length) {
+				map.fitBounds(leaflet.latLngBounds(hazards.map((hazard) => [hazard.latitude, hazard.longitude])), {
+					padding: [36, 36],
+					maxZoom: 15
+				});
+			}
+		}
+	}
+
+	$effect(() => {
+		let cancelled = false;
+		let instance: LeafletMap | undefined;
+		let observer: ResizeObserver | undefined;
+		void import('leaflet').then((L) => {
+			if (cancelled) return;
+			leaflet = L;
+			instance = L.map(container, { zoomControl: false, scrollWheelZoom: false, preferCanvas: true })
+				.setView([14.2813, 121.4173], 14);
+			markerLayer = L.layerGroup().addTo(instance);
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				maxZoom: 19,
+				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+			}).addTo(instance);
+			L.control.zoom({ position: 'bottomright' }).addTo(instance);
+			map = instance;
+			const redraw = () => drawMarkers(snapshot.hazards);
+			instance.on('zoomend', redraw);
+			observer = new ResizeObserver(() => instance?.invalidateSize({ pan: false }));
+			observer.observe(container);
+			window.requestAnimationFrame(() => instance?.invalidateSize({ pan: false }));
+		}).catch(() => {
+			mapError = true;
+		});
+
+		return () => {
+			cancelled = true;
+			observer?.disconnect();
+			instance?.remove();
+			markerLayer = undefined;
+			leaflet = undefined;
+			map = null;
+		};
+	});
+
+	$effect(() => {
+		const currentHazards = snapshot.hazards;
+		if (map) drawMarkers(currentHazards);
+	});
+
+	$effect(() => {
+		const timer = window.setInterval(() => {
+			if (document.visibilityState === 'visible') void refresh();
+		}, 30_000);
+		const onFocus = () => void refresh();
+		window.addEventListener('focus', onFocus);
+		return () => {
+			window.clearInterval(timer);
+			window.removeEventListener('focus', onFocus);
+		};
+	});
+
+	async function refresh() {
+		if (refreshing) return;
+		refreshing = true;
+		try {
+			const response = await fetch('/api/map/hazards', { cache: 'no-store' });
+			if (!response.ok) throw new Error('Map refresh failed.');
+			const next = await response.json() as PublicMapSnapshot;
+			if (!Array.isArray(next.hazards) || typeof next.totalHazards !== 'number') throw new Error('Invalid map data.');
+			latestSnapshot = next;
+			refreshError = false;
+		} catch {
+			refreshError = true;
+		} finally {
+			refreshing = false;
+		}
+	}
+</script>
+
+<section class="map-window" aria-label="Live public hazard map">
+	<header class="map-header">
+		<div>
+			<p class="live-label"><span class="live-dot"></span> LIVE MAP</p>
+			<strong>{snapshot.totalHazards.toLocaleString()} {snapshot.totalHazards === 1 ? 'hazard' : 'hazards'} mapped</strong>
 		</div>
-		<span class="sample-label">Illustrative view</span>
-	</div>
+		<span class="refresh-label" role="status">{refreshError ? 'Showing last update' : refreshing ? 'Checking for updates…' : snapshot.asOf ? 'Refreshes every 30 sec' : 'Connecting…'}</span>
+	</header>
 	<div class="map-scene">
-		<svg class="street-map" viewBox="0 0 760 560" role="img" aria-labelledby="map-title map-description" preserveAspectRatio="xMidYMid slice">
-			<title id="map-title">Illustrative SuriOS map preview</title>
-			<desc id="map-description">A simplified neighborhood street map with one highlighted section and two report pins.</desc>
-			<rect width="760" height="560" fill="#f0ede6" />
-			<g fill="#e5dfd5">
-				<path d="M22 26h143v85H22zM181 23h99v68h-99zM312 26h137v89H312zM485 19h118v76H485zM632 29h103v105H632z" />
-				<path d="M32 149h108v90H32zM168 126h135v96H168zM335 141h92v81h-92zM464 124h132v100H464zM626 163h118v83H626z" />
-				<path d="M17 283h125v89H17zM169 265h93v106h-93zM286 262h135v82H286zM450 270h111v103H450zM593 278h151v94H593z" />
-				<path d="M37 408h112v115H37zM180 405h136v101H180zM347 396h99v126h-99zM478 413h129v92H478zM632 408h97v114h-97z" />
-			</g>
-			<g fill="none" stroke="#fffdfa" stroke-linecap="round" stroke-linejoin="round">
-				<path d="M-24 116C115 155 196 157 290 193s165 60 259 54 133-27 238-3" stroke-width="34" />
-				<path d="M-14 354c137-42 204-54 315-42s167 39 259 12 121-71 218-70" stroke-width="30" />
-				<path d="M118-30c-8 102 16 174 22 239s-14 148-1 379" stroke-width="24" />
-				<path d="M323-20c-13 86 5 138-2 212s-37 149-21 388" stroke-width="26" />
-				<path d="M523-16c15 91 1 166 23 243s44 144 35 354" stroke-width="26" />
-				<path d="M704-15c-20 114-17 197 16 293s30 169 18 295" stroke-width="22" />
-				<path d="M-30 475c153-63 279-45 380-12s206 31 437-49" stroke-width="24" />
-			</g>
-			<g fill="none" stroke="#d6d0c7" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
-				<path d="M-24 116C115 155 196 157 290 193s165 60 259 54 133-27 238-3" />
-				<path d="M-14 354c137-42 204-54 315-42s167 39 259 12 121-71 218-70" />
-				<path d="M118-30c-8 102 16 174 22 239s-14 148-1 379" />
-				<path d="M323-20c-13 86 5 138-2 212s-37 149-21 388" />
-				<path d="M523-16c15 91 1 166 23 243s44 144 35 354" />
-				<path d="M704-15c-20 114-17 197 16 293s30 169 18 295" />
-				<path d="M-30 475c153-63 279-45 380-12s206 31 437-49" />
-			</g>
-			<path class="highlight-shadow" d="M166 338c88-23 154-42 222-76s114-53 203-63" />
-			<path class="highlight-road" d="M166 338c88-23 154-42 222-76s114-53 203-63" />
-			<circle cx="166" cy="338" r="7" fill="#fff" stroke="#e66532" stroke-width="4" />
-			<circle cx="591" cy="199" r="7" fill="#fff" stroke="#e66532" stroke-width="4" />
-			<g fill="#cfc8be">
-				<circle cx="221" cy="172" r="2" /><circle cx="454" cy="268" r="2" /><circle cx="499" cy="367" r="2" />
-				<circle cx="297" cy="393" r="2" /><circle cx="618" cy="124" r="2" /><circle cx="101" cy="264" r="2" />
-			</g>
-		</svg>
-		<div class="map-search">
-			<span class="search-symbol" aria-hidden="true"></span>
-			<span>Find a report or place</span>
-		</div>
-		<div class="map-controls" aria-hidden="true"><span>+</span><span>−</span></div>
-		<div class="map-pin map-pin--one" aria-hidden="true"><span></span></div>
-		<div class="map-pin map-pin--two" aria-hidden="true"><span></span></div>
-		<div class="map-note glass-panel">
-			<div class="note-topline"><span class="note-dot"></span><span>ROAD SECTION</span><span class="note-tag">ON MAP</span></div>
-			<strong>Location stays with the report</strong>
-			<p>Roads · bridges · drainage · more</p>
-		</div>
+		<div bind:this={container} class="map-canvas" role="region" aria-label="OpenStreetMap with current community hazard reports"></div>
+		{#if mapError}
+			<div class="map-message" role="status">Map unavailable. Try the full map.</div>
+		{:else if snapshot.asOf && snapshot.totalHazards === 0}
+			<div class="map-message" role="status"><strong>No reports yet</strong><span>New hazards will appear here.</span></div>
+		{/if}
 	</div>
-	<div class="map-caption"><span>Illustrative map interface</span><span>Community reports, placed in context</span></div>
-</div>
+	<div class="map-footer">
+		<div class="status-legend" aria-label="Map status colors">
+			<span><i class="legend-dot reported"></i>Reported</span>
+			<span><i class="legend-dot in-progress"></i>In progress</span>
+			<span><i class="legend-dot resolved"></i>Resolved</span>
+		</div>
+		<a href="/map">Open hazard map <span aria-hidden="true">↗</span></a>
+	</div>
+	{#if snapshot.totalHazards > snapshot.hazards.length}
+		<p class="map-limit">Showing the latest {snapshot.hazards.length} hazards.</p>
+	{/if}
+</section>
 
 <style>
-	.map-window {
-		position: relative;
-		width: 100%;
-		overflow: hidden;
-		border: 1px solid rgba(255, 255, 255, 0.92);
-		border-radius: 30px;
-		background: rgba(255, 255, 255, 0.78);
-		box-shadow: 0 24px 70px rgba(69, 53, 40, 0.12), 0 3px 10px rgba(69, 53, 40, 0.04);
-		backdrop-filter: blur(24px);
-		-webkit-backdrop-filter: blur(24px);
-		transition: transform 500ms cubic-bezier(.2, .75, .25, 1), box-shadow 500ms ease;
+	.map-window { overflow: hidden; border: 1px solid rgba(255,255,255,.95); border-radius: 25px; background: #fff; box-shadow: 0 22px 60px rgba(62,49,37,.10), 0 2px 9px rgba(62,49,37,.04); }
+	.map-header { display: flex; min-height: 68px; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; }
+	.map-header > div { display: grid; gap: 5px; }
+	.map-header strong { color: #302b26; font-size: 12px; font-weight: 650; letter-spacing: -.015em; }
+	.live-label { display: flex; align-items: center; gap: 7px; margin: 0; color: #7d756c; font-size: 8px; font-weight: 750; letter-spacing: .14em; }
+	.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #3f9162; box-shadow: 0 0 0 3px rgba(63,145,98,.11); animation: pulse 2.2s ease-out infinite; }
+	.refresh-label { color: #8a837a; font-size: 9px; white-space: nowrap; }
+	.map-scene { position: relative; height: clamp(340px, 38vw, 500px); overflow: hidden; border-block: 1px solid rgba(55,45,36,.08); background: #eeece7; }
+	.map-canvas { position: absolute; inset: 0; outline: none; }
+	.map-footer { display: flex; min-height: 54px; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 17px; }
+	.status-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 11px; }
+	.status-legend > span { display: inline-flex; align-items: center; gap: 5px; color: #77716a; font-size: 9px; }
+	.legend-dot { width: 7px; height: 7px; border-radius: 50%; }
+	.legend-dot.reported { background: #df602f; }
+	.legend-dot.in-progress { background: #547ea8; }
+	.legend-dot.resolved { background: #3d805c; }
+	.map-footer > a { display: inline-flex; align-items: center; gap: 8px; color: #cb562b; font-size: 10px; font-weight: 650; text-decoration: none; white-space: nowrap; }
+	.map-footer > a:hover { color: #a53f1d; }
+	.map-limit { margin: -1px 17px 12px; color: #8a837a; font-size: 9px; }
+	.map-message { position: absolute; z-index: 500; top: 50%; left: 50%; display: grid; gap: 4px; width: max-content; max-width: calc(100% - 32px); padding: 13px 17px; border: 1px solid rgba(255,255,255,.9); border-radius: 14px; background: rgba(255,255,255,.9); color: #746c63; font-size: 10px; text-align: center; box-shadow: 0 6px 22px rgba(48,38,28,.12); transform: translate(-50%, -50%); pointer-events: none; }
+	.map-message strong { color: #302b26; font-size: 12px; }
+	:global(.landing-map-icon) { border: 0; background: transparent; }
+	:global(.landing-map-pin) { position: relative; display: grid; width: 32px; height: 32px; place-items: center; border: 2px solid #fff; border-radius: 50% 50% 50% 9px; background: var(--pin-color); color: #fff; font: 700 10px/1 system-ui,sans-serif; box-shadow: 0 2px 7px #0004; transform: rotate(-45deg); }
+	:global(.landing-map-pin > span) { transform: rotate(45deg); }
+	:global(.landing-map-pin > i) { position: absolute; top: -5px; right: -8px; display: grid; min-width: 16px; height: 16px; place-items: center; padding-inline: 3px; border: 1px solid white; border-radius: 999px; background: #25211d; color: white; font: 700 8px/1 system-ui,sans-serif; font-style: normal; transform: rotate(45deg); }
+	:global(.landing-hazard-popup) { display: grid; gap: 4px; min-width: 150px; }
+	:global(.landing-popup-heading) { padding-bottom: 4px; color: #29241f; font-size: 12px; }
+	:global(.landing-popup-item) { display: grid; gap: 3px; padding: 6px 0; color: #28231e; font-size: 11px; text-decoration: none; }
+	:global(.landing-popup-item + .landing-popup-item), :global(.landing-popup-heading + .landing-popup-item) { border-top: 1px solid #eee8e2; }
+	:global(.landing-popup-item:hover strong) { color: #c95025; }
+	:global(.landing-popup-item > span) { color: #77716a; font-size: 9px; }
+	:global(.landing-popup-more) { padding-top: 5px; border-top: 1px solid #eee8e2; color: #77716a; font-size: 9px; }
+	:global(.leaflet-container) { font-family: inherit; }
+	:global(.leaflet-control-zoom) { overflow: hidden; border: 1px solid rgba(49,42,35,.13) !important; border-radius: 9px !important; box-shadow: 0 2px 6px #0002 !important; }
+	:global(.leaflet-control-zoom a) { border-color: rgba(49,42,35,.1) !important; background: rgba(255,255,255,.93) !important; color: #443c34 !important; }
+	@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(63,145,98,.11); } 50% { box-shadow: 0 0 0 6px rgba(63,145,98,.04); } }
+	@media (max-width: 600px) {
+		.map-window { border-radius: 20px; }
+		.map-header { min-height: 62px; padding-inline: 13px; }
+		.refresh-label { font-size: 8px; }
+		.map-scene { height: 350px; }
+		.map-footer { align-items: flex-start; padding: 10px 13px; }
+		.status-legend { gap: 7px; }
+		.status-legend > span { gap: 4px; font-size: 8px; }
+		.map-footer > a { font-size: 9px; }
 	}
-	:global(.hero-map:hover) .map-window {
-		transform: translateY(-5px) rotate(-0.35deg);
-		box-shadow: 0 32px 84px rgba(69, 53, 40, 0.16), 0 4px 12px rgba(69, 53, 40, 0.05);
-	}
-	.window-bar, .map-caption {
-		position: relative;
-		z-index: 2;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		padding: 14px 18px;
-	}
-	.window-bar { border-bottom: 1px solid rgba(72, 57, 42, 0.07); }
-	.window-brand { display: inline-flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 650; letter-spacing: -0.02em; }
-	.window-brand img { object-fit: contain; }
-	.sample-label, .map-caption { color: #847d75; font-size: 10px; letter-spacing: 0.04em; }
-	.sample-label { border: 1px solid rgba(90, 75, 59, 0.11); border-radius: 999px; padding: 5px 9px; background: rgba(255, 255, 255, 0.72); }
-	.map-scene { position: relative; height: clamp(320px, 43vw, 460px); overflow: hidden; background: #f0ede6; }
-	.street-map { position: absolute; inset: 0; width: 100%; height: 100%; }
-	.highlight-shadow { fill: none; stroke: rgba(255, 255, 255, 0.95); stroke-linecap: round; stroke-width: 15; }
-	.highlight-road { fill: none; stroke: #ea7140; stroke-linecap: round; stroke-width: 7; }
-	.map-search, .map-controls, .map-note {
-		position: absolute;
-		border: 1px solid rgba(255, 255, 255, 0.96);
-		background: rgba(255, 255, 255, 0.76);
-		box-shadow: 0 12px 34px rgba(55, 45, 35, 0.11);
-		backdrop-filter: blur(18px);
-		-webkit-backdrop-filter: blur(18px);
-	}
-	.map-search {
-		top: 18px;
-		left: 18px;
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		min-height: 43px;
-		padding: 0 11px;
-		border-radius: 13px;
-		color: #77716a;
-		font-size: 11px;
-	}
-	.search-symbol { width: 12px; height: 12px; border: 1.5px solid #77716a; border-radius: 50%; position: relative; }
-	.search-symbol::after { content: ''; position: absolute; width: 5px; height: 1.5px; right: -4px; bottom: -2px; background: #77716a; transform: rotate(45deg); border-radius: 4px; }
-	.map-controls { top: 18px; right: 18px; display: grid; width: 34px; overflow: hidden; border-radius: 11px; color: #655e56; text-align: center; font-size: 18px; line-height: 30px; }
-	.map-controls span + span { border-top: 1px solid rgba(80, 66, 52, .1); }
-	.map-pin { position: absolute; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid white; border-radius: 50% 50% 50% 8px; background: #e66532; box-shadow: 0 5px 14px rgba(179, 76, 36, .24); transform: rotate(-45deg); }
-	.map-pin span { width: 11px; height: 11px; border: 2px solid #e66532; border-radius: 50%; background: white; }
-	.map-pin--one { left: 47%; top: 42%; animation: pin-float 3.4s ease-in-out infinite; }
-	.map-pin--two { left: 25%; top: 63%; width: 29px; height: 29px; animation: pin-float 3.8s ease-in-out 450ms infinite; }
-	.map-pin--two span { width: 9px; height: 9px; }
-	.map-note { right: 18px; bottom: 20px; width: min(275px, calc(100% - 36px)); padding: 14px 15px; border-radius: 17px; }
-	.note-topline { display: flex; align-items: center; gap: 7px; color: #8a8177; font-size: 9px; font-weight: 700; letter-spacing: .11em; }
-	.note-dot { width: 6px; height: 6px; border-radius: 50%; background: #e66532; }
-	.note-tag { margin-left: auto; border-radius: 999px; padding: 4px 7px; background: #f7e9e1; color: #bd542b; font-size: 8px; letter-spacing: .06em; }
-	.map-note strong { display: block; margin-top: 12px; font-size: 14px; letter-spacing: -.035em; }
-	.map-note p { margin: 4px 0 0; color: #827a71; font-size: 11px; }
-	.map-caption { padding: 12px 18px 14px; font-size: 9px; letter-spacing: .01em; }
-	@keyframes pin-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
-	@media (max-width: 560px) {
-		.map-window { border-radius: 23px; }
-		.window-bar, .map-caption { padding-left: 13px; padding-right: 13px; }
-		.map-scene { height: 330px; }
-		.map-search { top: 12px; left: 12px; min-height: 39px; padding: 0 9px; gap: 8px; }
-		.map-controls { top: 12px; right: 12px; }
-		.map-note { right: 12px; bottom: 13px; }
-		.map-pin--one { left: 49%; top: 39%; }
-		.map-pin--two { left: 27%; top: 61%; }
-		.map-caption { flex-wrap: wrap; row-gap: 3px; }
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.map-pin--one, .map-pin--two { animation: none; }
-		.map-window { transition: none; }
-	}
+	@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
 </style>
