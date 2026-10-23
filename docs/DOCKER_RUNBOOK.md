@@ -4,6 +4,42 @@ This runbook contains all explicit Docker commands for running SuriOS locally an
 
 ---
 
+## Azure shortcuts
+
+From the repository checkout on the Azure VM, use the executable helper:
+
+```bash
+./surios.sh build
+./surios.sh admin
+```
+
+`build` builds the production image, starts/waits for PostgreSQL, applies pending migrations, and starts the web container. Existing data and uploads remain. `admin` prompts for an email and a password of at least 12 characters, creates an active administrator, and keeps existing administrator passwords unchanged. Sign in normally and open **Account approvals** (`/admin`). There is no public admin signup or default production admin password. For automation, supply `ADMIN_EMAIL` and `ADMIN_PASSWORD` through the process environment; do not put real passwords into command history or commit them.
+
+```bash
+./surios.sh seed      # Build, migrate, import the presentation snapshot, start
+./surios.sh migrate   # Apply pending schema changes without seeding
+./surios.sh status
+./surios.sh logs
+./surios.sh restart
+./surios.sh stop      # Stop services while retaining data
+```
+
+`seed` requires an empty database or the same complete snapshot; it refuses different existing community content. It includes the bundled photos, road sections, comments, government updates and interactions. It does not automatically create an administrator; use `./surios.sh admin`.
+
+For an intentional complete demo reset:
+
+```bash
+./surios.sh fresh
+```
+
+This asks you to type `fresh`, then **permanently deletes the production database and uploaded media**, builds, migrates, seeds and starts the app. Existing admin accounts are removed too; recreate one with `./surios.sh admin`. Unattended resets require the explicit `./surios.sh fresh --yes` form. Normal `build`, `migrate`, `admin` and `seed` commands never delete the database volume.
+
+The helper always uses `docker-compose.prod.yml` and resolves paths relative to itself, even when called from another directory. It does not pull or push Git changes or change the VM's Nginx/TLS setup. Pull your chosen branch before building. Port 3000 remains the app's container port.
+
+Migrations use `scripts/migrate.mjs` and `_surios_migrations`, with transactional application, a database lock, and stored migration hashes. A deployment previously initialized by the manual SQL instructions or `db:push` is adopted only through a structurally matching checked-in schema snapshot; new migrations then run normally. An unknown/partial schema fails rather than deleting data. On a fresh database, do not combine the old manual SQL loop with the helper; choose one initialization flow.
+
+---
+
 ## 1. Local Development (Your Laptop / Machine)
 
 ### Start Local PostgreSQL (Port 5433)
@@ -52,7 +88,7 @@ git checkout main
 git pull --ff-only origin main
 ```
 
-To deploy this presentation branch directly before merging it, use `feat/presentation-seed` in those three Git commands instead of `main`.
+To deploy this account-approval branch directly before merging it, use `feat/account-approval` in those three Git commands instead of `main`.
 
 ### Step 2: Start PostgreSQL
 ```bash

@@ -56,9 +56,9 @@ for (const [index, role] of ['ENGINEER', 'OFFICER', 'ADMIN'].entries()) test(`${
 	await page.goto(`/dashboard?q=${marker}`);
 	await expect(page.getByRole('heading', { name: 'Government updates', exact: true })).toBeVisible();
 	const nav = page.getByRole('navigation', { name: 'Main navigation', exact: true });
-	await expect(nav.getByRole('link')).toHaveCount(7);
+	await expect(nav.getByRole('link')).toHaveCount(role === 'ADMIN' ? 8 : 7);
 	await expect(nav.getByRole('link', { name: 'Government updates', exact: true })).toHaveAttribute('aria-current', 'page');
-	for (const name of ['Feed', 'Road hazards', 'Report a hazard', 'Liked updates', 'Account', 'Settings']) await expect(nav.getByRole('link', { name, exact: true })).toBeVisible();
+	for (const name of ['Feed', 'Hazard map', 'Report a hazard', 'Liked posts', 'Account', 'Settings']) await expect(nav.getByRole('link', { name, exact: true })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Assign crew' })).toHaveCount(0);
 	await expect(page.getByText('Material estimate', { exact: true })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'Post government update', exact: true })).toHaveCount(2);

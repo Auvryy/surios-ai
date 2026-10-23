@@ -82,11 +82,11 @@ test('report composer saves selected cover, media, map pin, confirmations, comme
 	await page.getByRole('button', { name: 'Use side.jpg as cover', exact: true }).click();
 	await page.getByRole('button', { name: 'Assess with AI', exact: true }).click();
 	await expect(page.getByText('Severity 8/10', { exact: true })).toBeVisible();
-	await page.getByLabel('Road or landmark', { exact: true }).fill('E2E Santa Cruz school gate');
-	await expect(page.locator('.leaflet-container')).toBeVisible();
+	await page.getByLabel('Asset or landmark', { exact: true }).fill('E2E Santa Cruz school gate');
+	await expect(page.getByRole('dialog').locator('.leaflet-container')).toBeVisible();
 	const y = '123.4173';
 	await page.getByLabel('Latitude', { exact: true }).fill('11.2813'); await page.getByLabel('Longitude', { exact: true }).fill(y);
-	await page.getByRole('button', { name: 'Publish road update', exact: true }).click();
+	await page.getByRole('button', { name: 'Publish infrastructure update', exact: true }).click();
 	await expect(page.getByRole('dialog')).toBeHidden();
 	const article = page.locator('article').filter({ hasText: `E2E road update ${draft.draftId}` });
 	await expect(article).toBeVisible();
@@ -137,7 +137,7 @@ test('report composer saves selected cover, media, map pin, confirmations, comme
 test('assessment failure keeps attachments and allows retry; removing cover chooses another', async ({ page }) => {
 	await login(page.request); await page.goto('/community'); await page.waitForLoadState('networkidle');
 	await page.route('**/api/community/assess', (route) => route.fulfill({ status: 503, json: { message: 'AI temporarily unavailable' } }));
-	await page.getByRole('button', { name: 'What’s happening on your road?', exact: true }).click();
+	await page.getByRole('button', { name: 'What’s happening with local infrastructure?', exact: true }).click();
 	await page.getByLabel('Attach media', { exact: true }).setInputFiles(['static/samples/pothole-severe.jpg', 'static/samples/alligator-fatigue.jpg']);
 	await page.getByRole('button', { name: 'Assess with AI', exact: true }).click(); await expect(page.getByRole('alert')).toHaveText('AI temporarily unavailable');
 	await expect(page.getByRole('button', { name: 'Use pothole-severe.jpg as cover', exact: true })).toBeVisible();
@@ -145,7 +145,7 @@ test('assessment failure keeps attachments and allows retry; removing cover choo
 	await expect(page.getByRole('button', { name: 'Use alligator-fatigue.jpg as cover', exact: true })).toHaveAttribute('aria-pressed', 'true');
 	await page.setViewportSize({ width: 320, height: 740 });
 	const dialog = await page.getByRole('dialog').boundingBox(); expect(dialog!.x).toBeGreaterThanOrEqual(0); expect(dialog!.x + dialog!.width).toBeLessThanOrEqual(320);
-	const locationMap = page.locator('.leaflet-container'); await locationMap.scrollIntoViewIfNeeded();
+	const locationMap = page.getByRole('dialog').locator('.leaflet-container'); await locationMap.scrollIntoViewIfNeeded();
 	await locationMap.click({ position: { x: 100, y: 90 } });
 	await expect(page.getByLabel('Latitude', { exact: true })).not.toHaveValue('14.2813');
 	await page.context().grantPermissions(['geolocation'], { origin }); await page.context().setGeolocation({ latitude: 14.28, longitude: 121.42 });

@@ -52,3 +52,16 @@ docker compose exec -T surios-db psql -U postgres -d surios -v ON_ERROR_STOP=1 -
 Use the normal migration runner instead if the database is managed by Drizzle's journal. The migration adds the email outbox and password-reset tables and changes new-account preference defaults; existing users/posts/comments are preserved.
 
 Run `npm run check`, `npm run build`, and `npm run test:community`. Browser tests use a loopback-only SMTP receiver and isolated accounts. They verify preference persistence and ownership, responsive settings, actual SMTP messages and links, opt-outs, self-alert suppression, confirmation deduplication, retrying failed sends, current-password verification, session revocation, single-use/expired reset links, and failure feedback. Test configuration overrides SMTP values to prevent sending real email. Fixtures and sessions are removed afterward.
+
+
+## Registration and government approval
+
+`/register` offers Citizen and Government in development and production. Citizens become active immediately. Government applications require a full name, email/password, office/department, municipal/city or barangay level, work location/jurisdiction, and a government ID number. The location uses the existing `government_profile` fields, so it appears on the approved office profile. The ID number is stored privately in `badge_number`, visible only to its owner and administrators, and is excluded from public profile/feed payloads. No ID image upload is required.
+
+New government applications use role `OFFICER` with `account_status=PENDING`. Pending/rejected accounts land on `/account-status` and cannot use protected application routes or APIs, including government posting and profile mutations. Admins review the submitted location/office/ID at `/admin`, then approve or reject. Approval records the reviewer and timestamp. It is a human review workflow; SuriOS does not claim automated identity verification. Public signup cannot create admins or bypass status checks.
+
+Admins can deactivate/reactivate existing citizen and government accounts. Deactivation removes sessions and blocks sign-in; reactivation requires a new sign-in. Pending accounts can only be approved/rejected, not activated through the status toggle. Admin accounts cannot be changed through this screen. Existing accounts remain active when migration `0012_account-approval.sql` is applied.
+
+Create the initial administrator on Azure with `./surios.sh admin`; it prompts privately for credentials. There is no fixed production admin password. Direct script usage is `node --env-file-if-exists=.env scripts/create-admin.mjs` with `ADMIN_EMAIL` and `ADMIN_PASSWORD` provided in the process environment. It refuses to promote an existing non-admin email and never resets an existing admin's password.
+
+Verification: `DATABASE_URL=<isolated-test-db> npx playwright test -c playwright.approval.config.ts` exercises signup, required government details, pending access denial, admin review, approval, rejection, activation/deactivation and mobile layouts. `node --test tests/docker-helper.mjs` checks deployment ordering, reset confirmation, credential handling and failure propagation without touching Docker resources.

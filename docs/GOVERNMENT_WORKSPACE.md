@@ -113,8 +113,7 @@ Demo login: `municipality@surios.gov` / `Password123!`.
 Documents and quote details explicitly identify the demonstration and make no
 claim of real maintenance, official certification or actual public spending.
 
-Account switching has been removed in all modes. Production disables automatic demo
-account creation and public self-registration for government roles.
+Account switching has been removed in all modes. Production disables automatic demo account creation. Public government registration requires office details, work location/jurisdiction and an ID number, then administrator approval before access. Apply migration `0012_account-approval.sql` (or use `./surios.sh build`). Create the initial administrator with `./surios.sh admin`; see [account registration and approval](ACCOUNT_SETTINGS.md#registration-and-government-approval).
 
 ## Verification
 

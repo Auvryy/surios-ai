@@ -51,6 +51,8 @@ export const actions: Actions = {
 				});
 			}
 
+			if (user.accountStatus === 'INACTIVE') return fail(403, { email, error: 'This account is inactive. Contact your administrator.' });
+
 			const sessionToken = generateSessionToken();
 			const session = await createSession(sessionToken, user.id, {
 				ipAddress: event.getClientAddress?.() || undefined,
@@ -59,7 +61,7 @@ export const actions: Actions = {
 
 			setSessionTokenCookie(event, sessionToken, session.expiresAt);
 
-			destination = workspaceRedirect(requestedRedirect, user.role);
+			destination = ['PENDING', 'REJECTED'].includes(user.accountStatus) ? '/account-status' : user.role === 'ADMIN' ? '/admin' : workspaceRedirect(requestedRedirect, user.role);
 		} catch (err) {
 			console.error('[Login Error]', err);
 			return fail(500, {

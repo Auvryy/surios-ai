@@ -13,7 +13,7 @@ const users = [randomUUID(), randomUUID()], token = randomBytes(32).toString('he
 const reports = new Set<string>(), files: string[] = [];
 const origin = 'http://127.0.0.1:5177';
 const road: RoadWay = { id: '990001234567', name: 'Test Road', coordinates: [[32, 110], [32.002, 110], [32.004, 110.001]] };
-const analysis: TriageAnalysis = { isValidInfrastructure: true, distressType: 'alligator_cracking', hazardSeverity: 5, riskLevel: 'MODERATE', vruLethality: 'LOW', vruDetails: 'Caution', recommendedAction: 'Inspect', materialsChecklist: [], estimatedDimensions: { depthEstimate: 'Unmeasured', surfaceAreaEstimate: 'Unmeasured' }, urgency: 'PRIORITY', summary: 'Test road section.' };
+const analysis: TriageAnalysis = { isValidInfrastructure: true, infrastructureType: 'ROAD_PAVEMENT', distressType: 'alligator_cracking', hazardSeverity: 5, riskLevel: 'MODERATE', vruLethality: 'LOW', vruDetails: 'Caution', recommendedAction: 'Inspect', materialsChecklist: [], estimatedDimensions: { depthEstimate: 'Unmeasured', surfaceAreaEstimate: 'Unmeasured' }, urgency: 'PRIORITY', summary: 'Test road section.' };
 test.beforeAll(async () => { for (const id of users) await sql`insert into users(id,name,email,password_hash,role) values(${id},'Road test',${`${id}@example.test`},'unused','CITIZEN')`; await sql`insert into sessions(id,user_id,expires_at) values(${token},${users[0]},${new Date(Date.now()+3600000)})`; });
 test.afterAll(async () => { await sql`delete from community_posts where user_id in ${sql(users)}`; if (reports.size) await sql`delete from reports where id in ${sql([...reports])}`; await sql`delete from users where id in ${sql(users)}`; await Promise.all(files.map(file=>fs.rm(file,{force:true}))); await sql.end(); });
 test('server enforces 5 MiB images and 25 MiB common videos, including format signatures', async () => {
@@ -57,10 +57,13 @@ test('feed media controls immediately open restricted file pickers; pin road con
 	await input.setFiles({name:'road.jpg',mimeType:'image/jpeg',buffer:await fs.readFile('static/samples/alligator-fatigue.jpg')});await expect(page.getByAltText('Selected cover',{exact:true})).toBeVisible();
 	await page.getByRole('button',{name:'Close',exact:true}).click();
 	chooser=page.waitForEvent('filechooser');await page.getByRole('button',{name:'Video',exact:true}).click();input=await chooser;expect(await input.element().getAttribute('accept')).toBe('video/mp4,video/webm,video/quicktime');await input.setFiles([]);
-	await page.setViewportSize({width:375,height:812});await page.getByRole('button',{name:'What’s happening on your road?'}).click();await page.getByRole('button',{name:'Road section',exact:true}).click();
+	await page.setViewportSize({width:375,height:812});await page.getByRole('button',{name:'What’s happening with local infrastructure?'}).click();
+	await page.route('**/api/community/assess', route => route.fulfill({json:{draftId:randomUUID(),media:[{id:randomUUID(),url:'/samples/alligator-fatigue.jpg',name:'road.jpg',mimeType:'image/jpeg',kind:'photo'}],analysis:{...analysis,infrastructureType:'ROAD_PAVEMENT'}}}));
+	await page.getByRole('button',{name:'Assess with AI',exact:true}).click();
+	await page.getByRole('button',{name:'Road section',exact:true}).click();
 	const demo=JSON.parse(await fs.readFile('static/samples/demo-road.json','utf8')).road;
 	await page.route('**/api/roads?*',route=>route.fulfill({json:{roads:[{...demo,coordinates:[[14.2813,121.4173],[14.285,121.4173]]}]}}));
-	const pin=page.locator('.road-dropper'); await expect(pin).toHaveCSS('animation-name',/road-pin-hop$/); await page.emulateMedia({reducedMotion:'reduce'}); await expect(pin).toHaveCSS('animation-name','none'); await page.emulateMedia({reducedMotion:'no-preference'}); const dropper=page.getByRole('button',{name:'Drop pin at map center'}), picker=page.getByRole('region',{name:'Hazard location picker'});
+	const pin=page.locator('.road-dropper'); await expect(pin).toHaveCSS('animation-name',/road-pin-hop$/); await page.emulateMedia({reducedMotion:'reduce'}); await expect(pin).toHaveCSS('animation-name','none'); await page.emulateMedia({reducedMotion:'no-preference'}); const dropper=page.getByRole('button',{name:'Drop pin at map center'}), picker=page.getByRole('region',{name:'Infrastructure issue location picker'});
 	await picker.locator('.leaflet-tile-pane').waitFor({state:'attached'});
 	await dropper.evaluate(el=>el.dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer:new DataTransfer()})));
 	const bounds=(await picker.boundingBox())!;
@@ -73,7 +76,7 @@ test('feed media controls immediately open restricted file pickers; pin road con
 	await dropper.dispatchEvent('dragend');
 	await dropper.dragTo(picker);await expect(shadow).toHaveCount(0);await expect(page.getByLabel('Road start',{exact:true})).toBeVisible();
 	const end=page.getByLabel('Road end',{exact:true});await end.fill('400');await expect(page.getByText(/Pedro Guevarra Avenue · 400 m/)).toBeVisible();
-	await expect(page.locator('.road-end')).toHaveCount(2);await expect(pin).toHaveCSS('animation-name','none');await expect(page.getByRole('region',{name:'Hazard location picker'}).locator('img[src="/orie.png"]')).toHaveCount(0);expect(await page.locator('[role="dialog"]').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+	await expect(page.locator('.road-end')).toHaveCount(2);await expect(pin).toHaveCSS('animation-name','none');await expect(page.getByRole('region',{name:'Infrastructure issue location picker'}).locator('img[src="/orie.png"]')).toHaveCount(0);expect(await page.locator('[role="dialog"]').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
 	await page.getByRole('button',{name:'Point pin',exact:true}).click();await expect(page.getByLabel('Latitude',{exact:true})).toBeVisible();
 	const pointPin=picker.locator('.location-pin'), pointBounds=(await pointPin.boundingBox())!;
 	await page.mouse.move(pointBounds.x+pointBounds.width/2,pointBounds.y+pointBounds.height/2);await page.mouse.down();await page.mouse.move(pointBounds.x+45,pointBounds.y+45,{steps:5});await expect(shadow).toBeVisible();await page.mouse.up();await expect(shadow).toHaveCount(0);

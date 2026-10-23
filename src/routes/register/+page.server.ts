@@ -1,101 +1,51 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { dev } from '$app/env';
 import type { Actions, PageServerLoad } from './$types.js';
 import { z } from 'zod';
-import { workspaceRedirect } from '$lib/server/workspace';
 import { eq } from 'drizzle-orm';
-import { db } from '$lib/server/db/index.js';
-import { users } from '$lib/server/db/schema.js';
-import {
-	hashPassword,
-	generateSessionToken,
-	createSession,
-	setSessionTokenCookie
-} from '$lib/server/auth.js';
+import { db, users } from '$lib/server/db';
+import { workspaceRedirect } from '$lib/server/workspace';
+import { hashPassword, generateSessionToken, createSession, setSessionTokenCookie } from '$lib/server/auth';
 
-const registerSchema = z.object({
-	name: z.string().min(2, 'Full name must be at least 2 characters'),
-	email: z.string().email('Please enter a valid email address'),
-	password: z.string().min(8, 'Password must be at least 8 characters'),
-	role: z.enum(['CITIZEN', 'OFFICER', 'ENGINEER']).default('CITIZEN'),
-	department: z.string().optional()
+const schema = z.object({
+	name: z.string().min(2, 'Full name must be at least 2 characters').max(120),
+	email: z.string().email('Please enter a valid email address').max(254),
+	password: z.string().min(8, 'Password must be at least 8 characters').max(256),
+	role: z.enum(['CITIZEN', 'OFFICER'], { error: 'Choose Citizen or Government.' }),
+	department: z.string().max(160),
+	level: z.enum(['MUNICIPAL', 'BARANGAY']),
+	jurisdiction: z.string().max(120),
+	badgeNumber: z.string().max(80)
+}).superRefine((value, ctx) => {
+	if (value.role === 'OFFICER') for (const field of ['department', 'jurisdiction', 'badgeNumber'] as const) {
+		if (value[field].length < 2) ctx.addIssue({ code: 'custom', path: [field], message: `${field === 'department' ? 'Office / department' : field === 'jurisdiction' ? 'Work location' : 'Government ID number'} is required.` });
+	}
 });
-
-export const load: PageServerLoad = async ({ url }) => {
-	const redirectTo = url.searchParams.get('redirectTo') || '';
-	return { redirectTo };
-};
-
+export const load: PageServerLoad = ({ url }) => ({ redirectTo: url.searchParams.get('redirectTo') || '' });
 export const actions: Actions = {
 	default: async (event) => {
-		const formData = await event.request.formData();
-		const name = (formData.get('name') as string)?.trim();
-		const email = (formData.get('email') as string)?.trim()?.toLowerCase();
-		const password = formData.get('password') as string;
-		const role = (formData.get('role') as string) || 'CITIZEN';
-		const department = (formData.get('department') as string)?.trim() || undefined;
-		const requestedRedirect = (formData.get('redirectTo') as string)?.trim();
-
-		const validation = registerSchema.safeParse({ name, email, password, role, department });
-		if (!validation.success) {
-			const error = validation.error.issues[0]?.message || 'Invalid registration form';
-			return fail(400, { name, email, role, department, error });
-		}
-
-		const destination = workspaceRedirect(requestedRedirect, role);
-		if (role !== 'CITIZEN' && !dev) return fail(403, {
-			name, email, role: 'CITIZEN', department,
-			error: 'Government accounts must be provisioned by your municipality.'
-		});
-
+		const form = await event.request.formData();
+		const text = (key: string) => typeof form.get(key) === 'string' ? String(form.get(key)).trim() : '';
+		const fields = { name: text('name'), email: text('email').toLowerCase(), role: text('role') || 'CITIZEN', department: text('department'), level: text('level') || 'MUNICIPAL', jurisdiction: text('jurisdiction'), badgeNumber: text('badgeNumber') };
+		const parsed = schema.safeParse({ ...fields, password: form.get('password') });
+		if (!parsed.success) return fail(400, { ...fields, error: parsed.error.issues[0].message });
+		const value = parsed.data;
+		const government = value.role === 'OFFICER';
 		try {
-			const existing = await db
-				.select({ id: users.id })
-				.from(users)
-				.where(eq(users.email, email))
-				.limit(1);
-
-			if (existing.length > 0) {
-				return fail(400, {
-					name,
-					email,
-					role,
-					department,
-					error: 'An account with this email address already exists'
-				});
-			}
-
-			const passwordHash = hashPassword(password);
-
-			const [newUser] = await db
-				.insert(users)
-				.values({
-					name,
-					email,
-					passwordHash,
-					role,
-					department
-				})
-				.returning();
-
-			const sessionToken = generateSessionToken();
-			const session = await createSession(sessionToken, newUser.id, {
-				ipAddress: event.getClientAddress?.() || undefined,
-				userAgent: event.request.headers.get('user-agent') || undefined
-			});
-
-			setSessionTokenCookie(event, sessionToken, session.expiresAt);
-		} catch (err) {
-			console.error('[Registration Error]', err);
-			return fail(500, {
-				name,
-				email,
-				role,
-				department,
-				error: 'Could not create account due to server error. Please try again.'
-			});
+			if ((await db.select({ id: users.id }).from(users).where(eq(users.email, value.email))).length) return fail(400, { ...fields, error: 'An account with this email address already exists.' });
+			const [user] = await db.insert(users).values({
+				name: value.name, email: value.email, passwordHash: hashPassword(value.password), role: value.role,
+				accountStatus: government ? 'PENDING' : 'ACTIVE',
+				department: government ? value.department : null,
+				badgeNumber: government ? value.badgeNumber : null,
+				governmentProfile: government ? { level: value.level, jurisdiction: value.jurisdiction, bio: '' } : null
+			}).returning();
+			const token = generateSessionToken();
+			const session = await createSession(token, user.id, { ipAddress: event.getClientAddress(), userAgent: event.request.headers.get('user-agent') || undefined });
+			setSessionTokenCookie(event, token, session.expiresAt);
+		} catch (cause) {
+			console.error('[Registration Error]', cause);
+			return fail(500, { ...fields, error: 'Could not create account. Please try again.' });
 		}
-
-		throw redirect(303, destination);
+		redirect(303, government ? '/account-status' : workspaceRedirect(text('redirectTo'), value.role));
 	}
 };
