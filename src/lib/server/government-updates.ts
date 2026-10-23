@@ -21,7 +21,7 @@ export async function prepareGovernmentAttachments(entries: FormDataEntryValue[]
 	for (const file of entries) {
 		if (!(file instanceof File) || !file.size) error(400, 'Choose a photo or PDF document.');
 		bytes += file.size;
-		if (file.size > 4 * 1024 * 1024 || bytes > 12 * 1024 * 1024) error(413, 'Each attachment must be 4 MB or less; total must be 12 MB or less.');
+		if (file.size > (file.type === 'application/pdf' ? 4 : 5) * 1024 * 1024 || bytes > 12 * 1024 * 1024) error(413, 'Photos must be 5 MB or less and PDFs 4 MB or less; total must be 12 MB or less.');
 		if (file.type === 'application/pdf') {
 			const buffer = Buffer.from(await file.arrayBuffer());
 			if (buffer.toString('ascii', 0, 5) !== '%PDF-') error(400, 'The document does not match its PDF format.');

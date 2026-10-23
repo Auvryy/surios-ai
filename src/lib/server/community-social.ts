@@ -66,7 +66,7 @@ export async function saveRepost(request: Request, userId: string) {
 	const files = form.getAll('image').filter((entry) => !(entry instanceof File && entry.size === 0));
 	if (files.length > 1) error(400, 'A repost can include at most one image.');
 	if (files.some((entry) => !(entry instanceof File) || !['image/jpeg', 'image/png', 'image/webp'].includes(entry.type))) error(400, 'Use one JPEG, PNG, or WebP image. Videos are not allowed in reposts.');
-	if (files.some((entry) => (entry as File).size > 4 * 1024 * 1024)) error(413, 'The repost image must be 4 MB or less.');
+	if (files.some((entry) => (entry as File).size > 5 * 1024 * 1024)) error(413, 'The repost image must be 5 MB or less.');
 	const uploads = files.length ? await validateMedia(files) : [];
 	await fs.mkdir(MEDIA_DIR, { recursive: true });
 	try {
