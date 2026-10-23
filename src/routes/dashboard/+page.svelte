@@ -1,630 +1,115 @@
 <script lang="ts">
-	import type { PageProps } from './$types.js';
-	import MapPinIcon from '@lucide/svelte/icons/map-pin';
-	import CheckCircleIcon from '@lucide/svelte/icons/circle-check';
-	import WrenchIcon from '@lucide/svelte/icons/wrench';
-	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
+	import type { PageProps } from './$types';
+	import { enhance, type SubmitFunction } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { WORK_ORDER_STATUSES, workOrderStatusLabel, type WorkOrderStatus } from '$lib/types/work-orders';
 	import DownloadIcon from '@lucide/svelte/icons/download';
+	import PrinterIcon from '@lucide/svelte/icons/printer';
 	import SearchIcon from '@lucide/svelte/icons/search';
-	import XIcon from '@lucide/svelte/icons/x';
-	import TruckIcon from '@lucide/svelte/icons/truck';
-	import CheckCheckIcon from '@lucide/svelte/icons/check-check';
-
-	import { Card } from '$lib/components/ui/card/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
-
-	let { data }: PageProps = $props();
-
-	interface TriageTicket {
-		id: string;
-		distress: string;
-		astm: string;
-		depthEstimate: string;
-		location: string;
-		coords: string;
-		vru: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW';
-		severity: number;
-		status: 'REPORTED' | 'DISPATCHED' | 'RESOLVED';
-		confirmations: number;
-		time: string;
-		imageUrl: string;
-		assignedCrew: string | null;
-		asphaltEstimate: string;
-		reporterName: string;
-		notes: string;
-	}
-
-	const availableCrews = [
-		'DPWH Crew Alpha (Cold-Patch Squad)',
-		'DPWH Crew Bravo (Hot-Mix Asphalt Unit)',
-		'Laguna Provincial Edge & Curb Team',
-		'Santa Cruz MEO Rapid Response Unit'
-	];
-
-	let incidents = $state<TriageTicket[]>([
-		{
-			id: 'TKT-7821',
-			distress: 'Deep Pothole & Submerged Edge Breakdown',
-			astm: 'ASTM D6433 • 13H (Pothole - High)',
-			depthEstimate: '68mm vertical lip',
-			location: 'LSPU Main Entrance, Pedro Guevara Ave, Santa Cruz',
-			coords: '14.2813° N, 121.4173° E',
-			vru: 'CRITICAL',
-			severity: 9.2,
-			status: 'REPORTED',
-			confirmations: 43,
-			time: '12m ago',
-			imageUrl: '/samples/pothole-severe.jpg',
-			assignedCrew: null,
-			asphaltEstimate: '0.45t Polymer Cold-Mix',
-			reporterName: 'Mark Bautista (@rider_mark_laguna)',
-			notes: 'Located directly in primary two-wheeler and tricycle track. Submerged during monsoon rain.'
-		},
-		{
-			id: 'TKT-7820',
-			distress: 'Sunken Crosswalk Utility Trench',
-			astm: 'ASTM D6433 • 14H (Utility Cut Depression)',
-			depthEstimate: '52mm transverse trench',
-			location: 'Quezon Ave Student Corridor, Santa Cruz',
-			coords: '14.2792° N, 121.4161° E',
-			vru: 'CRITICAL',
-			severity: 8.9,
-			status: 'DISPATCHED',
-			confirmations: 27,
-			time: '34m ago',
-			imageUrl: '/uploads/pothole-pre-repair.jpg',
-			assignedCrew: 'DPWH Crew Alpha (Cold-Patch Squad)',
-			asphaltEstimate: '0.60t Hot-Mix Asphalt',
-			reporterName: 'Ria Santos (@ria_commutes)',
-			notes: 'Subgrade moisture settling beneath crosswalk skin. Requires gravel base re-compaction.'
-		},
-		{
-			id: 'TKT-7819',
-			distress: 'Alligator Cracking & Longitudinal Rutting',
-			astm: 'ASTM D6433 • 01M (Alligator - Med)',
-			depthEstimate: '38mm wheel rut',
-			location: 'National Highway, Pagsanjan Junction',
-			coords: '14.2765° N, 121.4312° E',
-			vru: 'HIGH',
-			severity: 7.6,
-			status: 'DISPATCHED',
-			confirmations: 31,
-			time: '45m ago',
-			imageUrl: '/samples/alligator-fatigue.jpg',
-			assignedCrew: 'DPWH Crew Bravo (Hot-Mix Asphalt Unit)',
-			asphaltEstimate: '1.20t Dense-Graded Asphalt',
-			reporterName: 'TODASCL Patrol (@toda_santa_cruz)',
-			notes: 'Interconnected fatigue fractures causing loose gravel slip hazard for braking tricycles.'
-		},
-		{
-			id: 'TKT-7814',
-			distress: 'Drainage Failure & Unpaved Shoulder Drop-off',
-			astm: 'ASTM D6433 • 09M (Edge Drop-off)',
-			depthEstimate: '48mm shoulder step',
-			location: 'Barangay Bubukal Provincial Corridor',
-			coords: '14.2690° N, 121.4021° E',
-			vru: 'MODERATE',
-			severity: 5.8,
-			status: 'REPORTED',
-			confirmations: 14,
-			time: '2h ago',
-			imageUrl: '/uploads/1792498308438-da49636d411c.jpeg',
-			assignedCrew: null,
-			asphaltEstimate: '0.80t Shoulder Aggregate + Tack Coat',
-			reporterName: 'Carla Dizon (@carla_cycling)',
-			notes: 'Shoulder erosion along concrete gutter edge forcing cyclists into heavy bus lane.'
-		},
-		{
-			id: 'TKT-7798',
-			distress: 'Transverse Thermal Crack (Patched & Sealed)',
-			astm: 'ASTM D6433 • 10L (Crack - Low)',
-			depthEstimate: 'Flush (<3mm)',
-			location: 'Pedro Guevara Ave (Poblacion), Santa Cruz',
-			coords: '14.2840° N, 121.4190° E',
-			vru: 'LOW',
-			severity: 2.1,
-			status: 'RESOLVED',
-			confirmations: 19,
-			time: '4h ago',
-			imageUrl: '/uploads/patch-post-repair.jpg',
-			assignedCrew: 'Santa Cruz MEO Rapid Response Unit',
-			asphaltEstimate: '0.15t Elastomeric Bitumen Seal',
-			reporterName: 'Engr. Mateo Cruz (@cruz_civil)',
-			notes: 'Verified closed via Proof-of-Patch Gemini audit (96% surface flushness).'
-		}
-	]);
-
-	type FilterTab = 'ALL' | 'CRITICAL' | 'REPORTED' | 'DISPATCHED' | 'RESOLVED';
-	let filter = $state<FilterTab>('ALL');
-	let searchQuery = $state('');
-	let dispatchingId = $state<string | null>(null);
-	let selectedCrew = $state<string>(availableCrews[0]);
-	let inspectingTicket = $state<TriageTicket | null>(null);
-	let actionFeedback = $state<string | null>(null);
-
-	const counts = $derived({
-		all: incidents.length,
-		critical: incidents.filter((i) => i.vru === 'CRITICAL' || i.vru === 'HIGH').length,
-		reported: incidents.filter((i) => i.status === 'REPORTED').length,
-		dispatched: incidents.filter((i) => i.status === 'DISPATCHED').length,
-		resolved: incidents.filter((i) => i.status === 'RESOLVED').length
-	});
-
-	const filteredIncidents = $derived(
-		incidents.filter((item) => {
-			if (filter === 'CRITICAL' && item.vru !== 'CRITICAL' && item.vru !== 'HIGH') return false;
-			if (filter === 'REPORTED' && item.status !== 'REPORTED') return false;
-			if (filter === 'DISPATCHED' && item.status !== 'DISPATCHED') return false;
-			if (filter === 'RESOLVED' && item.status !== 'RESOLVED') return false;
-
-			const q = searchQuery.trim().toLowerCase();
-			if (!q) return true;
-			return (
-				item.id.toLowerCase().includes(q) ||
-				item.distress.toLowerCase().includes(q) ||
-				item.location.toLowerCase().includes(q) ||
-				item.astm.toLowerCase().includes(q)
-			);
-		})
-	);
-
-	function triggerFeedback(msg: string) {
-		actionFeedback = msg;
-		setTimeout(() => {
-			if (actionFeedback === msg) actionFeedback = null;
-		}, 3500);
-	}
-
-	function confirmDispatch(ticketId: string) {
-		const target = incidents.find((i) => i.id === ticketId);
-		if (!target) return;
-		target.status = 'DISPATCHED';
-		target.assignedCrew = selectedCrew;
-		dispatchingId = null;
-		triggerFeedback(`Dispatched ${selectedCrew} to ${ticketId} (${target.location}).`);
-	}
-
-	function markResolved(ticketId: string) {
-		const target = incidents.find((i) => i.id === ticketId);
-		if (!target) return;
-		target.status = 'RESOLVED';
-		if (inspectingTicket?.id === ticketId) {
-			inspectingTicket = target;
-		}
-		triggerFeedback(`Marked ${ticketId} as Patched & Resolved.`);
-	}
-
-	function exportWorkOrdersCsv() {
-		const headers = [
-			'Ticket ID',
-			'Status',
-			'VRU Risk',
-			'Severity',
-			'Distress Type',
-			'ASTM Code',
-			'Depth',
-			'Location',
-			'Coordinates',
-			'Assigned Crew',
-			'Material Estimate'
-		];
-		const rows = filteredIncidents.map((i) => [
-			i.id,
-			i.status,
-			i.vru,
-			i.severity.toFixed(1),
-			`"${i.distress}"`,
-			`"${i.astm}"`,
-			`"${i.depthEstimate}"`,
-			`"${i.location}"`,
-			`"${i.coords}"`,
-			`"${i.assignedCrew || 'Unassigned'}"`,
-			`"${i.asphaltEstimate}"`
-		]);
-		const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = `surios-dpwh-work-orders-${new Date().toISOString().slice(0, 10)}.csv`;
-		a.click();
-		URL.revokeObjectURL(url);
-		triggerFeedback(`Exported ${filteredIncidents.length} work orders to CSV.`);
-	}
-
-	function getVruBadgeClass(risk: TriageTicket['vru']): string {
-		switch (risk) {
-			case 'CRITICAL':
-				return 'bg-destructive/15 text-destructive border-destructive/30 font-semibold';
-			case 'HIGH':
-				return 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-semibold';
-			case 'MODERATE':
-				return 'bg-secondary text-foreground border-border';
-			default:
-				return 'bg-muted text-muted-foreground border-border';
-		}
-	}
+	let { data, form }: PageProps = $props();
+	let busy = $state(false);
+	let estimateDetails = $state<HTMLDetailsElement>();
+	let estimateWasOpen = false;
+	function beforePrint() { if (estimateDetails) { estimateWasOpen = estimateDetails.open; estimateDetails.open = true; } }
+	function afterPrint() { if (estimateDetails) estimateDetails.open = estimateWasOpen; }
+	const ticket = $derived(data.tickets.find((item) => item.id === data.selectedId));
+	const query = $derived(new URLSearchParams({ q: data.filters.q, status: data.filters.status }).toString());
+	const submit: SubmitFunction = () => {
+		busy = true;
+		return async ({ update }) => { try { await update(); } finally { busy = false; } };
+	};
+	function statusLabel(status: string) { return workOrderStatusLabel[status as WorkOrderStatus] || status.replaceAll('_', ' '); }
+	function timestamp(value: string | Date) { return new Date(value).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }); }
+	function pesos(value: number) { return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value); }
 </script>
 
-<svelte:head>
-	<title>Triage & Resolve — Municipal Engineering — SuriOS</title>
-</svelte:head>
+<svelte:head><title>Work orders — SuriOS</title></svelte:head>
+<svelte:window onbeforeprint={beforePrint} onafterprint={afterPrint} />
 
-<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 font-sans">
-	<!-- Swiss Minimalist Header (Zero Redundant Identity Banner or Module C Badge) -->
-	<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border pb-5">
-		<div class="space-y-1">
-			<span class="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-				DPWH District 1 &amp; Santa Cruz MEO
-			</span>
-			<h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-				Triage &amp; Resolving Reports
-			</h1>
-			<p class="text-xs text-muted-foreground">
-				Assign engineering crews to verified road defects and resolve completed field patches.
-			</p>
-		</div>
-
-		<div class="flex items-center gap-2 shrink-0">
-			<Button
-				variant="outline"
-				size="sm"
-				class="text-xs h-8 border-border gap-1.5 shadow-none"
-				onclick={exportWorkOrdersCsv}
-			>
-				<DownloadIcon class="h-3.5 w-3.5" />
-				<span>Export CSV</span>
-			</Button>
-			<Button
-				href="/verification"
-				size="sm"
-				class="text-xs h-8 gap-1.5 shadow-none"
-			>
-				<CheckCheckIcon class="h-3.5 w-3.5" />
-				<span>Proof of Patch QA</span>
-			</Button>
-		</div>
-	</div>
-
-	{#if actionFeedback}
-		<div class="rounded-lg border border-border bg-secondary/50 px-3.5 py-2.5 text-xs font-medium text-foreground flex items-center justify-between">
-			<span class="flex items-center gap-2">
-				<CheckCircleIcon class="h-4 w-4 text-foreground shrink-0" />
-				<span>{actionFeedback}</span>
-			</span>
-			<button
-				type="button"
-				class="text-muted-foreground hover:text-foreground cursor-pointer"
-				onclick={() => (actionFeedback = null)}
-			>
-				<XIcon class="h-3.5 w-3.5" />
-			</button>
-		</div>
-	{/if}
-
-	<!-- Unified Filter Pills with Embedded Live Counts + Search -->
-	<div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-		<div class="flex flex-wrap items-center gap-1.5">
-			<Button
-				variant={filter === 'ALL' ? 'default' : 'outline'}
-				size="sm"
-				class="h-8 text-xs px-3 rounded-full shadow-none gap-1.5"
-				onclick={() => (filter = 'ALL')}
-			>
-				<span>All Reports</span>
-				<span class="font-mono text-[10px] opacity-80">({counts.all})</span>
-			</Button>
-			<Button
-				variant={filter === 'CRITICAL' ? 'default' : 'outline'}
-				size="sm"
-				class="h-8 text-xs px-3 rounded-full shadow-none gap-1.5"
-				onclick={() => (filter = 'CRITICAL')}
-			>
-				<span>Critical VRU</span>
-				<span class="font-mono text-[10px] opacity-80">({counts.critical})</span>
-			</Button>
-			<Button
-				variant={filter === 'REPORTED' ? 'default' : 'outline'}
-				size="sm"
-				class="h-8 text-xs px-3 rounded-full shadow-none gap-1.5"
-				onclick={() => (filter = 'REPORTED')}
-			>
-				<span>Pending Dispatch</span>
-				<span class="font-mono text-[10px] opacity-80">({counts.reported})</span>
-			</Button>
-			<Button
-				variant={filter === 'DISPATCHED' ? 'default' : 'outline'}
-				size="sm"
-				class="h-8 text-xs px-3 rounded-full shadow-none gap-1.5"
-				onclick={() => (filter = 'DISPATCHED')}
-			>
-				<span>In Repair</span>
-				<span class="font-mono text-[10px] opacity-80">({counts.dispatched})</span>
-			</Button>
-			<Button
-				variant={filter === 'RESOLVED' ? 'default' : 'outline'}
-				size="sm"
-				class="h-8 text-xs px-3 rounded-full shadow-none gap-1.5"
-				onclick={() => (filter = 'RESOLVED')}
-			>
-				<span>Resolved</span>
-				<span class="font-mono text-[10px] opacity-80">({counts.resolved})</span>
-			</Button>
-		</div>
-
-		<div class="relative w-full md:w-64">
-			<SearchIcon class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-			<Input
-				type="text"
-				placeholder="Search ticket, street, or ASTM..."
-				class="text-xs pl-8 h-8 bg-card border-border shadow-none"
-				bind:value={searchQuery}
-			/>
-		</div>
-	</div>
-
-	<!-- Triage Work Order Queue -->
-	<Card class="border border-border bg-card shadow-xs overflow-hidden">
-		{#if filteredIncidents.length === 0}
-			<div class="p-10 text-center space-y-2">
-				<p class="text-sm font-semibold text-foreground">No work orders match this filter.</p>
-				<p class="text-xs text-muted-foreground">Try resetting the status filter or clearing your search query.</p>
-			</div>
-		{:else}
-			<div class="divide-y divide-border text-xs">
-				{#each filteredIncidents as item (item.id)}
-					<div class="p-4 sm:p-5 space-y-3 hover:bg-secondary/15 transition-colors">
-						<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-							<!-- Left: Defect Thumbnail + Telemetry -->
-							<div class="flex items-start gap-3.5 min-w-0">
-								<button
-									type="button"
-									class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-border bg-muted shrink-0 cursor-pointer group"
-									onclick={() => (inspectingTicket = item)}
-									title="Inspect defect dossier"
-								>
-									<img
-										src={item.imageUrl}
-										alt={item.distress}
-										class="w-full h-full object-cover group-hover:scale-105 transition-transform"
-									/>
-								</button>
-
-								<div class="space-y-1 min-w-0">
-									<div class="flex flex-wrap items-center gap-2">
-										<span class="font-mono font-bold text-foreground">{item.id}</span>
-										<Badge
-											variant="outline"
-											class="text-[10px] font-mono px-2 py-0 rounded-full {getVruBadgeClass(item.vru)} shadow-none"
-										>
-											{item.severity.toFixed(1)} {item.vru} VRU
-										</Badge>
-										<Badge variant="outline" class="text-[10px] font-mono px-2 py-0 border-border">
-											{item.status}
-										</Badge>
-										<span class="text-muted-foreground font-mono text-[11px]">• {item.time}</span>
-									</div>
-
-									<p class="font-semibold text-foreground text-sm sm:text-base leading-snug">
-										{item.distress}
-									</p>
-
-									<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground text-[11px]">
-										<span class="font-mono text-foreground/85">{item.astm}</span>
-										<span>•</span>
-										<span class="font-mono">Depth: {item.depthEstimate}</span>
-										<span>•</span>
-										<span>+{item.confirmations} Citizen Confirmations</span>
-									</div>
-
-									<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground text-[11px] pt-0.5">
-										<span class="flex items-center gap-1 text-foreground/85 font-medium">
-											<MapPinIcon class="h-3 w-3 text-muted-foreground shrink-0" />
-											{item.location}
-										</span>
-										<a
-											href="/map?report={item.id}"
-											class="font-mono text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5"
-										>
-											<span>{item.coords}</span>
-											<ArrowUpRightIcon class="h-3 w-3" />
-										</a>
-									</div>
-
-									{#if item.assignedCrew}
-										<div class="pt-1 flex items-center gap-1.5 text-[11px] font-mono text-foreground">
-											<TruckIcon class="h-3.5 w-3.5 text-muted-foreground" />
-											<span>Assigned: <strong>{item.assignedCrew}</strong> ({item.asphaltEstimate})</span>
-										</div>
-									{/if}
-								</div>
+<div class="work-orders mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+	<header class="no-print mb-6 flex flex-wrap items-center justify-between gap-3">
+		<div><h1 class="text-xl font-semibold tracking-tight">Work orders</h1><p class="mt-1 text-sm text-muted-foreground">Assign, repair, and review road reports.</p></div>
+		<div class="flex items-center gap-2"><Button variant="ghost" size="sm" onclick={() => invalidateAll()}>Refresh</Button><Button href="/dashboard/export?{query}" download variant="outline" size="sm"><DownloadIcon class="size-4" />Export CSV</Button></div>
+	</header>
+	{#if form?.error}<p role="alert" class="no-print mb-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{form.error}</p>{/if}
+	{#if form?.success}<p role="status" class="no-print mb-4 rounded-lg border border-border p-3 text-sm">{form.success}</p>{/if}
+	<form action="/dashboard" method="GET" class="no-print mb-5 flex flex-wrap gap-2">
+		<div class="relative min-w-48 flex-1"><SearchIcon class="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" /><Input name="q" value={data.filters.q} aria-label="Search work orders" placeholder="Search reports, locations, or crews" class="h-10 pl-9" /></div>
+		<select name="status" value={data.filters.status} aria-label="Work order status" class="h-10 max-w-full rounded-lg border border-input bg-background px-3 text-sm"><option value="">All statuses</option>{#each WORK_ORDER_STATUSES as status}<option value={status}>{statusLabel(status)}</option>{/each}</select>
+		<Button type="submit" variant="outline" class="h-10">Filter</Button>
+	</form>
+	{#if data.tickets.length}
+		<div class="workspace-grid grid items-start gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+			<section aria-label="Work order queue" class="no-print overflow-hidden rounded-xl border border-border bg-card">
+				<div class="border-b border-border px-4 py-3 text-xs text-muted-foreground">{data.tickets.length} matching {data.tickets.length === 1 ? 'report' : 'reports'}{data.tickets.length === data.limit ? ' · latest 1,000' : ''}</div>
+				<div class="max-h-72 overflow-y-auto lg:max-h-[75vh]">
+					{#each data.tickets as item (item.id)}
+						<a href="/dashboard?{query}&report={item.id}#work-order" aria-current={ticket?.id === item.id ? 'true' : undefined} class="block border-b border-border px-4 py-4 last:border-b-0 hover:bg-secondary {ticket?.id === item.id ? 'bg-primary/5' : ''}">
+							<span class="flex items-start justify-between gap-3"><span class="line-clamp-2 text-sm font-medium">{item.title}</span><span class="shrink-0 text-xs font-medium {item.severity >= 8 ? 'text-destructive' : 'text-muted-foreground'}">{item.severity}/10</span></span>
+							<span class="mt-1.5 block truncate text-xs text-muted-foreground">{item.location}</span><span class="mt-2 block text-xs text-muted-foreground">{statusLabel(item.status)}</span>
+						</a>
+					{/each}
+				</div>
+			</section>
+			{#if ticket}
+				{#key ticket.id}
+				<section id="work-order" aria-label="Work order details" class="print-record min-w-0 scroll-mt-20 rounded-xl border border-border bg-card">
+					<header class="border-b border-border p-4 sm:p-5">
+						<div class="flex flex-wrap items-start justify-between gap-3"><div class="min-w-0 flex-1"><p class="break-all font-mono text-[10px] text-muted-foreground">{ticket.id}</p><h2 class="mt-1 text-lg font-semibold leading-snug">{ticket.title}</h2><p class="mt-1 text-sm text-muted-foreground">{ticket.location}</p></div><button onclick={() => window.print()} class="no-print flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-xs hover:bg-secondary"><PrinterIcon class="size-4" />Print record</button></div>
+						<div class="mt-4 flex flex-wrap items-center gap-2 text-xs"><span class="rounded-md bg-primary/10 px-2 py-1 font-medium text-primary">{statusLabel(ticket.status)}</span><span class="rounded-md bg-secondary px-2 py-1">Severity {ticket.severity}/10</span><span class="text-muted-foreground">Reported {timestamp(ticket.createdAt)}</span></div>
+						<div class="no-print mt-3 flex flex-wrap gap-4 text-xs font-medium text-primary"><a href="/map?report={ticket.id}">View on map</a>{#if ticket.posts[0]}<a href="/community?q={ticket.posts[0].id}">View citizen report</a>{/if}</div>
+					</header>
+					<div class="space-y-6 p-4 sm:p-5">
+						<section class="space-y-3" aria-label="Repair evidence">
+							<div class="grid gap-3 {ticket.afterImage ? 'sm:grid-cols-2' : ''}">
+								<figure><div class="aspect-[3/2] overflow-hidden rounded-lg border border-border bg-muted">{#if ticket.mediaKind === 'video'}<video src={ticket.imageUrl} controls muted playsinline class="size-full object-cover"></video>{:else}<img src={ticket.imageUrl} alt="Reported road damage" class="size-full object-cover" />{/if}</div><figcaption class="mt-2 text-xs text-muted-foreground">Before · reported damage</figcaption></figure>
+								{#if ticket.afterImage}<figure><a href={ticket.afterImage} target="_blank" rel="noreferrer"><img src={ticket.afterImage} alt="Submitted road repair" class="aspect-[3/2] w-full rounded-lg border border-border object-cover" /></a><figcaption class="mt-2 text-xs text-muted-foreground">After · {ticket.status === 'RESOLVED' ? 'reviewed repair' : 'submitted evidence'}</figcaption></figure>{/if}
 							</div>
-
-							<!-- Right: Status-Aware Engineering Actions (No Dead Buttons) -->
-							<div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
-								{#if item.status === 'REPORTED'}
-									<Button
-										variant="default"
-										size="sm"
-										class="h-8 text-xs gap-1.5 shadow-none"
-										onclick={() => {
-											dispatchingId = dispatchingId === item.id ? null : item.id;
-										}}
-									>
-										<WrenchIcon class="h-3.5 w-3.5" />
-										<span>Dispatch Crew</span>
-									</Button>
-								{:else if item.status === 'DISPATCHED'}
-									<Button
-										variant="outline"
-										size="sm"
-										class="h-8 text-xs gap-1.5 border-foreground text-foreground hover:bg-secondary shadow-none"
-										onclick={() => markResolved(item.id)}
-									>
-										<CheckCircleIcon class="h-3.5 w-3.5" />
-										<span>Resolve Report</span>
-									</Button>
-								{:else}
-									<Badge variant="secondary" class="h-8 px-3 text-xs font-mono border border-border gap-1.5">
-										<CheckCircleIcon class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-										<span>Patched &amp; Verified</span>
-									</Badge>
-								{/if}
-
-								<Button
-									variant="ghost"
-									size="sm"
-									class="h-8 text-xs gap-1 text-muted-foreground hover:text-foreground"
-									onclick={() => (inspectingTicket = item)}
-								>
-									<span>Inspect</span>
-									<ArrowUpRightIcon class="h-3 w-3" />
-								</Button>
-							</div>
-						</div>
-
-						<!-- Inline Crew Assignment Bar (When Dispatching) -->
-						{#if dispatchingId === item.id}
-							<div class="rounded-lg border border-border bg-secondary/30 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-								<div class="space-y-0.5">
-									<span class="text-xs font-semibold text-foreground">
-										Assign Field Engineering Unit for {item.id}
-									</span>
-									<p class="text-[11px] font-mono text-muted-foreground">
-										Required Material: {item.asphaltEstimate}
-									</p>
-								</div>
-
-								<div class="flex flex-wrap items-center gap-2">
-									<select
-										bind:value={selectedCrew}
-										class="h-8 rounded-md border border-border bg-background px-2.5 text-xs text-foreground font-medium"
-									>
-										{#each availableCrews as crew}
-											<option value={crew}>{crew}</option>
-										{/each}
-									</select>
-									<Button
-										size="sm"
-										class="h-8 text-xs shadow-none"
-										onclick={() => confirmDispatch(item.id)}
-									>
-										Confirm Dispatch
-									</Button>
-									<Button
-										variant="ghost"
-										size="sm"
-										class="h-8 text-xs"
-										onclick={() => (dispatchingId = null)}
-									>
-										Cancel
-									</Button>
-								</div>
-							</div>
+							<p class="text-sm leading-relaxed">{ticket.analysis.recommendedAction}</p>
+						</section>
+						<section aria-label="Assignment" class="border-t border-border pt-5">
+							<h3 class="mb-3 text-sm font-semibold">Assignment</h3>
+							{#if ['REPORTED', 'DISPATCHED', 'IN_REPAIR'].includes(ticket.status)}
+								<form method="POST" action="/dashboard?{query}&report={ticket.id}&/assign" use:enhance={submit} class="no-print flex flex-wrap items-end gap-2"><input type="hidden" name="reportId" value={ticket.id} /><label class="min-w-40 flex-1 space-y-1 text-xs"><span>Crew</span><Input name="crew" aria-label="Crew" value={ticket.order?.assignedCrew || ''} required minlength={2} maxlength={120} placeholder="Crew or maintenance team" /></label><Button type="submit" disabled={busy} variant="outline">{ticket.order?.assignedCrew ? 'Update crew' : 'Assign crew'}</Button></form>
+								<p class="print-only text-sm">{ticket.order?.assignedCrew || 'Unassigned'}</p>
+							{:else}<p class="text-sm">{ticket.order?.assignedCrew || 'Unassigned'}</p>{/if}
+							{#if ticket.status === 'DISPATCHED'}<form method="POST" action="/dashboard?{query}&report={ticket.id}&/startRepair" use:enhance={submit} class="no-print mt-3"><input type="hidden" name="reportId" value={ticket.id} /><Button type="submit" disabled={busy}>Start repair</Button></form>{/if}
+						</section>
+						{#if ticket.status === 'IN_REPAIR'}
+							<form method="POST" action="/dashboard?{query}&report={ticket.id}&/submitRepair" enctype="multipart/form-data" use:enhance={submit} class="no-print space-y-3 border-t border-border pt-5"><h3 class="text-sm font-semibold">Submit repair</h3><input type="hidden" name="reportId" value={ticket.id} /><label class="block space-y-1 text-xs"><span>After photo</span><Input type="file" name="afterImage" aria-label="After photo" accept="image/jpeg,image/png,image/webp" required class="h-auto py-2" /></label><p class="text-xs text-muted-foreground">JPEG, PNG or WebP · up to 10 MB</p><label class="block space-y-1 text-xs"><span>Repair notes</span><textarea name="notes" aria-label="Repair notes" required minlength={5} maxlength={2000} rows={3} class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" placeholder="Work completed and any remaining issues"></textarea></label><Button type="submit" disabled={busy}>Submit for review</Button></form>
 						{/if}
+						{#if ticket.status === 'AWAITING_REVIEW'}
+							<form method="POST" action="/dashboard?{query}&report={ticket.id}&/review" use:enhance={submit} class="no-print space-y-3 border-t border-border pt-5"><h3 class="text-sm font-semibold">Review repair</h3><input type="hidden" name="reportId" value={ticket.id} /><input type="hidden" name="expectedImage" value={ticket.afterImage || ''} /><label class="block space-y-1 text-xs"><span>Review notes</span><textarea name="notes" aria-label="Review notes" required minlength={5} maxlength={2000} rows={3} class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" placeholder="Record your assessment of the repair evidence"></textarea></label><div class="flex flex-wrap gap-2"><Button type="submit" name="decision" value="approve" disabled={busy || !ticket.afterImage}>Approve repair</Button><Button type="submit" name="decision" value="return" variant="outline" disabled={busy || !ticket.afterImage}>Return for repair</Button></div></form>
+						{/if}
+						<details bind:this={estimateDetails} class="border-t border-border pt-5">
+							<summary class="cursor-pointer text-sm font-semibold">Material estimate{#if ticket.order?.estimate}<span class="ml-2 text-xs font-normal text-muted-foreground">{ticket.order.estimate.bags} bags · {pesos(ticket.order.estimate.cost)}</span>{/if}</summary>
+							<p class="mt-3 text-xs leading-relaxed text-muted-foreground">Planning estimate from entered measurements and supplier values. Materials only; excludes labor and base repairs.</p>
+							{#if ticket.order?.estimate}<p class="mt-3 text-sm">{ticket.order.estimate.volume.toFixed(3)} m³ · {ticket.order.estimate.mass.toFixed(1)} kg including allowance</p>{/if}
+							{#if ticket.status !== 'RESOLVED'}<form method="POST" action="/dashboard?{query}&report={ticket.id}&/saveEstimate" use:enhance={submit} class="no-print mt-4 space-y-3"><input type="hidden" name="reportId" value={ticket.id} /><div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+								{#each [{ name: 'length', label: 'Length (m)', max: 1000 }, { name: 'width', label: 'Width (m)', max: 1000 }, { name: 'depth', label: 'Depth (mm)', max: 1000 }, { name: 'density', label: 'Density (kg/m³)', max: 10000 }, { name: 'bagWeight', label: 'Bag weight (kg)', max: 10000 }, { name: 'bagPrice', label: 'Price per bag (PHP)', max: 1000000 }, { name: 'wastePercent', label: 'Allowance (%)', max: 100 }] as field}<label class="space-y-1 text-xs"><span>{field.label}</span><Input type="number" name={field.name} aria-label={field.label} value={ticket.order?.estimate?.[field.name as keyof typeof ticket.order.estimate] ?? (field.name === 'wastePercent' ? 0 : '')} required step="any" min={field.name === 'wastePercent' ? 0 : 0.001} max={field.max} /></label>{/each}
+							</div><Button type="submit" variant="outline" disabled={busy}>Save estimate</Button></form>{/if}
+						</details>
+						<section aria-label="Activity" class="border-t border-border pt-5"><h3 class="mb-3 text-sm font-semibold">Activity</h3>{#if data.activity.length}<ol class="space-y-4">{#each data.activity as event (event.id)}<li><p class="whitespace-pre-wrap text-sm leading-relaxed">{event.description}</p><p class="mt-1 text-xs text-muted-foreground">{event.actor || 'Former team member'} · {timestamp(event.createdAt)}</p>{#if event.imagePath}<a href={event.imagePath} target="_blank" rel="noreferrer" class="mt-1 inline-block text-xs font-medium text-primary">View submitted evidence</a>{/if}</li>{/each}</ol>{:else}<p class="text-xs text-muted-foreground">No work recorded yet.</p>{/if}</section>
 					</div>
-				{/each}
-			</div>
-		{/if}
-	</Card>
+				</section>
+				{/key}
+			{/if}
+		</div>
+	{:else}<div class="rounded-xl border border-border bg-card px-5 py-16 text-center"><h2 class="text-sm font-medium">No matching work orders</h2><p class="mt-2 text-sm text-muted-foreground">{data.filters.q || data.filters.status ? 'Try another search or status.' : 'Saved road reports will appear here.'}</p>{#if data.filters.q || data.filters.status}<Button href="/dashboard" variant="outline" class="mt-4">Clear filters</Button>{/if}</div>{/if}
 </div>
 
-<!-- Engineering Inspection Dossier Modal -->
-{#if inspectingTicket}
-	<div
-		class="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4"
-		role="dialog"
-		aria-modal="true"
-	>
-		<div class="w-full max-w-xl rounded-xl border border-border bg-card text-foreground shadow-xl overflow-hidden">
-			<div class="p-4 sm:p-5 border-b border-border flex items-center justify-between">
-				<div class="flex items-center gap-2">
-					<span class="font-mono font-bold text-sm">{inspectingTicket.id}</span>
-					<Badge variant="outline" class="font-mono text-[10px] border-border">
-						{inspectingTicket.status}
-					</Badge>
-				</div>
-				<Button
-					variant="ghost"
-					size="icon"
-					class="h-8 w-8 rounded-full"
-					onclick={() => (inspectingTicket = null)}
-				>
-					<XIcon class="h-4 w-4" />
-				</Button>
-			</div>
-
-			<div class="p-4 sm:p-5 space-y-4 text-xs">
-				<div class="h-56 w-full rounded-lg overflow-hidden border border-border bg-muted">
-					<img
-						src={inspectingTicket.imageUrl}
-						alt={inspectingTicket.distress}
-						class="w-full h-full object-cover"
-					/>
-				</div>
-
-				<div class="space-y-1">
-					<h3 class="text-base font-bold text-foreground">{inspectingTicket.distress}</h3>
-					<p class="text-muted-foreground leading-relaxed">{inspectingTicket.notes}</p>
-				</div>
-
-				<div class="grid grid-cols-2 gap-2.5 p-3 rounded-lg border border-border bg-secondary/20 font-mono text-[11px]">
-					<div>
-						<span class="text-muted-foreground block">ASTM D6433 Code</span>
-						<span class="text-foreground font-semibold">{inspectingTicket.astm}</span>
-					</div>
-					<div>
-						<span class="text-muted-foreground block">Measured Depth</span>
-						<span class="text-foreground font-semibold">{inspectingTicket.depthEstimate}</span>
-					</div>
-					<div>
-						<span class="text-muted-foreground block">Material Spec</span>
-						<span class="text-foreground font-semibold">{inspectingTicket.asphaltEstimate}</span>
-					</div>
-					<div>
-						<span class="text-muted-foreground block">Assigned Unit</span>
-						<span class="text-foreground font-semibold">{inspectingTicket.assignedCrew || 'Pending Dispatch'}</span>
-					</div>
-				</div>
-
-				<Separator />
-
-				<div class="flex items-center justify-between gap-2">
-					<Button
-						href="/map?report={inspectingTicket.id}"
-						variant="outline"
-						size="sm"
-						class="h-8 text-xs gap-1.5 border-border shadow-none"
-					>
-						<MapPinIcon class="h-3.5 w-3.5" />
-						<span>View on road hazards</span>
-					</Button>
-
-					<div class="flex items-center gap-2">
-						{#if inspectingTicket.status !== 'RESOLVED'}
-							<Button
-								size="sm"
-								class="h-8 text-xs gap-1.5 shadow-none"
-								onclick={() => markResolved(inspectingTicket!.id)}
-							>
-								<CheckCircleIcon class="h-3.5 w-3.5" />
-								<span>Mark Resolved</span>
-							</Button>
-						{/if}
-						<Button
-							variant="ghost"
-							size="sm"
-							class="h-8 text-xs"
-							onclick={() => (inspectingTicket = null)}
-						>
-							Close
-						</Button>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-{/if}
+<style>
+	.print-only { display: none; }
+	@media print {
+		.no-print { display: none !important; }
+		.print-only { display: block; }
+		.workspace-grid { display: block; }
+		.work-orders { max-width: none; padding: 0; }
+		.print-record { border: 0; border-radius: 0; }
+		.print-record figure, .print-record li { break-inside: avoid; }
+		.print-record details { display: block; }
+		.print-record details > * { display: block; }
+	}
+</style>

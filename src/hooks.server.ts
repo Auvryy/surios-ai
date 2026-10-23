@@ -1,5 +1,7 @@
 import { startEmailWorker } from '$lib/server/email';
+import { dev } from '$app/env';
 import { redirect } from '@sveltejs/kit';
+import { isGovernmentUser, isRetiredPage, workspaceRedirect } from '$lib/server/workspace';
 import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 import {
 	validateSessionToken,
@@ -9,7 +11,7 @@ import {
 } from '$lib/server/auth.js';
 
 export const init: ServerInit = async () => {
-	await ensureInitialSeedUsers();
+	if (dev) await ensureInitialSeedUsers();
 	startEmailWorker();
 };
 
@@ -35,19 +37,15 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	const pathname = event.url.pathname;
 	const role = event.locals.user?.role;
-	const isGovUser = role === 'ENGINEER' || role === 'OFFICER' || role === 'ADMIN';
+	const isGovUser = isGovernmentUser(role);
 
-	// Redirect removed overscoped routes (/docs, /crews) to the user's primary workspace
-	if (pathname.startsWith('/docs') || pathname.startsWith('/crews')) {
+	// Consolidated government tools now live in the single work order workspace.
+	if (isRetiredPage(pathname)) {
 		throw redirect(303, isGovUser ? '/dashboard' : '/community');
 	}
 
-	// Route Guard: Government-only routes (/dashboard, /verification, /analytics)
-	if (
-		pathname.startsWith('/dashboard') ||
-		pathname.startsWith('/verification') ||
-		pathname.startsWith('/analytics')
-	) {
+	// Guard the workspace and its export endpoint, matching path boundaries.
+	if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
 		if (!event.locals.user) {
 			const redirectTo = encodeURIComponent(pathname + event.url.search);
 			throw redirect(303, `/login?redirectTo=${redirectTo}`);
@@ -59,11 +57,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	// Route Guard: Redirect already authenticated users away from /login and /register
 	if ((pathname === '/login' || pathname === '/register') && event.locals.user) {
-		const defaultHome = '/community';
-		const requested = event.url.searchParams.get('redirectTo');
-		const redirectTo =
-			requested && !(!isGovUser && pathname.startsWith('/dashboard')) ? requested : defaultHome;
-		throw redirect(303, redirectTo);
+		throw redirect(303, workspaceRedirect(event.url.searchParams.get('redirectTo'), role));
 	}
 
 	return resolve(event);
