@@ -1,4 +1,6 @@
-import { pgTable, text, integer, numeric, timestamp, jsonb, uuid } from 'drizzle-orm/pg-core';
+import type { PostMedia } from '$lib/types/community';
+import type { TriageAnalysis } from '$lib/types/triage';
+import { pgTable, text, integer, numeric, timestamp, jsonb, uuid, primaryKey, index } from 'drizzle-orm/pg-core';
 
 export interface UserSettings {
 	theme?: 'dark' | 'light' | 'system';
@@ -87,3 +89,43 @@ export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
 export type Report = typeof reports.$inferSelect;
 export type NewReport = typeof reports.$inferInsert;
+
+
+export const communityDrafts = pgTable('community_drafts', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	media: jsonb('media').$type<PostMedia[]>().notNull(),
+	analysis: jsonb('analysis').$type<TriageAnalysis>().notNull(),
+	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => [index('community_drafts_user_idx').on(table.userId)]);
+
+export const communityPosts = pgTable('community_posts', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	userId: uuid('user_id').notNull().references(() => users.id),
+	draftId: uuid('draft_id').notNull().unique(),
+	reportId: uuid('report_id').notNull().references(() => reports.id),
+	title: text('title').notNull(),
+	body: text('body').notNull(),
+	locationName: text('location_name').notNull(),
+	latitude: numeric('latitude', { precision: 10, scale: 8 }).notNull(),
+	longitude: numeric('longitude', { precision: 11, scale: 8 }).notNull(),
+	media: jsonb('media').$type<PostMedia[]>().notNull(),
+	coverId: text('cover_id').notNull(),
+	analysis: jsonb('analysis').$type<TriageAnalysis>().notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => [index('community_posts_created_idx').on(table.createdAt), index('community_posts_user_idx').on(table.userId)]);
+
+export const communityConfirmations = pgTable('community_confirmations', {
+	postId: uuid('post_id').notNull().references(() => communityPosts.id, { onDelete: 'cascade' }),
+	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => [primaryKey({ columns: [table.postId, table.userId] })]);
+
+export const communityComments = pgTable('community_comments', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	postId: uuid('post_id').notNull().references(() => communityPosts.id, { onDelete: 'cascade' }),
+	userId: uuid('user_id').notNull().references(() => users.id),
+	body: text('body').notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => [index('community_comments_post_idx').on(table.postId)]);
