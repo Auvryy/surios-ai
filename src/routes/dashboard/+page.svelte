@@ -426,7 +426,7 @@
 											{item.location}
 										</span>
 										<a
-											href="/?incident={item.id}"
+											href="/map?report={item.id}"
 											class="font-mono text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5"
 										>
 											<span>{item.coords}</span>
@@ -594,13 +594,13 @@
 
 				<div class="flex items-center justify-between gap-2">
 					<Button
-						href="/?incident={inspectingTicket.id}"
+						href="/map?report={inspectingTicket.id}"
 						variant="outline"
 						size="sm"
 						class="h-8 text-xs gap-1.5 border-border shadow-none"
 					>
 						<MapPinIcon class="h-3.5 w-3.5" />
-						<span>Open on GIS Map</span>
+						<span>View on road hazards</span>
 					</Button>
 
 					<div class="flex items-center gap-2">

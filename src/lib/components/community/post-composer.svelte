@@ -13,7 +13,7 @@
 	import LoaderIcon from '@lucide/svelte/icons/loader-circle';
 	import type { PostMedia } from '$lib/types/community';
 	import type { TriageAnalysis } from '$lib/types/triage';
-	let { open = $bindable(false), user, onpublished }: { open?: boolean; user: { name: string } | null; onpublished: (id: string) => void } = $props();
+	let { open = $bindable(false), user, onpublished }: { open?: boolean; user: { name: string } | null; onpublished: (id: string, grouped?: boolean) => void } = $props();
 	type Attachment = { id: string; file: File; url: string; kind: 'photo' | 'video' };
 	let attachments = $state<Attachment[]>([]);
 	let cover = $state('');
@@ -72,7 +72,7 @@
 			if (!response.ok) throw new Error(result.message || result.error || 'Unable to publish. Your draft is saved here.');
 			await invalidateAll();
 			attachments.forEach((item) => URL.revokeObjectURL(item.url)); attachments = []; assessment = null; cover = ''; title = ''; body = ''; locationName = '';
-			open = false; onpublished(result.id);
+			open = false; onpublished(result.id, result.grouped);
 		} catch (cause) { error = cause instanceof Error ? cause.message : 'Unable to publish. Please try again.'; }
 		finally { busy = null; }
 	}

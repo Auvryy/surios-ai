@@ -10,7 +10,7 @@ The community feed reads PostgreSQL records. Posts, comments, and confirmations 
 4. Select **Assess with AI**. The server checks authentication, origin, upload limits, MIME signatures, and account assessment limits before sending all attachments to Gemini. Non-road evidence is rejected. Assessment errors preserve the local form for retry.
 5. Review the distress classification, severity, rider risk, and suggested repair. The author can choose to use the AI summary in the description.
 6. Name the road or landmark and select its exact position using the map, draggable pin, current location, or numeric coordinates. The initial map is centered on Santa Cruz; the author must confirm the actual site.
-7. Publish. One transaction creates the community post and its linked road report. Retrying a publish request for the same assessed draft returns the original post instead of duplicating the report.
+7. Publish. One transaction saves the community post and links it to a new or matching nearby road report. See [Road hazards](./ROAD_HAZARDS.md) for the grouping rules. Retrying a publish request for the same assessed draft returns the original post instead of duplicating the report.
 
 Changing attachments invalidates the assessment; changing the cover among the already assessed attachments does not. Assessment drafts expire after 24 hours. Expired, unpublished draft uploads are cleaned on subsequent assessment requests. Published evidence is retained. Unsubmitted browser attachments are released when removed, published, or the component is destroyed.
 
@@ -22,14 +22,14 @@ AI severity and dimensions are estimates for triage, not certified measurements.
 - The right-hand vertical dock retains other attachments and the map tile. Previous/next controls and the expanded gallery expose every attachment, including videos.
 - Search matches saved titles, descriptions, locations, contributor names, distress categories, and post/report IDs. Shared links search by post ID so older posts remain reachable beyond the first batch. Literal `%`, `_`, and backslash characters are escaped before SQL pattern matching.
 - Search, media, contributor, critical, and confirmed filters are stored in the URL and work after refreshing. **Load more** adds batches of 20 up to 1,000 posts per filter; search queries the whole matching dataset rather than only the visible cards.
-- Confirmations are unique per user/post. Setting a confirmation repeatedly is idempotent. The linked report count includes its original submission plus community confirmations.
+- Confirmations are unique per user/post. Setting a confirmation repeatedly is idempotent. The linked report deduplicates authors and confirmations across grouped posts; repeatedly confirming the same hazard does not inflate its priority.
 - Comments are authenticated, validated, saved, and rendered as text.
 - `/liked` redirects to the signed-in user's saved confirmations.
 - Guests can browse and search. Posting and interactions require sign-in.
 
 ## Database and deployment
 
-Apply the additive migration before starting the updated application:
+Apply the additive migrations before starting the updated application (0003 follows 0002; see [Road hazards](./ROAD_HAZARDS.md#upgrade)):
 
 ```bash
 docker compose exec -T surios-db psql -U postgres -d surios -v ON_ERROR_STOP=1 -1 < drizzle/0002_community-posting.sql

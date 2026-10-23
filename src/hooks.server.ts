@@ -55,16 +55,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	// Route Guard: Community-only routes (/community, /liked, /report) redirect Gov users to /dashboard
-	if (pathname.startsWith('/community') || pathname.startsWith('/liked')) {
-		if (isGovUser) {
-			throw redirect(303, '/dashboard');
-		}
-	}
-
 	// Route Guard: Redirect already authenticated users away from /login and /register
 	if ((pathname === '/login' || pathname === '/register') && event.locals.user) {
-		const defaultHome = isGovUser ? '/dashboard' : '/community';
+		const defaultHome = '/community';
 		const requested = event.url.searchParams.get('redirectTo');
 		const redirectTo =
 			requested && !(!isGovUser && pathname.startsWith('/dashboard')) ? requested : defaultHome;

@@ -66,7 +66,7 @@ export async function snapToRoad(latitude: number, longitude: number): Promise<S
 
 	try {
 		const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&type=street&format=json&apiKey=${apiKey}`;
-		const res = await fetch(url, { headers: { 'User-Agent': 'SuriOS-Civil/1.0' } });
+		const res = await fetch(url, { headers: { 'User-Agent': 'SuriOS-Civil/1.0' }, signal: AbortSignal.timeout(10000) });
 		
 		if (!res.ok) {
 			throw new Error(`Geoapify Reverse Geocode error: ${res.status}`);
@@ -137,7 +137,7 @@ export async function getDispatchRoute(
 		const waypoints = `${origin.lat},${origin.lng}|${destination.lat},${destination.lng}`;
 		const url = `https://api.geoapify.com/v1/routing?waypoints=${waypoints}&mode=${mode}&details=instruction_details&apiKey=${apiKey}`;
 		
-		const res = await fetch(url, { headers: { 'User-Agent': 'SuriOS-Civil/1.0' } });
+		const res = await fetch(url, { headers: { 'User-Agent': 'SuriOS-Civil/1.0' }, signal: AbortSignal.timeout(10000) });
 		if (!res.ok) {
 			throw new Error(`Geoapify Routing error: HTTP ${res.status}`);
 		}
@@ -219,17 +219,7 @@ function createFallbackRoute(
 	origin: { lat: number; lng: number; name?: string },
 	destination: { lat: number; lng: number; name?: string }
 ): DispatchRoute {
-	// Generate smooth intermediate waypoints
-	const midLat = (origin.lat + destination.lat) / 2;
-	const midLng = (origin.lng + destination.lng) / 2;
-
-	const coordinates: [number, number][] = [
-		[origin.lat, origin.lng],
-		[origin.lat + (destination.lat - origin.lat) * 0.3, origin.lng + (destination.lng - origin.lng) * 0.1],
-		[midLat, midLng],
-		[origin.lat + (destination.lat - origin.lat) * 0.7, origin.lng + (destination.lng - origin.lng) * 0.9],
-		[destination.lat, destination.lng]
-	];
+	const coordinates: [number, number][] = [[origin.lat, origin.lng], [destination.lat, destination.lng]];
 
 	// Approximate Haversine calculation
 	const dLat = (destination.lat - origin.lat) * (Math.PI / 180);
@@ -242,21 +232,14 @@ function createFallbackRoute(
 			Math.sin(dLon / 2);
 	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 	const straightKm = 6371 * c;
-	const roadDistKm = Number((straightKm * 1.35).toFixed(1)); // 1.35 road winding factor
-
-	const durationMinutes = Math.max(2, Math.round(roadDistKm * 2.2));
-
 	return {
+		estimated: true,
 		coordinates,
-		distanceKm: roadDistKm,
-		distanceFormatted: `${roadDistKm} km`,
-		durationMinutes,
-		durationFormatted: `${durationMinutes} mins`,
-		steps: [
-			{ instruction: `Depart ${origin.name || 'Municipal Depot'} along main arterial avenue.`, distanceMeters: Math.round(roadDistKm * 400), durationSeconds: durationMinutes * 25 },
-			{ instruction: 'Merge onto Santa Cruz provincial corridor toward destination.', distanceMeters: Math.round(roadDistKm * 600), durationSeconds: durationMinutes * 35 },
-			{ instruction: `Arrive at hazard site (${destination.name || 'Report Pin'}).`, distanceMeters: 50, durationSeconds: 15 }
-		],
+		distanceKm: Number(straightKm.toFixed(2)),
+		distanceFormatted: `${straightKm.toFixed(2)} km direct`,
+		durationMinutes: 0,
+		durationFormatted: 'Travel time unavailable',
+		steps: [],
 		originName: origin.name || SANTA_CRUZ_DEPOT.name,
 		destinationName: destination.name || 'Road Defect Work Site'
 	};

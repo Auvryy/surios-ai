@@ -1,3 +1,4 @@
+import type { MatchDecision } from '$lib/types/hazards';
 import type { PostMedia } from '$lib/types/community';
 import type { TriageAnalysis } from '$lib/types/triage';
 import { pgTable, text, integer, numeric, timestamp, jsonb, uuid, primaryKey, index } from 'drizzle-orm/pg-core';
@@ -129,3 +130,17 @@ export const communityComments = pgTable('community_comments', {
 	body: text('body').notNull(),
 	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 }, (table) => [index('community_comments_post_idx').on(table.postId)]);
+
+
+export const reportObservations = pgTable('report_observations', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	reportId: uuid('report_id').notNull().references(() => reports.id, { onDelete: 'cascade' }),
+	sourceId: uuid('source_id').notNull().unique(),
+	userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+	observerKey: text('observer_key').notNull(),
+	analysis: jsonb('analysis').$type<TriageAnalysis>().notNull(),
+	media: jsonb('media').$type<PostMedia[]>().notNull(),
+	fingerprints: jsonb('fingerprints').$type<string[]>().notNull(),
+	match: jsonb('match').$type<MatchDecision>().notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => [index('report_observations_report_idx').on(table.reportId)]);

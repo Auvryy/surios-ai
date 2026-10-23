@@ -22,6 +22,13 @@
       "when": 1792722634145,
       "tag": "0002_community-posting",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792728732301,
+      "tag": "0003_report-observations",
+      "breakpoints": true
     }
   ]
 }

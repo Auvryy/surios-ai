@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { and, desc, eq, inArray, sql, ilike, or } from 'drizzle-orm';
 import { error, type RequestEvent } from '@sveltejs/kit';
-import { db, communityPosts, communityComments, communityConfirmations, users, reports } from './db';
+import { db, communityPosts, communityComments, communityConfirmations, users, reports, reportObservations } from './db';
+import { lockReports, refreshReportSupport } from './hazard-reporting';
 import type { CommunityPost } from '$lib/types/community';
 
 export function requireCommunityUser(event: RequestEvent) {
@@ -34,8 +35,8 @@ export async function loadCommunityPosts(userId?: string, filters: CommunityFilt
 	const where = and(...clauses);
 	const limit = filters.currentPage * 20;
 	const [rows, [count]] = await Promise.all([
-		db.select({ post: communityPosts, author: { id: users.id, name: users.name, role: users.role } }).from(communityPosts)
-			.innerJoin(users, eq(users.id, communityPosts.userId)).where(where).orderBy(desc(communityPosts.createdAt), desc(communityPosts.id)).limit(limit),
+		db.select({ post: communityPosts, grouping: reportObservations.match, author: { id: users.id, name: users.name, role: users.role } }).from(communityPosts)
+			.innerJoin(users, eq(users.id, communityPosts.userId)).leftJoin(reportObservations, eq(reportObservations.sourceId, communityPosts.draftId)).where(where).orderBy(desc(communityPosts.createdAt), desc(communityPosts.id)).limit(limit),
 		db.select({ total: sql<number>`count(*)::int` }).from(communityPosts).innerJoin(users, eq(users.id, communityPosts.userId)).where(where)
 	]);
 	const result = { posts: [] as CommunityPost[], total: count.total, hasMore: count.total > limit && filters.currentPage < 50, currentPage: filters.currentPage, filters };
@@ -46,7 +47,8 @@ export async function loadCommunityPosts(userId?: string, filters: CommunityFilt
 		db.select({ comment: communityComments, author: { id: users.id, name: users.name } }).from(communityComments)
 			.innerJoin(users, eq(users.id, communityComments.userId)).where(inArray(communityComments.postId, ids)).orderBy(communityComments.createdAt)
 	]);
-	result.posts = rows.map(({ post, author }) => ({
+	result.posts = rows.map(({ post, author, grouping }) => ({
+		grouping,
 		id: post.id, title: post.title, body: post.body, locationName: post.locationName,
 		latitude: Number(post.latitude), longitude: Number(post.longitude), media: post.media, coverId: post.coverId,
 		analysis: post.analysis, reportId: post.reportId, createdAt: post.createdAt.toISOString(), author,
@@ -59,13 +61,13 @@ export async function loadCommunityPosts(userId?: string, filters: CommunityFilt
 
 export async function updateConfirmation(postId: string, userId: string, confirmed: boolean) {
 	return db.transaction(async (tx) => {
+		await lockReports(tx);
 		const [post] = await tx.select().from(communityPosts).where(eq(communityPosts.id, postId)).for('update');
 		if (!post) error(404, 'Post not found.');
 		if (confirmed) await tx.insert(communityConfirmations).values({ postId, userId }).onConflictDoNothing();
 		else await tx.delete(communityConfirmations).where(and(eq(communityConfirmations.postId, postId), eq(communityConfirmations.userId, userId)));
 		const [result] = await tx.select({ count: sql<number>`count(*)::int` }).from(communityConfirmations).where(eq(communityConfirmations.postId, postId));
-		// A submitted report counts as one observation; community confirmations add to it.
-		await tx.update(reports).set({ communityConfirmations: result.count + 1, updatedAt: new Date() }).where(eq(reports.id, post.reportId));
+		await refreshReportSupport(tx, post.reportId);
 		return { confirmations: result.count, userConfirmed: confirmed };
 	});
 }

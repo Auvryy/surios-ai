@@ -57,9 +57,9 @@
 	{/if}
 
 	<div class="flex items-center gap-2 pt-2">
-		<Button href="/" variant="outline" size="sm" class="h-8 text-xs gap-1.5">
+		<Button href="/map" variant="outline" size="sm" class="h-8 text-xs gap-1.5">
 			<ArrowLeftIcon class="h-3.5 w-3.5" />
-			<span>Return to Map Feed</span>
+			<span>View road hazards</span>
 		</Button>
 	</div>
 </div>

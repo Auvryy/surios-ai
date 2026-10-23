@@ -13,7 +13,8 @@
 		"db:generate": "drizzle-kit generate",
 		"db:push": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio",
-		"test:community": "playwright test"
+		"test:community": "playwright test",
+		"db:seed:community": "node --env-file-if-exists=.env scripts/seed-community.mjs"
 	},
 	"devDependencies": {
 		"@internationalized/date": "^3.12.4",

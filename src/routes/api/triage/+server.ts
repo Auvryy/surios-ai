@@ -1,154 +1,33 @@
-import { json } from '@sveltejs/kit';
-import type { RequestHandler } from './$types.js';
-import { analyzeRoadDistress } from '$lib/server/gemini.js';
-import { snapToRoad } from '$lib/server/geoapify.js';
-import { db, reports } from '$lib/server/db/index.js';
+import { json, isHttpError } from '@sveltejs/kit';
+import { analyzeRoadDistress } from '$lib/server/gemini';
+import { snapToRoad } from '$lib/server/geoapify';
+import { normalizeSeverity } from '$lib/types/hazards';
+import { recordHazardEvidence } from '$lib/server/hazard-reporting';
+import { MEDIA_DIR, readUploadForm, validateMedia, removeMedia } from '$lib/server/community-media';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
-
-// Santa Cruz, Laguna coordinates as authentic default anchor
-const DEFAULT_LAT = 14.2813;
-const DEFAULT_LNG = 121.4173;
-
-export const POST: RequestHandler = async ({ request }) => {
+import type { RequestHandler } from './$types';
+export const POST: RequestHandler = async ({ request, locals, url }) => {
+	let saved: Awaited<ReturnType<typeof validateMedia>> = [];
 	try {
-		const formData = await request.formData();
-		const imageFile = formData.get('image');
-		const rawLat = formData.get('latitude');
-		const rawLng = formData.get('longitude');
-
-		if (!imageFile || !(imageFile instanceof File)) {
-			return json(
-				{ success: false, error: 'No image file was provided in the request.' },
-				{ status: 400 }
-			);
-		}
-
-		// Validate file size (max 10MB)
-		if (imageFile.size > 10 * 1024 * 1024) {
-			return json(
-				{ success: false, error: 'Image exceeds maximum allowed size of 10MB.' },
-				{ status: 400 }
-			);
-		}
-
-		// Validate MIME type
-		const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
-		if (!allowedMimes.includes(imageFile.type)) {
-			return json(
-				{
-					success: false,
-					error: 'Invalid image format. Please upload a JPEG, PNG, or WebP photo.'
-				},
-				{ status: 400 }
-			);
-		}
-
-		const latitude = rawLat ? parseFloat(rawLat.toString()) : DEFAULT_LAT;
-		const longitude = rawLng ? parseFloat(rawLng.toString()) : DEFAULT_LNG;
-
-		// Convert File to Buffer
-		const arrayBuffer = await imageFile.arrayBuffer();
-		const buffer = Buffer.from(arrayBuffer);
-
-		// Generate unique filename and save to static/uploads/
-		const ext = imageFile.type.split('/')[1] || 'jpg';
-		const filename = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
-		const uploadDir = path.resolve('static/uploads');
-		await fs.mkdir(uploadDir, { recursive: true });
-		const filePath = path.join(uploadDir, filename);
-		await fs.writeFile(filePath, buffer);
-
-		const relativeImagePath = `/uploads/${filename}`;
-
-		// Execute Gemini Multimodal Vision Triage
-		const analysis = await analyzeRoadDistress(buffer, imageFile.type);
-
-		// If AI determined this is not public road infrastructure, reject without creating a ticket
-		if (!analysis.isValidInfrastructure) {
-			return json(
-				{
-					success: false,
-					error: analysis.rejectionReason || 'Uploaded image does not depict valid road or civil infrastructure.',
-					analysis
-				},
-				{ status: 422 }
-			);
-		}
-
-		// Snap GPS coordinates to nearest road centerline via Geoapify / OSM
-		let finalLat = latitude;
-		let finalLng = longitude;
-		let streetAddress: string | undefined;
-
-		try {
-			const snapped = await snapToRoad(latitude, longitude);
-			if (snapped.snapped) {
-				finalLat = snapped.latitude;
-				finalLng = snapped.longitude;
-				streetAddress = snapped.formattedAddress;
-			}
-		} catch (snapErr) {
-			console.warn('[Triage API] Snap-to-road fallback:', snapErr);
-		}
-
-		// Insert report into PostgreSQL
-		let reportId: string | undefined;
-		let rawId: string | undefined;
-		try {
-			const [inserted] = await db
-				.insert(reports)
-				.values({
-					imagePath: relativeImagePath,
-					latitude: finalLat.toFixed(8),
-					longitude: finalLng.toFixed(8),
-					distressType: analysis.distressType,
-					hazardSeverity: analysis.hazardSeverity,
-					riskLevel: analysis.riskLevel,
-					vruLethality: analysis.vruLethality,
-					vruDetails: analysis.vruDetails,
-					recommendedAction: analysis.recommendedAction,
-					materialsChecklist: analysis.materialsChecklist,
-					status: 'REPORTED',
-					communityConfirmations: 1,
-					triagePayload: {
-						...analysis,
-						civicAddress: streetAddress
-					}
-				})
-				.returning({ id: reports.id });
-
-			if (inserted?.id) {
-				rawId = inserted.id;
-				reportId = `TKT-${inserted.id.slice(0, 6).toUpperCase()}`;
-			}
-		} catch (dbError: any) {
-			console.error('[Triage API] Database insertion warning:', dbError?.message || dbError);
-			// Even if DB fails in offline mode, return AI analysis
-		}
-
-		return json({
-			success: true,
-			data: {
-				reportId: reportId || 'TKT-PENDING',
-				rawId,
-				imageUrl: relativeImagePath,
-				latitude: finalLat,
-				longitude: finalLng,
-				streetAddress,
-				analysis,
-				createdAt: new Date().toISOString()
-			}
-		});
-	} catch (err: any) {
-		console.error('[Triage API Error]:', err);
-		return json(
-			{
-				success: false,
-				error: err?.message || 'An unexpected error occurred during civil distress triage.'
-			},
-			{ status: 500 }
-		);
-	}
+		if (request.headers.get('origin') !== url.origin) return json({ success: false, error: 'Invalid request origin.' }, { status: 403 });
+		const form = await readUploadForm(request);
+		const latitude = Number(form.get('latitude')), longitude = Number(form.get('longitude'));
+		if (!form.get('latitude') || !form.get('longitude') || !Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return json({ success: false, error: 'Provide valid latitude and longitude for the hazard pin.' }, { status: 400 });
+		const files = await validateMedia(form.getAll('image'));
+		if (files.length !== 1 || files[0].media.kind !== 'photo') return json({ success: false, error: 'Choose one JPEG, PNG, or WebP photo.' }, { status: 400 });
+		const file = files[0];
+		const analysis = normalizeSeverity(await analyzeRoadDistress(file.buffer, file.media.mimeType));
+		if (!analysis.isValidInfrastructure) return json({ success: false, error: analysis.rejectionReason || 'The photo does not show public road infrastructure.', analysis }, { status: 422 });
+		const address = await snapToRoad(latitude, longitude).catch(() => null);
+		await fs.mkdir(MEDIA_DIR, { recursive: true });
+		saved = files;
+		await fs.writeFile(path.join(MEDIA_DIR, file.filename), file.buffer, { flag: 'wx' });
+		const result = await recordHazardEvidence({ sourceId: crypto.randomUUID(), userId: locals.user?.id, analysis, media: [file.media], latitude, longitude, locationName: address?.formattedAddress || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` });
+		saved = [];
+		return json({ success: true, data: { ...result, reportId: `TKT-${result.reportId.slice(0, 8).toUpperCase()}`, rawId: result.reportId, imageUrl: file.media.url, latitude, longitude, streetAddress: address?.formattedAddress, analysis, createdAt: new Date().toISOString() } });
+	} catch (cause) {
+		return json({ success: false, error: isHttpError(cause) ? cause.body.message : 'Unable to save the report. Your evidence was not dispatched; please try again.' }, { status: isHttpError(cause) ? cause.status : 503 });
+	} finally { if (saved.length) await removeMedia(saved.map((file) => file.media)); }
 };
