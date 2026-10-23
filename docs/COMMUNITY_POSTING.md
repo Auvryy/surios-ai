@@ -26,9 +26,21 @@ AI severity and dimensions are estimates for triage, not certified measurements.
 - The posting prompt and Photos/Video/Location shortcuts are hidden while text search or a contributor filter is active, including empty results. Clearing the search restores the composer and preserves media, severity/confirmation filters, and the selected sort. Posting remains available through Report a Hazard.
 - Search, sort, media, contributor, critical, and confirmed filters are stored in the URL and work after refreshing. Changing a filter or sort resets pagination; loading more retains the current query and order. **Load more** adds batches of 20 up to 1,000 posts per filter; search queries the whole matching dataset rather than only the visible cards.
 - Confirmations are unique per user/post. Setting a confirmation repeatedly is idempotent. The linked report deduplicates authors and confirmations across grouped posts; repeatedly confirming the same hazard does not inflate its priority.
-- Comments and replies are authenticated, validated, saved, and rendered as text. Replies retain a parent comment from the same post. Author names and pictures link to public profiles; the same post cards and interactions appear on profile pages. See [Community profiles](./COMMUNITY_PROFILES.md).
+- Comments and replies are authenticated, validated, saved, and rendered as text in full-page post threads. Replies retain a parent comment from the same post. Author names and pictures link to public profiles; the same post cards and interactions appear on profile pages. See [Community profiles](./COMMUNITY_PROFILES.md).
 - `/liked` redirects to the signed-in user's saved confirmations.
 - Guests can browse and search. Posting and interactions require sign-in.
+
+## Post threads and reposts
+
+A post has a permanent full-page thread at `/community/post/<post-id>`. Clicking the headline, main photo, attachment counter, or non-interactive blank space in a feed card opens that page. Profile links, confirmation/repost/share buttons, media controls, map controls and text selection keep their own behavior. Photo inspection uses the thread page instead of an image dialog. The main photo fills the feed frame; the thread uses `object-contain` for inspection, retaining supporting media and the map dock.
+
+Each collapsed card shows at most one comment, including when comments have replies. The top preview is selected by saved unique comment likes, then reply count, then oldest creation time and ID for stable ties. A sole comment is shown directly. The full thread shows the complete discussion and supports authenticated comments, replies and comment likes. Repeated like requests are idempotent. These social interactions do not alter road evidence or hazard scores.
+
+Signed-in users can repost a saved original post with optional text (up to 1,000 characters) and **at most one JPEG, PNG or WebP image, up to 4 MiB**. A plain repost needs no text or image. Repost images bypass Gemini because they are social attachments, not new road observations. The server checks authentication, request origin, image count, size, MIME signatures and source-post existence. The database also enforces the one-photo limit. Uploads stay on disk; PostgreSQL stores their metadata. A client request UUID makes retries idempotent. Owners can undo their own reposts; attachment files are removed with them.
+
+Reposts are stored in `community_reposts`, separate from `community_posts`, `reports` and `report_observations`. Reposting never calls hazard recording or support refresh, never creates a map hazard, and never raises severity or community evidence support. Independent road posts still follow the existing same-location/evidence grouping rules in [Road hazards](./ROAD_HAZARDS.md). Comment likes use the unique `(comment_id, user_id)` key in `community_comment_likes`.
+
+Originals and reposts share the feed and contributor profiles. Search can match repost text and its author's name as well as original-post fields. Pagination and sorting apply to the combined results; repost severity/confirmation sorting refers to the cited original, without adding a new assessment. A repost links back to its source thread, where original evidence and discussion remain available. Legacy `/community?q=<post-id>#post-<post-id>` links remain supported.
 
 ## Database and deployment
 
@@ -80,3 +92,11 @@ npx playwright test --config playwright.search.config.ts
 ```
 
 This suite reserves port 5187, disables outbound email, and creates uniquely identified temporary users, posts, confirmations, and one report in the configured local database, removing only those fixtures afterward. It covers multiword matching, weighted relevance, English stemming, literal wildcard handling, evidence IDs, all sort modes, combined filters, stable pagination, URL persistence, composer visibility, native search submission, and responsive widths. It does not require Gemini credentials.
+
+## Social and thread verification
+
+```bash
+npx playwright test --config playwright.social.config.ts
+```
+
+The focused suite runs search and social/thread tests on port 5187 with outbound email disabled. Use a schema-ready `DATABASE_URL`; uniquely identified fixture records and uploaded repost images are removed afterward. Coverage includes full-page/blank-space/media navigation, one popular or sole comment preview, persisted comment likes, plain and image reposts, feed/search/profile visibility, owner-only undo, idempotent retries, upload limits and unchanged hazard evidence/support/severity.

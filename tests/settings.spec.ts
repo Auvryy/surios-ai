@@ -87,7 +87,7 @@ test('SMTP emails follow comment/reply and confirmation preferences, suppress se
 		await expect.poll(() => delivered(actor.email, 'New reply on SuriOS').length, { timeout: 15000 }).toBe(1);
 		await comment(page.request, 'My own comment.');
 		const [self] = await sql`select count(*)::int as count from email_outbox where user_id = ${owner.id} and topic = 'comments'`; expect(self.count).toBe(1);
-		await page.goto(`/community?q=${postId}`); await page.waitForLoadState('networkidle'); await page.locator('article').getByRole('button', { name: 'Comment', exact: true }).click(); await expect(page.getByText('Reply with notifications enabled.', { exact: true })).toBeVisible();
+		await page.goto(`/community?q=${postId}`); await page.waitForLoadState('networkidle'); await page.locator('article').getByRole('link', { name: 'Comment', exact: true }).click(); await expect(page.getByText('Reply with notifications enabled.', { exact: true })).toBeVisible();
 	} finally { await other.close(); }
 });
 

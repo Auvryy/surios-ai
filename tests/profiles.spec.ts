@@ -90,7 +90,7 @@ test('owner edits name, avatar and cover; public profiles are private-data safe,
 			await other.screenshot({ path: `.svelte-kit/review/profile-${width}.png` });
 		}
 		await other.evaluate(() => document.documentElement.classList.add('dark')); await other.screenshot({ path: '.svelte-kit/review/profile-dark.png' });
-		await other.locator('article').first().getByRole('button', { name: 'Comment', exact: true }).click();
+		await other.locator('article').first().getByRole('link', { name: 'Comment', exact: true }).click();
 		await other.locator('article').first().getByRole('textbox', { name: /Comment on/ }).fill('Guest reply');
 		await other.locator('article').first().getByRole('button', { name: 'Send comment' }).click(); await expect(other).toHaveURL(/\/login\?redirectTo=/);
 	} finally { await guest.close(); }
@@ -99,13 +99,13 @@ test('owner edits name, avatar and cover; public profiles are private-data safe,
 test('community author links open another profile; comments and replies persist across profile and feed', async ({ page }) => {
 	await sql`update users set name = ${`${alice.name} Updated`} where id = ${alice.id}`;
 	await login(page.request); await page.goto(`/community?q=${postIds[21]}`); await page.waitForLoadState('networkidle');
-	await page.locator('article').getByRole('link', { name: `View profile of ${bob.name}`, exact: true }).click();
+	await page.locator('article header').getByRole('link', { name: `View profile of ${bob.name}`, exact: true }).click();
 	await expect(page).toHaveURL(`${origin}/community?profile=${bob.id}`);
 	await expect(page.getByRole('link', { name: 'Community feed', exact: true })).toHaveAttribute('aria-current', 'page');
 	await expect(page.getByRole('link', { name: 'Profile', exact: true })).not.toHaveAttribute('aria-current', 'page');
 	await expect(page.getByRole('heading', { name: bob.name, exact: true })).toBeVisible();
 	await expect(page.locator('article')).toHaveCount(1); await expect(page.getByRole('button', { name: 'Edit profile' })).toHaveCount(0);
-	const article = page.locator('article'); await article.getByRole('button', { name: 'Comment', exact: true }).click();
+	const article = page.locator('article'); await article.getByRole('link', { name: 'Comment', exact: true }).click();
 	await article.getByRole('button', { name: 'Reply', exact: true }).click();
 	await article.getByRole('textbox', { name: /Comment on/ }).fill('A saved reply from another person.');
 	await article.getByRole('button', { name: 'Send reply', exact: true }).click();
@@ -113,7 +113,7 @@ test('community author links open another profile; comments and replies persist 
 	const [reply] = await sql`select parent_id, user_id from community_comments where post_id = ${postIds[21]} and body = 'A saved reply from another person.'`;
 	expect(reply.parent_id).toBe(commentId); expect(reply.user_id).toBe(alice.id);
 	await page.goto(`/community?q=${postIds[21]}`); await page.waitForLoadState('networkidle');
-	await page.locator('article').getByRole('button', { name: 'Comment', exact: true }).click();
+	await page.locator('article').getByRole('link', { name: 'Comment', exact: true }).click();
 	await expect(page.getByText('A saved reply from another person.', { exact: true })).toBeVisible();
 	await page.locator('article').getByRole('link', { name: `View profile of ${alice.name} Updated`, exact: true }).click();
 	await expect(page).toHaveURL(`${origin}/community?profile=${alice.id}`);
