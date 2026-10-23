@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '$lib/components/ui/dialog';
@@ -8,7 +9,7 @@
 	let { open = $bindable(false), post, user }: { open: boolean; post: CommunityPost; user: { id: string; role?: string } | null } = $props();
 	const official = $derived(isGovernment(user?.role));
 	let body = $state('');
-	let status = $state('IN_PROGRESS');
+	let status = $state(untrack(() => post.reportStatus === 'RESOLVED' ? 'RESOLVED' : 'IN_PROGRESS'));
 	let budgetType = $state('ESTIMATED');
 	let budget = $state<BudgetItem[]>([]);
 	let files = $state<File[]>([]);
