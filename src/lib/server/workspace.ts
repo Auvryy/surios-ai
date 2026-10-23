@@ -20,7 +20,7 @@ export function workspaceRedirect(value: unknown, role?: string | null): string 
 		if (url.origin !== 'https://surios.invalid') return '/community';
 		const pathname = url.pathname.replace(/\/$/, '') || '/';
 		if (isRetiredPage(pathname)) return isGovernmentUser(role) ? '/dashboard' : '/community';
-		const shared = sharedPages.includes(pathname) || /^\/profile\/[^/]+$/.test(pathname);
+		const shared = sharedPages.includes(pathname) || /^\/community\/post\/[0-9a-f-]{36}$/.test(pathname) || /^\/profile\/[^/]+$/.test(pathname);
 		if (!shared && !(isGovernmentUser(role) && pathname === '/dashboard')) return '/community';
 		return url.pathname + url.search + url.hash;
 	} catch {

@@ -36,7 +36,7 @@
 			{ name: 'Confirmed updates', href: '/liked', icon: HeartIcon }
 		] },
 		...(isGovUser ? [{ title: 'Government', items: [
-			{ name: 'Work orders', href: '/dashboard', icon: LayoutDashboardIcon }
+			{ name: 'Government updates', href: '/dashboard', icon: LayoutDashboardIcon }
 		] }] : []),
 		{ title: 'Account', items: [{ name: isGovUser ? 'Account' : 'Profile', href: '/profile', icon: UserIcon }, { name: 'Settings', href: '/settings', icon: SettingsIcon }] }
 	]);

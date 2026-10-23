@@ -59,7 +59,7 @@
 				<div class="relative min-w-0 flex-1"><SearchIcon aria-hidden="true" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input name="q" aria-label="Search community" type="search" placeholder="Search people, roads, and posts" bind:value={search} maxlength={100} class="h-11 rounded-full bg-card pl-10 pr-12 shadow-none" /><button type="submit" class="absolute right-1 top-1 flex size-9 items-center justify-center rounded-full text-primary hover:bg-primary/10" aria-label="Search posts" disabled={searchPending}><SearchIcon aria-hidden="true" class="size-4" /></button></div>
 				<a href={data.user ? '/profile' : '/login?redirectTo=/community'} aria-label="Your profile" class="avatar size-11 bg-primary/10 text-primary"><Avatar {name} src={data.user?.avatarUrl} class="size-11" /></a>
 			</form>
-			{#if !searching}<div class="rounded-xl border border-border bg-card px-3 pt-2">
+			{#if !searching && data.filters.tab !== 'confirmed'}<div class="rounded-xl border border-border bg-card px-3 pt-2">
 				<div class="flex items-center gap-2.5"><Avatar {name} src={data.user?.avatarUrl} /><button onclick={openComposer} class="flex min-h-11 flex-1 items-center rounded-full bg-muted px-4 text-left text-sm text-muted-foreground hover:bg-secondary">What’s happening on your road?</button></div>
 				<div class="mt-2 grid grid-cols-3 border-t border-border"><button onclick={openComposer} class="feed-action"><ImageIcon class="size-4 text-primary" />Photos</button><button onclick={openComposer} class="feed-action"><VideoIcon class="size-4 text-primary" />Video</button><button onclick={openComposer} class="feed-action"><MapPinIcon class="size-4 text-primary" />Location</button></div>
 			</div>{/if}

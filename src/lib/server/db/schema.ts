@@ -1,5 +1,5 @@
 import type { MatchDecision } from '$lib/types/hazards';
-import type { PostMedia } from '$lib/types/community';
+import type { GovernmentProfile, PostMedia } from '$lib/types/community';
 import type { TriageAnalysis } from '$lib/types/triage';
 import type { MaterialEstimate } from '$lib/types/work-orders';
 import { type AnyPgColumn, pgTable, text, integer, numeric, timestamp, jsonb, uuid, primaryKey, index } from 'drizzle-orm/pg-core';
@@ -25,6 +25,7 @@ export const users = pgTable('users', {
 	passwordHash: text('password_hash').notNull(),
 	role: text('role').notNull().default('CITIZEN'), // 'CITIZEN' | 'OFFICER' | 'ENGINEER' | 'ADMIN'
 	department: text('department'),
+	governmentProfile: jsonb('government_profile').$type<GovernmentProfile>(),
 	badgeNumber: text('badge_number'),
 	settings: jsonb('settings').$type<UserSettings>().default(defaultUserSettings),
 	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

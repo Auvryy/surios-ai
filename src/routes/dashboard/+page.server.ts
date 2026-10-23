@@ -1,15 +1,10 @@
-import type { Actions, PageServerLoad } from './$types';
-import { loadWorkOrders, requireGovernmentUser, updateWorkOrder } from '$lib/server/work-orders';
+import type { PageServerLoad } from './$types';
+import { requireGovernmentUser } from '$lib/server/work-orders';
+import { communityFilters, loadCommunityPosts } from '$lib/server/community';
 
 export const load: PageServerLoad = async (event) => {
 	requireGovernmentUser(event);
-	return loadWorkOrders(event.url);
-};
-
-export const actions: Actions = {
-	assign: (event) => updateWorkOrder(event, 'assign'),
-	startRepair: (event) => updateWorkOrder(event, 'startRepair'),
-	submitRepair: (event) => updateWorkOrder(event, 'submitRepair'),
-	review: (event) => updateWorkOrder(event, 'review'),
-	saveEstimate: (event) => updateWorkOrder(event, 'saveEstimate')
+	const filters = { ...communityFilters(event.url), originalsOnly: true };
+	const feed = await loadCommunityPosts(event.locals.user!.id, filters);
+	return { ...feed, posts: [...new Map(feed.posts.map((post) => [post.reportId, post])).values()] };
 };

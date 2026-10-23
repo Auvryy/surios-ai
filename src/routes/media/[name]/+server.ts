@@ -3,13 +3,14 @@ import path from 'node:path';
 import { error } from '@sveltejs/kit';
 import { MEDIA_DIR } from '$lib/server/community-media';
 import type { RequestHandler } from './$types';
-const mimeTypes: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime' };
+const mimeTypes: Record<string, string> = { pdf: 'application/pdf', jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime' };
 export const GET: RequestHandler = async ({ params, request }) => {
-	if (!/^[0-9a-f-]{36}\.(jpg|png|webp|mp4|webm|mov)$/.test(params.name)) error(404);
+	if (!/^[0-9a-f-]{36}\.(jpg|png|webp|mp4|webm|mov|pdf)$/.test(params.name)) error(404);
 	const filename = path.join(MEDIA_DIR, params.name);
 	const stat = await fs.stat(filename).catch(() => null);
 	if (!stat?.isFile()) error(404);
 	const headers: Record<string, string> = { 'Content-Type': mimeTypes[params.name.split('.').pop()!], 'Accept-Ranges': 'bytes', 'Cache-Control': 'public, max-age=31536000, immutable', 'X-Content-Type-Options': 'nosniff' };
+	if (params.name.endsWith('.pdf')) { headers['Content-Disposition'] = 'attachment'; headers['Content-Security-Policy'] = "sandbox; default-src 'none'"; }
 	const range = request.headers.get('range');
 	let start = 0, end = stat.size - 1, status = 200;
 	if (range) {

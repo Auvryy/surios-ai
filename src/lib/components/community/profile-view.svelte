@@ -8,11 +8,11 @@
 	import ProfileEditor from './profile-editor.svelte';
 	import CameraIcon from '@lucide/svelte/icons/camera';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
-	import type { CommunityPost, CommunityFeedItem } from '$lib/types/community';
+	import { isGovernment, type PublicProfile, type CommunityPost, type CommunityFeedItem } from '$lib/types/community';
 	let { data, user, embedded = false }: {
 		embedded?: boolean;
-		data: { profile: { id: string; name: string; avatarUrl: string | null; coverUrl: string | null }; isOwner: boolean; posts: CommunityPost[]; feed: CommunityFeedItem[]; total: number; hasMore: boolean; currentPage: number };
-		user: { id: string } | null;
+		data: { profile: PublicProfile; statistics?: { inProgress: number; resolved: number; reports: number } | null; isOwner: boolean; posts: CommunityPost[]; feed: CommunityFeedItem[]; total: number; hasMore: boolean; currentPage: number };
+		user: { id: string; role?: string } | null;
 	} = $props();
 	let editOpen = $state(false);
 	let loading = $state(false);
@@ -58,6 +58,11 @@
 				{#if canEdit}<button type="button" aria-label="Change profile picture" class="photo-control absolute inset-1 flex flex-col items-center justify-center gap-1 rounded-full bg-black/55 text-[10px] font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" disabled={!!uploading} onclick={() => avatarInput.click()}><CameraIcon aria-hidden="true" class="size-5" /><span>{uploading === 'avatar' ? 'Uploading…' : 'Change photo'}</span></button>{/if}
 			</div>{#if canEdit}<Button variant="outline" class="mt-3 h-11 shrink-0" disabled={!!uploading} onclick={() => editOpen = true}>Edit profile</Button>{/if}</div>
 				<h1 class="mt-3 break-words text-xl font-semibold tracking-tight">{data.profile.name}</h1>
+				{#if isGovernment(data.profile.role)}
+					<p class="mt-1 text-sm font-medium text-primary">{data.profile.governmentProfile?.level === 'BARANGAY' ? 'Barangay office' : 'Municipal office'}{data.profile.governmentProfile?.jurisdiction ? ` · ${data.profile.governmentProfile.jurisdiction}` : ''}</p>
+					{#if data.profile.governmentProfile?.bio}<p class="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">{data.profile.governmentProfile.bio}</p>{/if}
+					{#if data.statistics}<dl aria-label="Government report statistics" class="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-4">{#each [{ label: 'Reports handled', value: data.statistics.reports }, { label: 'In progress', value: data.statistics.inProgress }, { label: 'Resolved', value: data.statistics.resolved }] as stat}<div><dt class="text-xs text-muted-foreground">{stat.label}</dt><dd class="mt-1 text-xl font-semibold tabular-nums">{stat.value}</dd></div>{/each}</dl><p class="mt-2 text-xs leading-5 text-muted-foreground">Distinct reports currently attributed to this office’s latest official updates.</p>{/if}
+				{/if}
 				<p class="mt-1 text-sm text-muted-foreground">{data.total} {data.total === 1 ? 'post' : 'posts'}</p>
 			</div>
 			{#if photoError}<p role="alert" class="px-4 pb-4 text-sm text-destructive">{photoError}</p>{/if}

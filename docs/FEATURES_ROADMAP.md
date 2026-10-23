@@ -5,8 +5,9 @@ This document defines the phased execution roadmap, architectural milestones, an
 > Government update: the separate verification and analytics demo pages below
 > are retired plans, superseded by the user's single-workspace requirement.
 > [GOVERNMENT_WORKSPACE.md](./GOVERNMENT_WORKSPACE.md) is the current scope:
-> Work orders includes assignment, repair evidence, human review, material
-> estimates and exports. Do not recreate redundant government pages or treat
+> Government updates publishes In progress/Resolved quotes, photo/PDF evidence,
+> itemized budgets, municipal/barangay profiles and distinct-report statistics.
+> Crew assignment and dimensional material calculation have been retired. Do not recreate redundant government pages or treat
 > the older simulated engineering metrics as implemented measurements.
 
 ---

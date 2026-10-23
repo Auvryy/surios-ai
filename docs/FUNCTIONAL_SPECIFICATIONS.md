@@ -4,13 +4,13 @@
 **Mission:** UN SDG 9 (Industry, Innovation, and Infrastructure) & SDG 11 (Sustainable Cities) — Municipal Civil Infrastructure Defect Triage, Two-Wheeler (VRU) Safety Profiling, and Accountable Public Works Dispatch.
 
 > [!IMPORTANT]
-> Government scope has been consolidated per user direction. [GOVERNMENT_WORKSPACE.md](./GOVERNMENT_WORKSPACE.md) describes the implemented single Work orders page and supersedes earlier separate verification/analytics plans. Repair approval is human review of saved evidence; no compaction certification or AI repair sign-off is implemented.
+> Government scope has been consolidated per user direction. [GOVERNMENT_WORKSPACE.md](./GOVERNMENT_WORKSPACE.md) describes the implemented Government updates page: official quotes with progress/resolution status, photo/PDF evidence, itemized budgets and municipal/barangay profiles. It supersedes the crew assignment, material calculator and separate verification/analytics plans.
 
 ---
 
 ## 1. System Sitemap & Dual-Persona Route Architecture
 
-SuriOS is structured around a **Two-Persona Swiss Minimalist Sidebar Shell** (`src/routes/+layout.svelte`) that strictly separates **Community Citizen (`CITIZEN`)** workflows from **Government Engineering (`ENGINEER` / `OFFICER` / `ADMIN`)** workflows. Non-essential standalone pages (`/docs` "Civil Standards" and `/crews` standalone contractor directory) have been pruned to prevent feature bloat; crew assignment is embedded directly inline within `/dashboard`.
+SuriOS is structured around a **Two-Persona Swiss Minimalist Sidebar Shell** (`src/routes/+layout.svelte`) that strictly separates **Community Citizen (`CITIZEN`)** workflows from **Government Engineering (`ENGINEER` / `OFFICER` / `ADMIN`)** workflows. Non-essential standalone pages (`/docs` "Civil Standards" and `/crews` standalone contractor directory) have been pruned to prevent feature bloat; government action is published through quote updates from `/dashboard` or the shared feed.
 
 | Route | Module Name | Target Persona | 5-Word Functional Mandate | Current Status |
 | :--- | :--- | :--- | :--- | :--- |
@@ -18,8 +18,8 @@ SuriOS is structured around a **Two-Persona Swiss Minimalist Sidebar Shell** (`s
 | **`/liked`** | **Liked History** | Community (`CITIZEN`) | *Track confirmed hazards repair progress.* | **Active** — Citizen watchlist tracking DPWH repair states (`REPORTED` $\rightarrow$ `DISPATCHED` $\rightarrow$ `RESOLVED`). |
 | **`/report`** | **Report a hazard** | Community (`CITIZEN`) | *A compact prompt to post road evidence.* | **Active** — Shared composer, photos/video, AI review, precise location, persistent posts. |
 | **`/map`** | **Road hazards** | Shared (Community & Gov) | *Real-time geolocated road hazard map.* | **Active** — Stored hazard pins, compact collapsible controls, consistent severity, and linked evidence. |
-| **`/dashboard`** | **Work orders** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *Assign, repair, review, estimate, export.* | **Active** — Database-backed lifecycle, before/after evidence, human review and saved activity. |
-| **`/verification`, `/analytics`** | **Retired demo pages** | All | *Consolidated into existing work orders.* | Redirect to `/dashboard` for government users and `/community` otherwise. |
+| **`/dashboard`** | **Government updates** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *Quote, document, budget, resolve, export.* | **Active** — Public official quotes, shared-report status, evidence and budget breakdowns. |
+| **`/verification`, `/analytics`** | **Retired demo pages** | All | *Consolidated into official quote updates.* | Redirect to `/dashboard` for government users and `/community` otherwise. |
 | **`/profile`, `/community?profile=[id]`** | **Community profile** | Own / Public | *Name, profile picture, cover photo and posts.* | **Active** — Owner editing, public author profiles, shared posts and replies. |
 | **`/settings`** | **Account settings** | Signed-in users | *Email notifications and password security.* | **Active** — Saved email preferences, password change, and email reset links. |
 
@@ -34,12 +34,12 @@ Authentication is powered by native Node.js cryptographic primitives (`node:cryp
 | View Road hazards (`/map`) | ✅ | ✅ | ✅ | ✅ |
 | Submit Field Hazard Report (`/report` & `POST /api/triage`) | ✅ | ✅ | ✅ | ✅ |
 | Confirm / Upvote Existing Proximate Defect (`+1 Confirmation`) | ❌ | ✅ | ✅ | ✅ |
-| Access Work orders (`/dashboard`) | ❌ *(303 `/login`)* | ❌ *(303 `/community`)* | ✅ | ✅ |
-| Transition Ticket `REPORTED` → `DISPATCHED` → `IN_REPAIR` | ❌ | ❌ | ✅ | ✅ |
-| Submit After-Repair Photo for Proof of Patch | ❌ | ❌ | ✅ | ✅ |
-| Authorize Final Ticket Closure (`RESOLVED`) | ❌ | ❌ | ❌ *(Requires AI or Engineer)* | ✅ |
-| Calibrate Municipal ASTM Thresholds (`/settings`) | ❌ | ❌ | ❌ | ✅ |
-| Export Official DPWH / LGU Work Order Manifests (CSV) | ❌ | ❌ | ✅ | ✅ |
+| Access Government updates (`/dashboard`) | ❌ *(303 `/login`)* | ❌ *(303 `/community`)* | ✅ | ✅ |
+| Publish In progress quote with evidence | ❌ | ❌ | ✅ | ✅ |
+| Attach repair photos or PDF paperwork | ❌ | ❌ | ✅ | ✅ |
+| Publish Resolved quote and close linked posts | ❌ | ❌ | ✅ | ✅ |
+| Edit own municipality/barangay profile | ❌ | ❌ | ✅ | ✅ |
+| Export saved official quote updates and budgets (CSV) | ❌ | ❌ | ✅ | ✅ |
 
 ---
 
@@ -95,28 +95,29 @@ See [ROAD_HAZARDS.md](./ROAD_HAZARDS.md) and [COMMUNITY_POSTING.md](./COMMUNITY_
 
 ---
 
-### 4.4. Government work orders (`/dashboard`)
+### 4.4. Government quote updates (`/dashboard`)
 
-The six shared destinations remain available to government users. One Work
-orders page handles assignment, repair evidence, human review, material
-estimates, CSV and printable records. It uses the same saved reports as the map.
+The six shared destinations remain, plus one Government updates page. Officials
+quote a source community post via `POST /api/community/reposts`, supplying status
+`IN_PROGRESS` or `RESOLVED`, details, staged photo/PDF evidence files and an optional
+itemized PHP budget labeled estimated or actual. Crew assignment and the material
+calculator are retired; their old named form actions return 405.
 
-Named form actions are `assign`, `startRepair`, `submitRepair`, `review`, and
-`saveEstimate`. Status progresses through `REPORTED`, `DISPATCHED`, `IN_REPAIR`,
-`AWAITING_REVIEW`, and `RESOLVED`. Review can return a report for more repair.
-The saved after-image must match the evidence version being approved.
+A transaction locks the shared report and saves the official quote, canonical
+status and audit event. Every linked post reflects that status and links to the
+latest government explanation. Unrelated nearby reports are unchanged. Repeated
+quotes do not increase hazard severity, support or source observation counts.
+Profiles show municipality/barangay identity and distinct-report statistics.
 
-See [GOVERNMENT_WORKSPACE.md](./GOVERNMENT_WORKSPACE.md) for the complete current
-contract, permissions, storage, migration, limits and presentation walkthrough.
-Separate `/verification` and `/analytics` pages are retired redirects. The old
-AI certification, compaction measurements, and predictive savings demos are not
-part of the implemented workflow.
+See [GOVERNMENT_WORKSPACE.md](./GOVERNMENT_WORKSPACE.md) for storage, limits,
+permissions, migrations 0008–0009, quote conversations, CSV export and the labeled presentation dataset.
+Separate verification/analytics pages remain retired redirects.
 
 ### 4.5. Shared community pages
 
 `/community` serves the shared feed. `/liked` opens that same feed with the
 signed-in user's confirmed filter; it does not duplicate the feed on another
-page. `/map` shows report status from the same records updated by Work orders.
+page. `/map` shows report status from the same records updated by official government quotes.
 
 ### Community profiles
 
