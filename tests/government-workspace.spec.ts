@@ -86,7 +86,7 @@ test('publishing progress in the UI persists PDF evidence and a budget without i
 	const quote = page.locator(`#repost-${id}`);
 	await expect(quote.getByRole('link', { name: 'In progress', exact: true })).toBeVisible();
 	await expect(quote.getByRole('img', { name: 'Quoted original report', exact: true })).toHaveAttribute('src', media[0].url);
-	await quote.getByText('Estimated budget · ₱5,000.00', { exact: true }).click();
+	await quote.locator('summary').filter({ hasText: 'Estimated budget' }).click();
 	await expect(quote.getByText('Materials', { exact: true })).toBeVisible();
 	const fileUrl = await quote.getByRole('link', { name: /Download PDF/ }).getAttribute('href');
 	const file = await page.request.get(fileUrl!); expect(file.status()).toBe(200); expect(file.headers()['content-type']).toBe('application/pdf'); expect(file.headers()['content-disposition']).toBe('attachment');
@@ -207,7 +207,7 @@ test('multiple evidence files stay prominent, limits are enforced and exports co
 	const quote = page.locator(`#repost-${id}`); await expect(quote.getByRole('link', { name: /Download PDF/ })).toHaveCount(3);
 	await expect(quote.getByRole('img', { name: 'repair.jpg', exact: true })).toBeVisible();
 	await expect(quote.getByRole('img', { name: 'Quoted original report', exact: true })).toBeVisible();
-	await quote.getByText('Actual expenditure · ₱5,000.00', { exact: true }).click();
+	await quote.locator('summary').filter({ hasText: 'Actual expenditure' }).click();
 	for (const width of [320, 375, 768, 1440]) { await page.setViewportSize({ width, height: 900 }); expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width); }
 	await page.setViewportSize({ width: 375, height: 900 }); await page.screenshot({ path: '.svelte-kit/government-update-mobile.png', fullPage: true });
 	await page.context().addCookies([{ name: 'surios_session', value: accounts[0].token, url: baseURL! }]);

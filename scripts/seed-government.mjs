@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import { randomUUID, scryptSync } from 'node:crypto';
-import { mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 
 // Explicit presentation dataset only; never called by application startup.
 const sql = postgres(process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5433/surios', { max: 1 });
@@ -19,7 +19,7 @@ try {
 		await tx`select pg_advisory_xact_lock(76489215)`;
 		const email = 'municipality@surios.gov';
 		const [existing] = await tx`select id from community_reposts where government_update->>'demoKey' = 'government-quotes-v1' limit 1`;
-		if (existing) { console.log('Government presentation example already exists; retained its posts and status.'); return; }
+		if (existing) { console.log('Government presentation example exists; checking gallery enhancement.'); return; }
 		const [source] = await tx`select p.id, p.report_id from community_posts p join reports r on r.id = p.report_id where r.triage_payload->>'seedKey' = 'community-presentation-v1' and r.distress_type = 'pothole' order by p.created_at, p.id limit 1`;
 		if (!source) throw new Error('Run the app and seed-community.mjs first. Only labeled demo reports can be used by this seed.');
 		const salt = randomUUID();
@@ -42,5 +42,23 @@ try {
 		await tx`update reports set status = 'RESOLVED', resolved_image_path = null, updated_at = now() where id = ${source.report_id}`;
 		console.log('Seeded demo municipal profile, In progress and Resolved quote updates, PDFs and a PHP 5,000 illustrative budget. All linked demo posts share the resolved status.');
 	});
+	createdFiles.length = 0; // Previous transaction is committed; do not remove its files on a gallery failure.
+	await sql.begin(async tx => {
+		await tx`select pg_advisory_xact_lock(76489215)`;
+		const [example] = await tx`select id, government_update from community_reposts where government_update->>'demoKey' = 'government-quotes-v1' and government_update->>'status' = 'RESOLVED' for update`;
+		if (!example || example.government_update.galleryVersion === 1) return;
+		const attachments = [...example.government_update.attachments];
+		for (let index = 0; index < 9; index++) {
+			const id = randomUUID();
+			const sample = index % 2 ? 'alligator-fatigue.jpg' : 'pothole-severe.jpg';
+			const file = new URL(`../static/uploads/community/${id}.jpg`, import.meta.url); createdFiles.push(file);
+			await writeFile(file, await readFile(new URL(`../static/samples/${sample}`, import.meta.url)));
+			attachments.push({ id, url: `/media/${id}.jpg`, name: `Demo gallery sample ${index + 1} (not repair evidence).jpg`, mimeType: 'image/jpeg', kind: 'photo' });
+		}
+		const body = 'DEMO · Sample maintenance completed. All reports linked to this example pothole now show Resolved.\n\nIllustrative expenditure: PHP 5,000. Completion paper and sample gallery attached. Photos repeat sample road images to demonstrate the gallery; no real repair, certification or public spending is claimed.';
+		await tx`update community_reposts set body = ${body}, government_update = ${tx.json({ ...example.government_update, galleryVersion: 1, attachments })} where id = ${example.id}`;
+		console.log('Added 9 explicitly labeled sample gallery photos (+5 overflow), retaining the original PDF and illustrative budget.');
+	});
+
 } catch (error) { await Promise.all(createdFiles.map(file => rm(file, { force: true }))); throw error; }
 finally { await sql.end(); }

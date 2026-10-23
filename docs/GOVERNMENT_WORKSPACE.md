@@ -13,9 +13,12 @@ The government queue shows one representative post per shared hazard.
 
 - Choose **In progress** or **Resolved**.
 - Explain the action or reason in up to 1,000 characters.
-- Attach 1–4 JPEG/PNG/WebP photos or PDF documents: up to 4 MiB each and 12 MiB
-  total. Work instructions, completion paperwork and repair photos are supported.
-  Upload signatures and limits are checked server-side. PDFs download as files
+- Attach JPEG/PNG/WebP photos or PDF documents, up to 4 MiB each. There is no
+  four-photo limit: the composer uploads individual files and publishes their
+  references together. Work instructions, completion paperwork and repair photos are supported.
+  Upload signatures and per-file limits are checked server-side. Unpublished
+  uploads belong to their uploader, expire after 24 hours and are cleaned on
+  subsequent uploads; publication claims them transactionally. PDFs download as files
   with `nosniff` and a sandbox policy; they are not embedded as active content.
 - Optionally enter up to 20 labeled budget amounts in PHP, with two decimal
   places. Label the breakdown **Estimated budget** or **Actual expenditure**.
@@ -23,9 +26,20 @@ The government queue shows one representative post per shared hazard.
   measured quantities or automatically certified costs.
 
 The public quote emphasizes the government's text and evidence. The original
-report appears underneath as a small linked card with its photo. Opening an
+report appears underneath as a small linked card with two media thumbnails and
+a noninteractive OpenStreetMap preview with a link to the full map. Opening an
 official update displays that update prominently, rather than repeating a large
 copy of the original report. Other official updates remain available as history.
+The feed gallery shows up to four photos, with +N on the fourth tile for extra
+photos. Full-page gallery navigation reaches every photo. Green Resolved and
+amber In progress chips distinguish the current status.
+
+Quotes have their own saved likes, comments/replies, comment likes and repost
+targets. A repost of an official update quotes that government author/content,
+rather than silently sharing only the original citizen report. These actions
+do not change source confirmations or hazard evidence. Guest write actions,
+cross-origin writes and cross-thread replies are refused.
+
 The Photos filter includes official repair photos even when the quoted source
 contains only video. The CSV download includes official quotes, budgets, evidence
 links and dates.
@@ -69,7 +83,9 @@ independent certification of repair quality or government spending.
 ## Migration and presentation example
 
 Apply migrations through `0007_community-social.sql`, then additive
-`0008_government-updates.sql`. Migration 0008 adds nullable JSON metadata to
+`0008_government-updates.sql`, then `0009_quote-interactions.sql`. Migration
+0009 adds quote-specific interactions, a quoted-repost reference and staged
+evidence uploads. Migration 0008 adds nullable JSON metadata to
 users and reposts; it does not delete existing posts, reports or work orders.
 Use the normal journal-managed migration runner where configured. On a database
 whose earlier migrations were applied manually, apply only the new SQL file.
@@ -85,8 +101,11 @@ The government seed only selects the labeled presentation pothole from the
 community seed. It adds a **Demo · Santa Cruz Municipal Office** account,
 In progress and Resolved quote updates, downloadable sample work/completion PDFs,
 and a PHP 5,000 illustrative breakdown for materials, labor and equipment.
-All linked demo posts show Resolved. Re-running the seed leaves the example
-unchanged. It is never called by application startup.
+The resolved example also contains nine explicitly labeled sample gallery images
+(+5 overflow). These repeat the existing sample road photos to demonstrate the
+layout and do not purport to show a real repair. All linked demo posts show
+Resolved. Re-running the seed retains the example and applies its gallery
+enhancement only once. It is never called by application startup.
 
 Demo login: `municipality@surios.gov` / `Password123!`.
 Documents and quote details explicitly identify the demonstration and make no
@@ -102,3 +121,8 @@ navigation, removal of crew/calculator controls, budget/photo/PDF persistence,
 grouped-post closure and links, unrelated-report isolation, map status, profile
 statistics, municipal/barangay profile editing, mobile widths, authorization,
 input limits, idempotency, retained history and concurrent office updates.
+
+`tests/quote-interactions.spec.ts` verifies nine-photo publication and navigation,
+compact original media/map, reactions, comments/replies/likes, precise repost
+targets, unchanged hazard support, upload ownership/expiry/single claiming and
+concurrent request retries.
