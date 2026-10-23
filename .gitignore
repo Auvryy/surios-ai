@@ -29,3 +29,12 @@ vite.config.ts.timestamp-*
 # Browser verification artifacts
 /test-results
 /playwright-report
+
+# Local AI instructions and coordination (never commit these files).
+# Before editing, read /home/andy/Projects/surios-ai/.agent-coordination/README.md.
+# Every session uses that shared directory, including sessions in worktrees.
+/AGENTS.override.md
+/.agent-coordination/
+
+# Parallel agent worktrees kept inside the project workspace.
+/.worktrees/
