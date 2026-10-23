@@ -7,4 +7,3 @@ build
 .env.*
 !.env.example
 *.log
-drizzle

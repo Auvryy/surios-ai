@@ -52,7 +52,7 @@ npm run dev -- --host 0.0.0.0
 ```
 Open **`http://localhost:5173`** for the public landing page. The community feed is at `/community`, and the **Hazard map** is at `/map`.
 
-Government accounts keep the six shared destinations plus **Government updates** at `/dashboard`. Officials quote citizen posts with progress/resolution evidence and optional budget breakdowns. Existing databases should apply migrations through `0011_community-post-soft-delete.sql`. See the [government guide](docs/GOVERNMENT_WORKSPACE.md) for migration and explicit presentation seed commands.
+Government accounts keep the six shared destinations plus **Government updates** at `/dashboard`. Officials quote citizen posts with progress/resolution evidence and optional budget breakdowns. Existing databases should apply migrations through `0012_account-approval.sql`. See the [government guide](docs/GOVERNMENT_WORKSPACE.md) for migration and explicit presentation seed commands.
 
 ### 3. Presentation Seed and Demo Accounts (`/login`)
 On a fresh local database, run `npm run db:seed:presentation` after `npm run db:push` to load the saved community demo snapshot, including reports, posts, road sections, comments, official updates, reactions, and their media. Production does not seed demo content on startup; for an Azure fresh database, follow the explicit migration and seed steps in the [Docker runbook](docs/DOCKER_RUNBOOK.md).
@@ -65,3 +65,15 @@ On a fresh local database, run `npm run db:seed:presentation` after `npm run db:
 | **`ENGINEER` (Municipality)** | `municipality@surios.gov` | `Password123!` | Government quote updates, resolution evidence, and municipal profile. |
 
 All four accounts are created by the presentation seed on a fresh database. The login page uses the normal email and password form; these credentials are for the demo environment.
+
+
+### Azure deployment shortcuts and administrator
+
+```bash
+./surios.sh build
+./surios.sh admin
+```
+
+`build` builds, applies pending migrations, and starts the production app while keeping existing data. `admin` prompts for credentials to create your administrator. At `/admin`, review government applications and activate/deactivate accounts. Citizens can register immediately; government applicants provide their office, work location and ID number and wait for approval. Existing government accounts retain access.
+
+Use `./surios.sh seed` for the saved presentation snapshot on an empty database, or `./surios.sh fresh` for a confirmed destructive reset of the database and uploaded media. Run `./surios.sh help` for all commands. See the [Docker runbook](docs/DOCKER_RUNBOOK.md) and [account guide](docs/ACCOUNT_SETTINGS.md).
