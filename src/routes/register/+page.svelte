@@ -1,4 +1,6 @@
 <script lang="ts">
+	import EyeIcon from '@lucide/svelte/icons/eye';
+	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import type { PageProps } from './$types';
@@ -7,6 +9,12 @@
 	let { data, form }: PageProps = $props();
 	let role = $state(untrack(() => form?.role === 'OFFICER' ? 'OFFICER' : 'CITIZEN'));
 	let submitting = $state(false);
+	let password = $state('');
+	let confirmPassword = $state('');
+	let showPassword = $state(false);
+	let showConfirmation = $state(false);
+	let confirmationTouched = $state(false);
+	const passwordMismatch = $derived(confirmationTouched && confirmPassword.length > 0 && password !== confirmPassword);
 </script>
 <svelte:head><title>Create account — SuriOS</title></svelte:head>
 <div class="mx-auto w-full max-w-lg px-4 py-8 sm:py-12">
@@ -28,7 +36,8 @@
 					<div class="space-y-1.5"><label for="badgeNumber" class="text-sm font-medium">Government ID number</label><Input id="badgeNumber" name="badgeNumber" value={form?.badgeNumber || ''} required minlength={2} maxlength={80} class="min-h-11" /><p class="text-xs text-muted-foreground">For admin review. Your ID number is kept private.</p></div>
 				</div>
 			{/if}
-			<div class="space-y-1.5"><label for="password" class="text-sm font-medium">Password</label><Input id="password" name="password" type="password" autocomplete="new-password" required minlength={8} maxlength={256} aria-describedby="password-help" class="min-h-11" /><p id="password-help" class="text-xs text-muted-foreground">At least 8 characters.</p></div>
+			<div class="space-y-1.5"><label for="password" class="text-sm font-medium">Password</label><div class="relative"><Input id="password" name="password" type={showPassword ? 'text' : 'password'} bind:value={password} autocomplete="new-password" required minlength={8} maxlength={256} aria-describedby="password-help" class="min-h-11 pr-12" /><button type="button" class="absolute inset-y-0 right-0 flex min-h-11 w-11 items-center justify-center rounded-r-md text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} aria-controls="password" onclick={() => showPassword = !showPassword}>{#if showPassword}<EyeOffIcon aria-hidden="true" class="size-4" />{:else}<EyeIcon aria-hidden="true" class="size-4" />{/if}</button></div><p id="password-help" class="text-xs text-muted-foreground">At least 8 characters.</p></div>
+			<div class="space-y-1.5"><label for="confirmPassword" class="text-sm font-medium">Confirm password</label><div class="relative"><Input id="confirmPassword" name="confirmPassword" type={showConfirmation ? 'text' : 'password'} bind:value={confirmPassword} onblur={() => confirmationTouched = true} autocomplete="new-password" required maxlength={256} aria-invalid={passwordMismatch ? 'true' : undefined} aria-describedby={passwordMismatch ? 'confirmation-error' : undefined} class="min-h-11 pr-12" /><button type="button" class="absolute inset-y-0 right-0 flex min-h-11 w-11 items-center justify-center rounded-r-md text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary" aria-label={showConfirmation ? 'Hide confirm password' : 'Show confirm password'} aria-pressed={showConfirmation} aria-controls="confirmPassword" onclick={() => showConfirmation = !showConfirmation}>{#if showConfirmation}<EyeOffIcon aria-hidden="true" class="size-4" />{:else}<EyeIcon aria-hidden="true" class="size-4" />{/if}</button></div>{#if passwordMismatch}<p id="confirmation-error" role="status" class="text-sm text-destructive">Passwords do not match.</p>{/if}</div>
 			<Button type="submit" disabled={submitting} class="min-h-11 w-full">{submitting ? 'Creating account…' : role === 'OFFICER' ? 'Submit government application' : 'Create citizen account'}</Button>
 		</form>
 		<p class="mt-6 text-center text-sm text-muted-foreground">Already registered? <a href="/login" class="font-medium text-primary underline underline-offset-4">Sign in</a></p>

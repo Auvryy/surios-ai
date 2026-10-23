@@ -10,12 +10,14 @@ const schema = z.object({
 	name: z.string().min(2, 'Full name must be at least 2 characters').max(120),
 	email: z.string().email('Please enter a valid email address').max(254),
 	password: z.string().min(8, 'Password must be at least 8 characters').max(256),
+	confirmPassword: z.string({ error: 'Please confirm your password.' }).min(1, 'Please confirm your password.').max(256),
 	role: z.enum(['CITIZEN', 'OFFICER'], { error: 'Choose Citizen or Government.' }),
 	department: z.string().max(160),
 	level: z.enum(['MUNICIPAL', 'BARANGAY']),
 	jurisdiction: z.string().max(120),
 	badgeNumber: z.string().max(80)
 }).superRefine((value, ctx) => {
+	if (value.password !== value.confirmPassword) ctx.addIssue({ code: 'custom', path: ['confirmPassword'], message: 'Passwords do not match.' });
 	if (value.role === 'OFFICER') for (const field of ['department', 'jurisdiction', 'badgeNumber'] as const) {
 		if (value[field].length < 2) ctx.addIssue({ code: 'custom', path: [field], message: `${field === 'department' ? 'Office / department' : field === 'jurisdiction' ? 'Work location' : 'Government ID number'} is required.` });
 	}
@@ -26,7 +28,7 @@ export const actions: Actions = {
 		const form = await event.request.formData();
 		const text = (key: string) => typeof form.get(key) === 'string' ? String(form.get(key)).trim() : '';
 		const fields = { name: text('name'), email: text('email').toLowerCase(), role: text('role') || 'CITIZEN', department: text('department'), level: text('level') || 'MUNICIPAL', jurisdiction: text('jurisdiction'), badgeNumber: text('badgeNumber') };
-		const parsed = schema.safeParse({ ...fields, password: form.get('password') });
+		const parsed = schema.safeParse({ ...fields, password: form.get('password'), confirmPassword: form.get('confirmPassword') });
 		if (!parsed.success) return fail(400, { ...fields, error: parsed.error.issues[0].message });
 		const value = parsed.data;
 		const government = value.role === 'OFFICER';

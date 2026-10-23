@@ -9,7 +9,7 @@ let adminId: string;
 let adminToken: string;
 const origin = process.env.APPROVAL_TEST_ORIGIN || 'http://127.0.0.1:5177';
 const email = (name: string) => `${mark}${name}@example.test`;
-const details = (name: string, role = 'OFFICER') => ({ name: `Test ${name}`, email: email(name), password, role, department: 'Municipal Engineering Office', level: 'BARANGAY', jurisdiction: 'Barangay Poblacion, Santa Cruz, Laguna', badgeNumber: 'GOV-TEST-204' });
+const details = (name: string, role = 'OFFICER') => ({ name: `Test ${name}`, email: email(name), password, confirmPassword: password, role, department: 'Municipal Engineering Office', level: 'BARANGAY', jurisdiction: 'Barangay Poblacion, Santa Cruz, Laguna', badgeNumber: 'GOV-TEST-204' });
 const adminHeaders = () => ({ Origin: origin, Cookie: `surios_session=${adminToken}` });
 test.beforeAll(async () => {
 	const salt = 'approvaltestsalt';
@@ -111,6 +111,7 @@ test('rejected applications cannot bypass approval, citizens cannot use admin ac
 test('registration and approval screens fit mobile, preserve failed forms, and keep IDs out of public profiles', async ({ page, request }) => {
 	await page.setViewportSize({ width: 375, height: 812 });
 	await page.goto('/register');
+	await page.waitForLoadState('networkidle');
 	await page.getByRole('radio', { name: 'Government', exact: true }).check();
 	await expect(page.getByLabel('Work location / jurisdiction')).toBeVisible();
 	await page.getByLabel('Full name').fill('Mobile applicant');
@@ -119,12 +120,14 @@ test('registration and approval screens fit mobile, preserve failed forms, and k
 	await page.getByLabel('Work location / jurisdiction').fill('Santa Cruz, Laguna');
 	await page.getByLabel('Government ID number').fill('PRIVATE-ID-504');
 	await page.getByLabel('Password', { exact: true }).fill(password);
+	await page.getByLabel('Confirm password', { exact: true }).fill(password);
 	await page.getByRole('button', { name: 'Submit government application' }).click();
 	await expect(page.getByRole('alert')).toContainText('already exists');
 	await expect(page.getByRole('radio', { name: 'Government', exact: true })).toBeChecked();
 	await expect(page.getByLabel('Government ID number')).toHaveValue('PRIVATE-ID-504');
 	await page.getByLabel('Email address').fill(email('mobile'));
 	await page.getByLabel('Password', { exact: true }).fill(password);
+	await page.getByLabel('Confirm password', { exact: true }).fill(password);
 	await page.getByRole('button', { name: 'Submit government application' }).click();
 	await expect(page.getByText('Pending approval', { exact: true })).toBeVisible();
 	expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
