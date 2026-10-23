@@ -1,3 +1,4 @@
+import { assertCurrentDraft } from '$lib/server/community-assessments';
 import { error, json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -16,6 +17,7 @@ export const POST: RequestHandler = async (event) => {
 	const input = parsed.data;
 	const [draft] = await db.select().from(communityDrafts).where(and(eq(communityDrafts.id, input.draftId), eq(communityDrafts.userId, user.id)));
 	if (!draft) error(404, 'Assessment not found. Assess your attachments again.');
+	assertCurrentDraft(draft, input.title, input.body);
 	if (!draft.media.some((media) => media.id === input.coverId)) error(400, 'Choose a cover from your attachments.');
 	const roadSegment = input.road && draft.analysis.infrastructureType === 'ROAD_PAVEMENT' ? await verifyRoadSelection(input.road) : null;
 	const center = roadSegment ? pointAlong(roadSegment.coordinates, roadSegment.length / 2) : [input.latitude, input.longitude];

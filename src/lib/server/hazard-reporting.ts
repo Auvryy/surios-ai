@@ -1,3 +1,4 @@
+import { assertCurrentDraft } from './community-assessments';
 import { and, between, desc, eq, inArray, ne, sql } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
 import fs from 'node:fs/promises';
@@ -108,7 +109,7 @@ export async function recordHazardEvidence(input: EvidenceInput, compare: typeof
 	if (input.post) {
 		const [draft] = await db.select().from(communityDrafts).where(and(eq(communityDrafts.id, input.post.draftId), eq(communityDrafts.userId, input.userId!)));
 		if (!draft) error(404, 'Assessment not found.');
-		if (draft.expiresAt < new Date()) error(410, 'This assessment expired. Assess your attachments again.');
+		assertCurrentDraft(draft, input.post.title, input.post.body);
 	}
 	const analysis = normalizeSeverity(input.analysis);
 	const fingerprints = (await Promise.all(input.media.map(mediaBytes))).filter((item) => item !== null).map((item) => crypto.createHash('sha256').update(item.buffer).digest('hex'));
@@ -127,7 +128,7 @@ export async function recordHazardEvidence(input: EvidenceInput, compare: typeof
 			if (input.post) {
 				const [draft] = await tx.select().from(communityDrafts).where(and(eq(communityDrafts.id, input.post.draftId), eq(communityDrafts.userId, input.userId!))).for('update');
 				if (!draft) error(404, 'Assessment not found.');
-				if (draft.expiresAt < new Date()) error(410, 'This assessment expired. Assess your attachments again.');
+				assertCurrentDraft(draft, input.post.title, input.post.body);
 				const [existing] = await tx.select().from(communityPosts).where(eq(communityPosts.draftId, draft.id));
 				if (existing) return { id: existing.id, reportId: existing.reportId, grouped: false, match: { method: 'legacy', confidence: 1, reason: 'Already published.' } as MatchDecision, severity: existing.analysis.hazardSeverity, support: 1, priority: existing.analysis.hazardSeverity };
 			}

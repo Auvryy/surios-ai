@@ -52,7 +52,7 @@ npm run dev -- --host 0.0.0.0
 ```
 Open **`http://localhost:5173`** for the public landing page. The community feed is at `/community`, and the **Hazard map** is at `/map`.
 
-Government accounts keep the six shared destinations plus **Government updates** at `/dashboard`. Officials quote citizen posts with progress/resolution evidence and optional budget breakdowns. Existing databases should apply migrations through `0012_account-approval.sql`. See the [government guide](docs/GOVERNMENT_WORKSPACE.md) for migration and explicit presentation seed commands.
+Government accounts keep the six shared destinations plus **Government updates** at `/dashboard`. Officials quote citizen posts with progress/resolution evidence and optional budget breakdowns. Existing databases should apply migrations through `0013_assessment-context.sql`. See the [government guide](docs/GOVERNMENT_WORKSPACE.md) for migration and explicit presentation seed commands.
 
 ### 3. Presentation Seed and Demo Accounts (`/login`)
 On a fresh local database, run `npm run db:seed:presentation` after `npm run db:push` to load the saved community demo snapshot, including reports, posts, road sections, comments, official updates, reactions, and their media. Production does not seed demo content on startup; for an Azure fresh database, follow the explicit migration and seed steps in the [Docker runbook](docs/DOCKER_RUNBOOK.md).
