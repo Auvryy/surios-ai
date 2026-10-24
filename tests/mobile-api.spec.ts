@@ -166,6 +166,8 @@ test('browser previews use an exact CORS allowlist and native requests do not ne
 });
 
 test('browser cookie sessions keep same-origin checks while bearer mutations work without fabricated headers', async ({ playwright }) => {
+	// Reject unauthenticated requests before parsing a malformed multipart form.
+	expect((await api.post('/settings?/changePassword', { headers: { Origin: origin, 'Content-Type': 'multipart/form-data; boundary=missing' }, data: 'not a multipart form' })).status()).toBe(401);
 	const web = await playwright.request.newContext({ baseURL: origin, extraHTTPHeaders: { Accept: 'application/json' } });
 	try {
 		expect((await web.post('/login', { headers: { Origin: origin, Accept: 'text/html' }, form: { email: actors[0].email, password }, maxRedirects: 0 })).status()).toBe(303);

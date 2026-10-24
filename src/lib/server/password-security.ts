@@ -15,6 +15,8 @@ export function passwordError(password: string, confirmation: string) {
 	return null;
 }
 export async function changePasswordAction(event: RequestEvent) {
+	if (!event.locals.user || !event.locals.session) error(401, 'Sign in to change your password.');
+	requireOrigin(event);
 	const form = await event.request.formData();
 	try {
 		return { section: 'password', success: await changeAccountPassword(event, { currentPassword: String(form.get('currentPassword') || ''), newPassword: String(form.get('newPassword') || ''), confirmPassword: String(form.get('confirmPassword') || '') }) };
