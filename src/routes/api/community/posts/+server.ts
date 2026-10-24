@@ -19,7 +19,7 @@ export const POST: RequestHandler = async (event) => {
 	if (!draft) error(404, 'Assessment not found. Assess your attachments again.');
 	assertCurrentDraft(draft, input.title, input.body);
 	if (!draft.media.some((media) => media.id === input.coverId)) error(400, 'Choose a cover from your attachments.');
-	const roadSegment = input.road && draft.analysis.infrastructureType === 'ROAD_PAVEMENT' ? await verifyRoadSelection(input.road) : null;
+	const roadSegment = input.road ? await verifyRoadSelection(input.road) : null;
 	const center = roadSegment ? pointAlong(roadSegment.coordinates, roadSegment.length / 2) : [input.latitude, input.longitude];
 	const result = await recordHazardEvidence({ roadSegment, sourceId: draft.id, userId: user.id, analysis: draft.analysis, media: draft.media, latitude: center[0], longitude: center[1], locationName: input.locationName, post: { draftId: draft.id, coverId: input.coverId, title: input.title, body: input.body } });
 	return json(result, { status: 201 });

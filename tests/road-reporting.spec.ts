@@ -65,6 +65,23 @@ test('overlapping road sections link matching evidence across different pins, in
 	const [stored] = await sql`select road_segment from community_posts where id=${published.id!}`;
 	expect(stored.road_segment).toMatchObject({ id: road.id, start: 30, end: 230, length: 200 });
 });
+test('non-pavement reports validate and retain a chosen road section without changing the assessed asset type', async ({ request }) => {
+	const input = { ...await evidence(0, 30, 230), analysis: { ...analysis, infrastructureType: 'DRAINAGE_FLOOD_CANAL' as const, distressType: 'drainage_blockage' as const, hazardSeverity: 3, riskLevel: 'LOW' as const } };
+	await sql`insert into community_drafts(id,user_id,media,analysis,expires_at) values(${input.sourceId},${users[0]},${sql.json(input.media)},${sql.json(input.analysis)},now()+interval '1 day')`;
+	const response = await request.post('/api/community/posts', { headers: { Origin: origin, Cookie: `surios_session=${token}` }, data: { draftId: input.sourceId, coverId: input.media[0].id, title: 'Drainage along the selected street', body: 'Visible canal obstruction.', locationName: road.name, latitude: input.latitude, longitude: input.longitude, road: { id: road.id, start: 0, end: 501 } } });
+	expect(response.status()).toBe(400);
+	expect(await response.text()).toContain('between 5 and 500 metres');
+	expect(await sql`select id from community_posts where draft_id=${input.sourceId}`).toHaveLength(0);
+	const saved = await recordHazardEvidence({ ...input, post: { draftId: input.sourceId, coverId: input.media[0].id, title: 'Drainage along the selected street', body: 'Visible canal obstruction.' } });
+	reports.add(saved.reportId);
+	const [post] = await sql`select road_segment,analysis from community_posts where id=${saved.id!}`;
+	expect(post.road_segment).toMatchObject({ id: road.id, start: 30, end: 230 });
+	expect(post.analysis.infrastructureType).toBe('DRAINAGE_FLOOD_CANAL');
+	const [shared] = await sql`select triage_payload from reports where id=${saved.reportId}`;
+	expect(shared.triage_payload.infrastructureType).toBe('DRAINAGE_FLOOD_CANAL');
+	expect(shared.triage_payload.roadSegment.id).toBe(road.id);
+});
+
 test('map posting offers point and road locations before any assessment', async ({ page, baseURL }) => {
 	await page.setViewportSize({ width: 375, height: 812 });
 	await page.context().addCookies([{ name: 'surios_session', value: token, url: baseURL! }]);
@@ -94,9 +111,9 @@ test('map posting offers point and road locations before any assessment', async 
 	expect(await page.getByRole('dialog').evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
 });
 
-test('a preselected road survives edits and pavement assessment, submits its geometry, and resets for other assets or discard', async ({ page, baseURL }) => {
-	const control = (overrides: Record<string, unknown> = {}) => fetch('http://127.0.0.1:5198/control', { method: 'POST', body: JSON.stringify({ overrides }) });
-	await control({ infrastructureType: 'ROAD_PAVEMENT', distressType: 'alligator_cracking' });
+test('road selection stays enabled during and after every asset assessment, submits geometry, and resets on discard', async ({ page, baseURL }) => {
+	const control = (overrides: Record<string, unknown> = {}, delay = 0) => fetch('http://127.0.0.1:5198/control', { method: 'POST', body: JSON.stringify({ overrides, delay }) });
+	await control({ infrastructureType: 'ROAD_PAVEMENT', distressType: 'alligator_cracking' }, 1500);
 	try {
 		await page.context().addCookies([{ name: 'surios_session', value: token, url: baseURL! }]);
 		await page.goto('/community?compose=1');
@@ -113,29 +130,35 @@ test('a preselected road survives edits and pavement assessment, submits its geo
 		await page.getByLabel('Attach media', { exact: true }).setInputFiles({ name: 'road.jpg', mimeType: 'image/jpeg', buffer: await fs.readFile('static/samples/alligator-fatigue.jpg') });
 		await expect(end).toHaveValue('200');
 		await page.getByRole('button', { name: 'Assess with AI', exact: true }).click();
+		await expect(page.getByRole('button', { name: 'Road section', exact: true })).toBeEnabled();
+		await expect(end).toBeEnabled();
+		await end.fill('210');
 		await expect(page.getByText('Severity 3/10', { exact: true })).toBeVisible();
-		await expect(end).toHaveValue('200');
+		await expect(end).toHaveValue('210');
 		await page.getByLabel('What happened?', { exact: true }).fill('Corrected description of the same pavement issue.');
 		await expect(page.getByText('Severity 3/10', { exact: true })).toHaveCount(0);
-		await expect(end).toHaveValue('200');
+		await expect(end).toHaveValue('210');
 		await page.getByRole('button', { name: 'Assess with AI', exact: true }).click();
 		await expect(page.getByText('Severity 3/10', { exact: true })).toBeVisible();
-		await expect(end).toHaveValue('200');
+		await expect(end).toHaveValue('210');
 		await page.getByLabel('Asset or landmark', { exact: true }).fill('Public entrance along Test Road');
 		await page.route('**/api/community/posts', route => route.fulfill({ status: 503, json: { message: 'Controlled publication capture.' } }));
 		const sent = page.waitForRequest(request => request.url().endsWith('/api/community/posts') && request.method() === 'POST');
 		await page.getByRole('button', { name: 'Publish infrastructure update', exact: true }).click();
-		expect((await sent).postDataJSON().road).toEqual({ id: road.id, start: 0, end: 200 });
+		expect((await sent).postDataJSON().road).toEqual({ id: road.id, start: 0, end: 210 });
 		await expect(page.getByRole('alert')).toContainText('Controlled publication capture');
 		await control();
 		await page.getByRole('button', { name: 'Assess again', exact: true }).click();
-		await expect(page.getByLabel('Latitude', { exact: true })).toBeVisible();
-		await expect(page.getByRole('button', { name: 'Road section', exact: true })).toBeVisible();
-		await expect(page.getByRole('button', { name: 'Road section', exact: true })).toBeDisabled();
-		await expect(page.getByText('This assessed asset uses a point location; road sections are only used for pavement reports.', { exact: true })).toBeVisible();
-		await expect(page.locator('.road-end')).toHaveCount(0);
-		await page.getByLabel('Headline', { exact: true }).fill('Corrected pavement target');
+		await expect(page.getByText('OTHER PUBLIC INFRASTRUCTURE', { exact: true })).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Road section', exact: true })).toBeEnabled();
+		await expect(end).toHaveValue('210');
+		const nonPavementSent = page.waitForRequest(request => request.url().endsWith('/api/community/posts') && request.method() === 'POST');
+		await page.getByRole('button', { name: 'Publish infrastructure update', exact: true }).click();
+		expect((await nonPavementSent).postDataJSON().road).toEqual({ id: road.id, start: 0, end: 210 });
+		await expect(page.getByRole('alert')).toContainText('Controlled publication capture');
+		await page.getByRole('button', { name: 'Point pin', exact: true }).click();
+		await expect(page.getByLabel('Latitude', { exact: true })).toBeVisible();
+		await expect(page.locator('.road-end')).toHaveCount(0);
 		await page.getByRole('button', { name: 'Road section', exact: true }).click();
 		await page.getByRole('button', { name: 'Drop pin at map center', exact: true }).click();
 		await expect(end).toBeVisible();
