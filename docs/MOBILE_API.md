@@ -318,5 +318,7 @@ The tests read `DATABASE_URL` from their environment, as existing suites do. The
 focused server uses port 5183 and mock Gemini 5198; do not run it alongside the
 full suite using the same mock port. The production suite builds the app and
 exercises the same cases on localhost:5184, including real form-origin behavior
-that development skips. All mobile-client code and token storage
+that development skips. It needs `openssl` to generate an ignored, short-lived
+loopback SMTP certificate; production email TLS remains enabled and certificate
+verification is preserved using that test CA. All mobile-client code and token storage
 implementation remain work for the mobile repository.

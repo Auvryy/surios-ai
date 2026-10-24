@@ -1,10 +1,11 @@
 import net from 'node:net';
+import tls from 'node:tls';
 
-export async function startLocalMailbox() {
+export async function startLocalMailbox(options?: { tls?: tls.TlsOptions }) {
 	const messages: { to: string[]; subject: string; text: string }[] = [];
 	const sockets = new Set<net.Socket>();
 	let rejectNext = false;
-	const server = net.createServer((socket) => {
+	const connection = (socket: net.Socket) => {
 		sockets.add(socket); socket.on('close', () => sockets.delete(socket)); socket.on('error', () => {});
 		socket.write('220 localhost test mailbox\r\n');
 		let buffer = '', inData = false, data: string[] = [], recipients: string[] = [];
@@ -30,7 +31,8 @@ export async function startLocalMailbox() {
 				else socket.write('250 OK\r\n');
 			}
 		});
-	});
+	};
+	const server = options?.tls ? tls.createServer(options.tls, connection) : net.createServer(connection);
 	await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(25279, '127.0.0.1', resolve); });
 	return { messages, rejectOne: () => { rejectNext = true; }, close: async () => { for (const socket of sockets) socket.destroy(); await new Promise<void>((resolve) => server.close(() => resolve())); } };
 }

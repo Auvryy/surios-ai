@@ -37,7 +37,8 @@ async function register(name: string, extra: Record<string, unknown> = {}) {
 
 test.beforeAll(async ({ playwright }) => {
 	api = await playwright.request.newContext({ baseURL: origin, extraHTTPHeaders: { Accept: 'application/json' } });
-	mailbox = await startLocalMailbox();
+	const tlsDirectory = process.env.MOBILE_API_TEST_TLS_DIR;
+	mailbox = await startLocalMailbox(tlsDirectory ? { tls: { key: await fs.readFile(path.join(tlsDirectory, 'key.pem')), cert: await fs.readFile(path.join(tlsDirectory, 'cert.pem')) } } : undefined);
 	photo = await fs.readFile('static/samples/pothole-severe.jpg');
 	const salt = 'mobile-integration-salt';
 	const hash = `${salt}:${scryptSync(password, salt, 64).toString('hex')}`;
@@ -412,6 +413,10 @@ test('password recovery delivers a real test email, keeps unknown accounts priva
 });
 
 test('only the owner can delete a source post and government history survives deletion', async () => {
+	const staged = await api.post('/api/community/government-media', { headers: headers(2), multipart: { file: { name: 'retained-evidence.jpg', mimeType: 'image/jpeg', buffer: photo } } }).then((response) => response.json());
+	files.add(staged.media.url);
+	const official = await api.post('/api/community/reposts', { headers: headers(2), multipart: { id: randomUUID(), postId: postIds[0], body: 'Retain this official explanation after citizen deletion.', status: 'RESOLVED', evidenceIds: JSON.stringify([staged.id]), budget: '[]' } });
+	expect(official.status()).toBe(201);
 	expect((await api.delete(`/api/community/posts/${postIds[0]}`, { headers: headers(2) })).status()).toBe(404);
 	const before = await api.get('/api/community/posts/' + postIds[0]).then((response) => response.json());
 	const removed = await api.delete(`/api/community/posts/${postIds[0]}`, { headers: headers() });
