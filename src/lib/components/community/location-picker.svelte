@@ -22,7 +22,7 @@
 	let landing = $state<{ x: number; y: number } | null>(null);
 	function clearLanding() { landing = null; draggingPin = false; }
 	function previewDrop(event: DragEvent) {
-		if (!draggingPin || disabled || !map) return;
+		if (!draggingPin || disabled || !allowRoadSection || mode !== 'road' || !map) return;
 		event.preventDefault();
 		if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
 		const point = map.mouseEventToContainerPoint(event);
@@ -44,7 +44,7 @@
 		else saveSection(roadSegment.start, Math.max(roadSegment.start + MIN_ROAD_METERS, Math.min(roadTotal, roadSegment.start + MAX_ROAD_METERS, offset)));
 	}
 	async function selectAt(point: RoadPoint) {
-		if (disabled || loadingRoad) return;
+		if (disabled || (mode === 'road' && loadingRoad)) return;
 		if (mode === 'point') { latitude = point[0]; longitude = point[1]; return; }
 		if (pickEnd && road) { moveEnd(pickEnd, nearestRoadPoint(road.coordinates, point).offset); pickEnd = null; return; }
 		loadingRoad = true; message = ''; const version = ++requestVersion;
@@ -59,10 +59,10 @@
 			saveSection(start, Math.min(total, start + 80));
 			message = 'Road selected. Drag either endpoint or adjust the sliders.';
 		} catch (cause) { if (version === requestVersion) message = cause instanceof Error ? cause.message : 'Road data is unavailable. Try again or choose a point pin.'; }
-		finally { loadingRoad = false; }
+		finally { if (version === requestVersion) loadingRoad = false; }
 	}
-	function changeMode(next: 'point' | 'road') { clearLanding(); mode = next; requestVersion++; road = null; roadSegment = null; pickEnd = null; message = ''; }
-	function drop(event: DragEvent) { event.preventDefault(); const valid = draggingPin; clearLanding(); if (!valid || disabled || !map) return; mode = 'road'; const point = map.mouseEventToLatLng(event); void selectAt([point.lat, point.lng]); }
+	function changeMode(next: 'point' | 'road') { clearLanding(); mode = next; requestVersion++; loadingRoad = false; road = null; roadSegment = null; pickEnd = null; message = ''; }
+	function drop(event: DragEvent) { event.preventDefault(); const valid = draggingPin; clearLanding(); if (!valid || disabled || !allowRoadSection || mode !== 'road' || !map) return; const point = map.mouseEventToLatLng(event); void selectAt([point.lat, point.lng]); }
 	$effect(() => {
 		let disposed = false;
 		let instance: LeafletMap | undefined;
@@ -110,7 +110,7 @@
 	}
 </script>
 <div class="space-y-3">
-	<div class="flex flex-wrap items-center justify-between gap-2"><div class="flex gap-1" aria-label="Location type"><Button type="button" variant={mode === 'point' ? 'default' : 'outline'} size="sm" class="min-h-11" {disabled} onclick={() => changeMode('point')}>Point pin</Button>{#if allowRoadSection}<Button type="button" variant={mode === 'road' ? 'default' : 'outline'} size="sm" class="min-h-11" {disabled} onclick={() => changeMode('road')}>Road section</Button>{/if}</div><Button type="button" size="sm" variant="outline" class="min-h-11 shrink-0 text-xs" onclick={locate} disabled={disabled || locating}><NavigationIcon class="size-3.5" />{locating ? 'Locating…' : 'Use my location'}</Button></div>
+	<div class="flex flex-wrap items-center justify-between gap-2"><div role="group" class="flex gap-1" aria-label="Location type"><Button type="button" variant={mode === 'point' ? 'default' : 'outline'} size="sm" class="min-h-11" aria-pressed={mode === 'point'} {disabled} onclick={() => changeMode('point')}>Point pin</Button><Button type="button" variant={mode === 'road' ? 'default' : 'outline'} size="sm" class="min-h-11" aria-pressed={mode === 'road'} disabled={disabled || !allowRoadSection} onclick={() => changeMode('road')}>Road section</Button></div><Button type="button" size="sm" variant="outline" class="min-h-11 shrink-0 text-xs" onclick={locate} disabled={disabled || locating}><NavigationIcon class="size-3.5" />{locating ? 'Locating…' : 'Use my location'}</Button></div>
 	{#if mode === 'road'}<div class="flex items-center gap-3 rounded-lg bg-primary/5 px-3 py-2"><button type="button" draggable={!disabled} ondragstart={(event) => { draggingPin = true; if (event.dataTransfer) { event.dataTransfer.setData('text/plain', 'road-pin'); event.dataTransfer.effectAllowed = 'move'; } }} ondragend={clearLanding} onclick={() => { if (map) { const center = map.getCenter(); void selectAt([center.lat, center.lng]); } }} disabled={disabled || loadingRoad} aria-label="Drop pin at map center" class="flex size-12 shrink-0 cursor-grab items-center justify-center rounded-lg border border-primary/30 bg-card active:cursor-grabbing"><MapPinIcon aria-hidden="true" class={`road-dropper size-8 text-primary ${!roadSegment && !loadingRoad && !disabled ? 'road-dropper-idle' : ''}`} /></button><p class="text-xs leading-5 text-muted-foreground">{loadingRoad ? 'Finding the road…' : 'Drag the pin onto a road, tap a road, or press the pin to select at the map center. Adjust A and B to mark 5–500 metres.'}</p></div>{:else}<p class="text-xs text-muted-foreground">Tap the map or drag the pin to the hazard.</p>{/if}
 	<div role="region" ondragover={previewDrop} ondragleave={(event) => { if (!(event.relatedTarget instanceof Node) || !container.contains(event.relatedTarget)) landing = null; }} ondrop={drop} aria-label="Infrastructure issue location picker" bind:this={container} class="relative z-0 h-60 w-full overflow-hidden rounded-lg border border-border">{#if landing}<span data-testid="pin-landing-shadow" aria-hidden="true" class="pin-landing-shadow" style:left={`${landing.x}px`} style:top={`${landing.y}px`}></span>{/if}</div>
 	{#if mode === 'road' && roadSegment}<div class="space-y-3 rounded-lg border border-primary/25 p-3"><p class="text-sm font-medium">{roadSegment.name} · {Math.round(roadSegment.length)} m</p>{#each (['start', 'end'] as const) as which}<label class="block text-xs"><span>{which === 'start' ? 'A · Start' : 'B · End'} · {Math.round(roadSegment[which])} m along road</span><input aria-label={`Road ${which}`} type="range" min={which === 'start' ? Math.max(0, roadSegment.end - MAX_ROAD_METERS) : roadSegment.start + MIN_ROAD_METERS} max={which === 'start' ? roadSegment.end - MIN_ROAD_METERS : Math.min(roadTotal, roadSegment.start + MAX_ROAD_METERS)} step="1" value={roadSegment[which]} {disabled} oninput={(event) => moveEnd(which, Number(event.currentTarget.value))} class="mt-1 min-h-11 w-full accent-primary" /></label>{/each}<div class="grid grid-cols-2 gap-2"><Button type="button" size="sm" variant="outline" {disabled} onclick={() => pickEnd = 'start'}>Tap to move A</Button><Button type="button" size="sm" variant="outline" {disabled} onclick={() => pickEnd = 'end'}>Tap to move B</Button></div>{#if pickEnd}<p role="status" class="text-xs text-primary">Tap the road to move {pickEnd === 'start' ? 'A' : 'B'}.</p>{/if}</div>{/if}
