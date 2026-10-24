@@ -28,6 +28,7 @@
 	let longitude = $state(121.4173);
 	let roadSegment = $state<RoadSegment | null>(null);
 	let locationReady = $state(true);
+	let locationKey = $state(0);
 	let error = $state('');
 	let busy = $state<'assessing' | 'publishing' | null>(null);
 	let assessment = $state<{ draftId: string; media: PostMedia[]; analysis: TriageAnalysis } | null>(null);
@@ -39,6 +40,7 @@
 	let fileInput = $state<HTMLInputElement>(null!);
 	let requested = $state<'photo' | 'video'>('photo');
 	const coverMedia = $derived(attachments.find((item) => item.id === cover));
+	const roadSelectionAllowed = $derived(!assessment || assessment.analysis.infrastructureType === 'ROAD_PAVEMENT');
 	function discardSaved(id: string) {
 		cleanup = cleanup.then(async () => {
 			const response = await fetch(`/api/community/drafts/${id}`, { method: 'DELETE', keepalive: true, signal: AbortSignal.timeout(8000) });
@@ -50,7 +52,7 @@
 		const id = pendingId || assessment?.draftId;
 		controller?.abort(); controller = null; pendingId = null;
 		if (id) discardSaved(id);
-		assessment = null; roadSegment = null; error = '';
+		assessment = null; error = '';
 		if (busy === 'assessing') busy = null;
 		assessmentNote = attachments.length ? note : '';
 	}
@@ -59,7 +61,7 @@
 		invalidateAssessment();
 		attachments.forEach((item) => URL.revokeObjectURL(item.url));
 		attachments = []; cover = ''; title = ''; body = ''; locationName = '';
-		latitude = 14.2813; longitude = 121.4173; assessmentNote = '';
+		latitude = 14.2813; longitude = 121.4173; roadSegment = null; locationKey++; assessmentNote = '';
 	}
 	onDestroy(() => {
 		invalidateAssessment();
@@ -132,7 +134,7 @@
 				throw new Error(result.message || result.error || 'Unable to publish. Your draft is saved here.');
 			}
 			await invalidateAll();
-			attachments.forEach((item) => URL.revokeObjectURL(item.url)); attachments = []; assessment = null; assessmentNote = ''; cover = ''; title = ''; body = ''; locationName = ''; roadSegment = null;
+			attachments.forEach((item) => URL.revokeObjectURL(item.url)); attachments = []; assessment = null; assessmentNote = ''; cover = ''; title = ''; body = ''; locationName = ''; roadSegment = null; locationKey++;
 			open = false; onpublished(result.id, result.grouped);
 		} catch (cause) { error = cause instanceof Error ? cause.message : 'Unable to publish. Please try again.'; }
 		finally { busy = null; }
@@ -164,10 +166,10 @@
 				<Button type="button" variant={assessment ? 'outline' : 'default'} class="h-11 w-full" disabled={!attachments.length || !!busy} onclick={assess}>{#if busy === 'assessing'}<LoaderIcon class="size-4 animate-spin motion-reduce:animate-none" />Assessing your evidence…{:else}<SparklesIcon class="size-4" />{assessment ? 'Assess again' : 'Assess with AI'}{/if}</Button>
 				{#if busy === 'assessing'}<Button type="button" variant="outline" class="min-h-11 w-full" onclick={() => invalidateAssessment('Assessment cancelled. You can edit your attachments and try again.')}>Cancel assessment</Button>{/if}
 			</section>
-			<fieldset disabled={!!busy} class="space-y-3 border-t border-border pt-4"><legend class="flex items-center gap-2 pt-4 text-sm font-medium"><MapPinIcon class="size-4 text-primary" />Where is the issue?</legend><label for="post-location" class="sr-only">Asset or landmark</label><Input id="post-location" bind:value={locationName} placeholder="Street, bridge, canal, utility, barangay, or landmark" minlength={3} maxlength={200} required class="h-11" /><LocationPicker bind:latitude bind:longitude bind:roadSegment bind:ready={locationReady} allowRoadSection={assessment?.analysis.infrastructureType === 'ROAD_PAVEMENT'} disabled={!!busy} />{#if assessment?.analysis.infrastructureType !== 'ROAD_PAVEMENT'}<p class="text-xs text-muted-foreground">This report uses a point location; road-section lines are only used for pavement issues.</p>{/if}<p class="text-xs text-muted-foreground">The map is the final item in your post’s media gallery.</p></fieldset>
+			<fieldset disabled={!!busy} class="space-y-3 border-t border-border pt-4"><legend class="flex items-center gap-2 pt-4 text-sm font-medium"><MapPinIcon class="size-4 text-primary" />Where is the issue?</legend><label for="post-location" class="sr-only">Asset or landmark</label><Input id="post-location" bind:value={locationName} placeholder="Street, bridge, canal, utility, barangay, or landmark" minlength={3} maxlength={200} required class="h-11" />{#key locationKey}<LocationPicker bind:latitude bind:longitude bind:roadSegment bind:ready={locationReady} allowRoadSection={roadSelectionAllowed} disabled={!!busy} />{/key}{#if !roadSelectionAllowed}<p class="text-xs text-muted-foreground">This assessed asset uses a point location; road sections are only used for pavement reports.</p>{:else if !assessment}<p class="text-xs text-muted-foreground">Choose a point location, or mark a road section for pavement reports.</p>{/if}<p class="text-xs text-muted-foreground">The map is the final item in your post’s media gallery.</p></fieldset>
 			{#if error}<p role="alert" class="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>{/if}
 			<div class="sticky -bottom-4 border-t border-border bg-popover py-3"><Button type="submit" class="h-11 w-full" disabled={!assessment || !locationReady || !!busy || !locationName.trim() || title.trim().length < 3}>{#if busy === 'publishing'}<LoaderIcon class="size-4 animate-spin motion-reduce:animate-none" />Publishing…{:else}Publish infrastructure update{/if}</Button>{#if !assessment}<p class="mt-2 text-center text-xs text-muted-foreground">Assess your attachments to enable publishing.</p>{/if}</div>
-			{#if attachments.length || title || body}<Button type="button" variant="ghost" class="min-h-11 w-full text-muted-foreground" disabled={busy === 'publishing'} onclick={discardDraft}>Discard draft</Button>{/if}
+			{#if attachments.length || title || body || locationName || roadSegment}<Button type="button" variant="ghost" class="min-h-11 w-full text-muted-foreground" disabled={busy === 'publishing'} onclick={discardDraft}>Discard draft</Button>{/if}
 		</form>
 		{/if}
 	</DialogContent>

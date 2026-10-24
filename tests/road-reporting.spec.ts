@@ -15,7 +15,15 @@ const origin = 'http://127.0.0.1:5177';
 const road: RoadWay = { id: '990001234567', name: 'Test Road', coordinates: [[32, 110], [32.002, 110], [32.004, 110.001]] };
 const analysis: TriageAnalysis = { isValidInfrastructure: true, infrastructureType: 'ROAD_PAVEMENT', distressType: 'alligator_cracking', hazardSeverity: 5, riskLevel: 'MODERATE', vruLethality: 'LOW', vruDetails: 'Caution', recommendedAction: 'Inspect', materialsChecklist: [], estimatedDimensions: { depthEstimate: 'Unmeasured', surfaceAreaEstimate: 'Unmeasured' }, urgency: 'PRIORITY', summary: 'Test road section.' };
 test.beforeAll(async () => { for (const id of users) await sql`insert into users(id,name,email,password_hash,role) values(${id},'Road test',${`${id}@example.test`},'unused','CITIZEN')`; await sql`insert into sessions(id,user_id,expires_at) values(${token},${users[0]},${new Date(Date.now()+3600000)})`; });
-test.afterAll(async () => { await sql`delete from community_posts where user_id in ${sql(users)}`; if (reports.size) await sql`delete from reports where id in ${sql([...reports])}`; await sql`delete from users where id in ${sql(users)}`; await Promise.all(files.map(file=>fs.rm(file,{force:true}))); await sql.end(); });
+test.afterAll(async () => {
+	const drafts = await sql`select media from community_drafts where user_id in ${sql(users)}`;
+	for (const draft of drafts) for (const media of draft.media) files.push('static/uploads/community/' + media.url.split('/').pop());
+	await sql`delete from community_posts where user_id in ${sql(users)}`;
+	if (reports.size) await sql`delete from reports where id in ${sql([...reports])}`;
+	await sql`delete from users where id in ${sql(users)}`;
+	await Promise.all(files.map(file => fs.rm(file, { force: true })));
+	await sql.end();
+});
 test('server enforces 5 MiB images and 25 MiB common videos, including format signatures', async () => {
 	for (const [type, bytes, signature, name] of [['image/jpeg',PHOTO_BYTES,Buffer.from([255,216,255]),'road.jpg'],['video/mp4',VIDEO_BYTES,Buffer.from('0000ftyp'),'road.mp4']] as const) {
 		const data=Buffer.alloc(bytes); signature.copy(data);
@@ -49,7 +57,132 @@ test('overlapping road sections link matching evidence across different pins, in
 	const postId=randomUUID(),mediaId=randomUUID();await sql`insert into community_posts(id,user_id,draft_id,report_id,title,body,location_name,latitude,longitude,media,cover_id,analysis) values(${postId},${users[0]},${randomUUID()},${first.reportId},${`road-shared-${postId}`},'Earlier milder source','Test Road',32,110,${sql.json([{id:mediaId,url:'/samples/alligator-fatigue.jpg',name:'source.jpg',mimeType:'image/jpeg',kind:'photo'}])},${mediaId},${sql.json(analysis)})`;
 	const shared=await request.get(`/api/community/posts?q=${postId}&tab=critical&sort=severity`);const sharedData=await shared.json();expect(sharedData.posts).toHaveLength(1);expect(sharedData.posts[0].reportSeverity).toBe(8);expect(sharedData.posts[0].analysis.hazardSeverity).toBe(5);
 	const different=await recordHazardEvidence(await evidence(0,300,500,'non-road-spam.jpg'),async()=>({reportId:null,confidence:.3,reason:'Different physical defect.'})); reports.add(different.reportId); expect(different.reportId).not.toBe(first.reportId);
+
+	const publishedInput = await evidence(0, 30, 230);
+	await sql`insert into community_drafts(id,user_id,media,analysis,expires_at) values(${publishedInput.sourceId},${users[0]},${sql.json(publishedInput.media)},${sql.json(analysis)},now()+interval '1 day')`;
+	const published = await recordHazardEvidence({ ...publishedInput, post: { draftId: publishedInput.sourceId, coverId: publishedInput.media[0].id, title: 'Saved road selection', body: 'Selected pavement section.' } });
+	reports.add(published.reportId);
+	const [stored] = await sql`select road_segment from community_posts where id=${published.id!}`;
+	expect(stored.road_segment).toMatchObject({ id: road.id, start: 30, end: 230, length: 200 });
 });
+test('map posting offers point and road locations before any assessment', async ({ page, baseURL }) => {
+	await page.setViewportSize({ width: 375, height: 812 });
+	await page.context().addCookies([{ name: 'surios_session', value: token, url: baseURL! }]);
+	await page.goto('/map');
+	await page.waitForLoadState('networkidle');
+	await page.getByRole('link', { name: 'Create a road post', exact: true }).click();
+	await expect(page.getByRole('dialog')).toBeVisible();
+	const roadChoice = page.getByRole('button', { name: 'Road section', exact: true });
+	await expect(roadChoice).toBeVisible();
+	await expect(roadChoice).toBeEnabled();
+	await expect(page.getByRole('button', { name: 'Point pin', exact: true })).toBeVisible();
+	await expect(page.getByLabel('Latitude', { exact: true })).toBeVisible();
+	await page.route('**/api/roads?*', route => route.fulfill({ json: { roads: [{ ...road, coordinates: [[14.2813,121.4173],[14.285,121.4173]] }] } }));
+	await roadChoice.click();
+	const dropper = page.getByRole('button', { name: 'Drop pin at map center', exact: true });
+	await expect(dropper).toBeVisible();
+	await expect(dropper).toHaveAttribute('draggable', 'true');
+	await dropper.focus();
+	await page.keyboard.press('Enter');
+	await expect(page.getByLabel('Road start', { exact: true })).toBeVisible();
+	await expect(page.locator('.road-end')).toHaveCount(2);
+	await expect(page.getByRole('button', { name: 'Publish infrastructure update', exact: true })).toBeDisabled();
+	await page.getByRole('button', { name: 'Point pin', exact: true }).click();
+	await expect(page.getByLabel('Latitude', { exact: true })).toBeVisible();
+	await expect(page.locator('.road-end')).toHaveCount(0);
+	await expect(roadChoice).toBeEnabled();
+	expect(await page.getByRole('dialog').evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+});
+
+test('a preselected road survives edits and pavement assessment, submits its geometry, and resets for other assets or discard', async ({ page, baseURL }) => {
+	const control = (overrides: Record<string, unknown> = {}) => fetch('http://127.0.0.1:5198/control', { method: 'POST', body: JSON.stringify({ overrides }) });
+	await control({ infrastructureType: 'ROAD_PAVEMENT', distressType: 'alligator_cracking' });
+	try {
+		await page.context().addCookies([{ name: 'surios_session', value: token, url: baseURL! }]);
+		await page.goto('/community?compose=1');
+		await page.waitForLoadState('networkidle');
+		await page.route('**/api/roads?*', route => route.fulfill({ json: { roads: [{ ...road, coordinates: [[14.2813,121.4173],[14.285,121.4173]] }] } }));
+		await page.getByRole('button', { name: 'Road section', exact: true }).click();
+		await expect(page.locator('[aria-label="Infrastructure issue location picker"] .leaflet-tile-pane')).toBeAttached();
+		await page.getByRole('button', { name: 'Drop pin at map center', exact: true }).click();
+		const end = page.getByLabel('Road end', { exact: true });
+		await expect(end).toBeVisible();
+		await end.fill('200');
+		await page.getByLabel('Headline', { exact: true }).fill('Pavement defect on the selected section');
+		await page.getByLabel('What happened?', { exact: true }).fill('A localized pavement issue near the public entrance.');
+		await page.getByLabel('Attach media', { exact: true }).setInputFiles({ name: 'road.jpg', mimeType: 'image/jpeg', buffer: await fs.readFile('static/samples/alligator-fatigue.jpg') });
+		await expect(end).toHaveValue('200');
+		await page.getByRole('button', { name: 'Assess with AI', exact: true }).click();
+		await expect(page.getByText('Severity 3/10', { exact: true })).toBeVisible();
+		await expect(end).toHaveValue('200');
+		await page.getByLabel('What happened?', { exact: true }).fill('Corrected description of the same pavement issue.');
+		await expect(page.getByText('Severity 3/10', { exact: true })).toHaveCount(0);
+		await expect(end).toHaveValue('200');
+		await page.getByRole('button', { name: 'Assess with AI', exact: true }).click();
+		await expect(page.getByText('Severity 3/10', { exact: true })).toBeVisible();
+		await expect(end).toHaveValue('200');
+		await page.getByLabel('Asset or landmark', { exact: true }).fill('Public entrance along Test Road');
+		await page.route('**/api/community/posts', route => route.fulfill({ status: 503, json: { message: 'Controlled publication capture.' } }));
+		const sent = page.waitForRequest(request => request.url().endsWith('/api/community/posts') && request.method() === 'POST');
+		await page.getByRole('button', { name: 'Publish infrastructure update', exact: true }).click();
+		expect((await sent).postDataJSON().road).toEqual({ id: road.id, start: 0, end: 200 });
+		await expect(page.getByRole('alert')).toContainText('Controlled publication capture');
+		await control();
+		await page.getByRole('button', { name: 'Assess again', exact: true }).click();
+		await expect(page.getByLabel('Latitude', { exact: true })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Road section', exact: true })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Road section', exact: true })).toBeDisabled();
+		await expect(page.getByText('This assessed asset uses a point location; road sections are only used for pavement reports.', { exact: true })).toBeVisible();
+		await expect(page.locator('.road-end')).toHaveCount(0);
+		await page.getByLabel('Headline', { exact: true }).fill('Corrected pavement target');
+		await expect(page.getByRole('button', { name: 'Road section', exact: true })).toBeEnabled();
+		await page.getByRole('button', { name: 'Road section', exact: true }).click();
+		await page.getByRole('button', { name: 'Drop pin at map center', exact: true }).click();
+		await expect(end).toBeVisible();
+		await page.getByRole('button', { name: 'Discard draft', exact: true }).click();
+		await expect(page.getByRole('button', { name: 'Point pin', exact: true })).toHaveAttribute('aria-pressed', 'true');
+		await expect(page.getByRole('button', { name: 'Road section', exact: true })).toBeEnabled();
+		await expect(page.locator('.road-end')).toHaveCount(0);
+		await expect(page.getByLabel('Latitude', { exact: true })).toHaveValue('14.2813');
+	} finally { await control(); }
+});
+
+test('switching to a point during a road lookup ignores the old result and permits another road selection', async ({ page, baseURL }) => {
+	await page.context().addCookies([{ name: 'surios_session', value: token, url: baseURL! }]);
+	await page.goto('/community?compose=1');
+	await page.waitForLoadState('networkidle');
+	let release!: () => void, seen!: () => void;
+	const pending = new Promise<void>(resolve => release = resolve);
+	const started = new Promise<void>(resolve => seen = resolve);
+	let calls = 0;
+	await page.route('**/api/roads?*', async route => {
+		const first = ++calls === 1;
+		if (first) { seen(); await pending; }
+		await route.fulfill({ json: { roads: [{ ...road, name: first ? 'Old delayed road' : 'Current selected road', coordinates: [[14.2813,121.4173],[14.285,121.4173]] }] } });
+	});
+	try {
+		const choice = page.getByRole('button', { name: 'Road section', exact: true });
+		const dropper = page.getByRole('button', { name: 'Drop pin at map center', exact: true });
+		await choice.click();
+		await expect(page.locator('[aria-label="Infrastructure issue location picker"] .leaflet-tile-pane')).toBeAttached();
+		await dropper.click();
+		await started;
+		await page.getByRole('button', { name: 'Point pin', exact: true }).click();
+		await page.getByRole('region', { name: 'Infrastructure issue location picker' }).click({ position: { x: 120, y: 100 } });
+		await expect(page.getByLabel('Latitude', { exact: true })).not.toHaveValue('14.2813');
+		await choice.click();
+		await expect(dropper).toBeEnabled();
+		await dropper.click();
+		await expect(page.getByText(/Current selected road ·/)).toBeVisible();
+		const oldResponse = page.waitForResponse(response => response.url().includes('/api/roads?'));
+		release();
+		await oldResponse;
+		await expect(page.getByText(/Old delayed road ·/)).toHaveCount(0);
+		await expect(page.getByText(/Current selected road ·/)).toBeVisible();
+		await expect(page.locator('.road-end')).toHaveCount(2);
+	} finally { release(); }
+});
+
 test('feed media controls immediately open restricted file pickers; pin road controls work on mobile',async({page,baseURL})=>{
 	await page.context().addCookies([{name:'surios_session',value:token,url:baseURL!}]);await page.goto('/community');await page.waitForLoadState('networkidle');
 	await expect(page.getByTitle('Switch demo persona')).toHaveCount(0);
