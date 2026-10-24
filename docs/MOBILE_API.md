@@ -42,6 +42,11 @@ expired session), 403 (permissions, approval or origin), 404 (missing/not owned)
 provider or email). API errors do not redirect to HTML login pages. API responses
 are not cached. Dates are ISO 8601 strings.
 
+`GET /media/:name` serves the returned public photo/video/PDF URL. Video/download
+clients can send a single `Range: bytes=...` header (206 for a valid range, 416
+for an invalid one); PDFs are downloads. This media route is outside `/api` and
+does not require a bearer credential.
+
 ## Authentication and account approval
 
 | Method | Path | Request / response |
@@ -133,6 +138,13 @@ The response contains `feed`, `posts`, `reposts`, `total`, `hasMore`,
 `kind: "repost"`. Replace the loaded collection when requesting the next page:
 page 2 returns the first 40 items, not only items 21–40. Do not append duplicates.
 The separate arrays support existing website callers.
+
+Use `post.reportStatus`, `reportSeverity`, and `reportRiskLevel` for the current
+shared hazard badges; `post.analysis` preserves that source's original assessment.
+An official quote's `governmentUpdate.status` is its historical update, while
+`repost.post.reportStatus` is the current shared state. The response shapes are
+defined by [community DTOs](../src/lib/types/community.ts) and
+[map hazard DTOs](../src/lib/types/hazards.ts).
 
 For a social repost, send multipart `id` (a client-generated UUID), `postId`,
 optional `body` (up to 1,000 characters), optional `quotedRepostId`, and zero/one
