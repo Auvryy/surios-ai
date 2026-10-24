@@ -8,6 +8,7 @@ declare global {
 		interface Locals {
 			user: User | null;
 			session: Session | null;
+			authMethod: 'cookie' | 'bearer' | null;
 		}
 		interface PageData {
 			user?: User | null;

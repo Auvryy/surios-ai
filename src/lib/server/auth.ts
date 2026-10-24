@@ -6,6 +6,19 @@ import { users, sessions, type User, type Session } from './db/schema.js';
 
 const SESSION_COOKIE_NAME = 'surios_session';
 const SESSION_EXPIRY_DAYS = 30;
+const MOBILE_TOKEN_PREFIX = 'surios_mobile_';
+
+/** Mobile credentials are returned once; only their digest is stored in sessions. */
+export function mobileSessionId(token: string): string | null {
+	if (!/^surios_mobile_[a-f0-9]{64}$/.test(token)) return null;
+	return `mobile:${crypto.createHash('sha256').update(token).digest('hex')}`;
+}
+
+export async function createMobileSession(userId: string, metadata?: { ipAddress?: string; userAgent?: string }) {
+	const token = MOBILE_TOKEN_PREFIX + generateSessionToken();
+	const session = await createSession(mobileSessionId(token)!, userId, metadata);
+	return { token, session };
+}
 
 /**
  * Generates a cryptographic scrypt hash for the password with a random 16-byte salt.
