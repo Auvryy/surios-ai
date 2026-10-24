@@ -1,12 +1,13 @@
 import crypto from 'node:crypto';
-import { error, fail, type RequestEvent } from '@sveltejs/kit';
+import { error, fail, isHttpError, type RequestEvent } from '@sveltejs/kit';
 import { and, eq, gt, ne, sql } from 'drizzle-orm';
 import { db, users, sessions, passwordResets } from './db';
 import { hashPassword, verifyPassword, deleteSessionTokenCookie } from './auth';
 import { mailConfiguration, sendEmail } from './email';
+import { requireMutationOrigin } from './api-access';
 
 export function requireOrigin(event: RequestEvent) {
-	if (event.request.headers.get('origin') !== event.url.origin) error(403, 'Invalid request origin.');
+	requireMutationOrigin(event);
 }
 export function passwordError(password: string, confirmation: string) {
 	if (password.length < 8 || password.length > 128) return 'Use a password between 8 and 128 characters.';
@@ -14,21 +15,30 @@ export function passwordError(password: string, confirmation: string) {
 	return null;
 }
 export async function changePasswordAction(event: RequestEvent) {
+	const form = await event.request.formData();
+	try {
+		return { section: 'password', success: await changeAccountPassword(event, { currentPassword: String(form.get('currentPassword') || ''), newPassword: String(form.get('newPassword') || ''), confirmPassword: String(form.get('confirmPassword') || '') }) };
+	} catch (cause) {
+		if (isHttpError(cause) && cause.status === 400) return fail(400, { section: 'password', error: cause.body.message });
+		throw cause;
+	}
+}
+
+export async function changeAccountPassword(event: RequestEvent, input: { currentPassword: string; newPassword: string; confirmPassword: string }) {
 	if (!event.locals.user || !event.locals.session) error(401, 'Sign in to change your password.');
 	requireOrigin(event);
-	const form = await event.request.formData();
-	const current = String(form.get('currentPassword') || ''), password = String(form.get('newPassword') || ''), confirmation = String(form.get('confirmPassword') || '');
+	const { currentPassword: current, newPassword: password, confirmPassword: confirmation } = input;
 	const invalid = passwordError(password, confirmation);
-	if (invalid) return fail(400, { section: 'password', error: invalid });
-	if (!current || current.length > 128) return fail(400, { section: 'password', error: 'Enter your current password.' });
-	if (password === current) return fail(400, { section: 'password', error: 'Choose a different password.' });
+	if (invalid) error(400, invalid);
+	if (!current || current.length > 256) error(400, 'Enter your current password.');
+	if (password === current) error(400, 'Choose a different password.');
 	return db.transaction(async (tx) => {
 		const [user] = await tx.select().from(users).where(eq(users.id, event.locals.user!.id)).for('update');
-		if (!user || !verifyPassword(current, user.passwordHash)) return fail(400, { section: 'password', error: 'Your current password is incorrect.' });
+		if (!user || !verifyPassword(current, user.passwordHash)) error(400, 'Your current password is incorrect.');
 		await tx.update(users).set({ passwordHash: hashPassword(password), updatedAt: new Date() }).where(eq(users.id, user.id));
 		await tx.delete(sessions).where(and(eq(sessions.userId, user.id), ne(sessions.id, event.locals.session!.id)));
 		await tx.update(passwordResets).set({ usedAt: new Date() }).where(eq(passwordResets.userId, user.id));
-		return { section: 'password', success: 'Password changed. Other sessions have been signed out.' };
+		return 'Password changed. Other sessions have been signed out.';
 	});
 }
 const requests = new Map<string, { count: number; until: number }>();
@@ -66,11 +76,21 @@ export async function requestPasswordReset(event: RequestEvent, email: string, r
 export async function resetPasswordAction(event: RequestEvent) {
 	requireOrigin(event);
 	const form = await event.request.formData();
-	const token = String(form.get('token') || '');
-	const password = String(form.get('newPassword') || ''), confirmation = String(form.get('confirmPassword') || '');
+	try {
+		const success = await resetAccountPassword({ token: String(form.get('token') || ''), newPassword: String(form.get('newPassword') || ''), confirmPassword: String(form.get('confirmPassword') || '') });
+		deleteSessionTokenCookie(event);
+		return { success };
+	} catch (cause) {
+		if (isHttpError(cause) && cause.status === 400) return fail(400, { error: cause.body.message });
+		throw cause;
+	}
+}
+
+export async function resetAccountPassword(input: { token: string; newPassword: string; confirmPassword: string }) {
+	const { token, newPassword: password, confirmPassword: confirmation } = input;
 	const invalid = passwordError(password, confirmation);
-	if (invalid) return fail(400, { error: invalid });
-	if (!/^[a-f0-9]{64}$/.test(token)) return fail(400, { error: 'This reset link is invalid or expired. Request a new one.' });
+	if (invalid) error(400, invalid);
+	if (!/^[a-f0-9]{64}$/.test(token)) error(400, 'This reset link is invalid or expired. Request a new one.');
 	const hash = crypto.createHash('sha256').update(token).digest('hex');
 	const result = await db.transaction(async (tx) => {
 		// Lock the account before its tokens, matching the request/change-password lock order.
@@ -84,7 +104,6 @@ export async function resetPasswordAction(event: RequestEvent) {
 		await tx.delete(sessions).where(eq(sessions.userId, reset.userId));
 		return true;
 	});
-	if (!result) return fail(400, { error: 'This reset link is invalid or expired. Request a new one.' });
-	deleteSessionTokenCookie(event);
-	return { success: 'Password reset. Sign in with your new password.' };
+	if (!result) error(400, 'This reset link is invalid or expired. Request a new one.');
+	return 'Password reset. Sign in with your new password.';
 }
