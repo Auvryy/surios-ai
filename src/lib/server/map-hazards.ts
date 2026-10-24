@@ -2,8 +2,8 @@ import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { db, reports, communityPosts, reportObservations, users } from './db';
 import { TriageAnalysisSchema } from '$lib/types/triage';
 import { normalizeSeverity, hazardPriority, type MapHazard } from '$lib/types/hazards';
-export async function loadMapHazards(): Promise<{ hazards: MapHazard[]; asOf: string }> {
-	const rows = await db.select().from(reports).orderBy(desc(reports.updatedAt)).limit(1000);
+export async function loadMapHazards(id?: string): Promise<{ hazards: MapHazard[]; asOf: string }> {
+	const rows = await db.select().from(reports).where(id ? eq(reports.id, id) : undefined).orderBy(desc(reports.updatedAt)).limit(1000);
 	if (!rows.length) return { hazards: [], asOf: new Date().toISOString() };
 	const ids = rows.map((report) => report.id);
 	const [posts, observations] = await Promise.all([
