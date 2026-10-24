@@ -8,12 +8,15 @@ declare global {
 		interface Locals {
 			user: User | null;
 			session: Session | null;
+			authMethod: 'cookie' | 'bearer' | null;
 		}
 		interface PageData {
 			user?: User | null;
 		}
 		// interface PageState {}
-		// interface Platform {}
+		interface Platform {
+			req?: import('node:http').IncomingMessage;
+		}
 	}
 }
 

@@ -1,14 +1,12 @@
 import { error, fail, isHttpError, redirect } from '@sveltejs/kit';
-import { eq, sql } from 'drizzle-orm';
-import { db, users } from '$lib/server/db';
-import { emailPreferences, mailConfiguration } from '$lib/server/email';
+import { accountSettings, saveAccountSettings } from '$lib/server/settings';
 import { changePasswordAction, requestPasswordReset, requireOrigin } from '$lib/server/password-security';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = ({ locals, setHeaders }) => {
 	if (!locals.user) redirect(303, '/login?redirectTo=/settings');
 	setHeaders({ 'Cache-Control': 'no-store' });
-	return { preferences: emailPreferences(locals.user.settings), email: locals.user.email, mailAvailable: !!mailConfiguration() };
+	return accountSettings(locals.user);
 };
 export const actions: Actions = {
 	saveNotifications: async (event) => {
@@ -16,7 +14,7 @@ export const actions: Actions = {
 		requireOrigin(event);
 		const form = await event.request.formData();
 		const preferences = { emailComments: form.get('emailComments') === 'on', emailConfirmations: form.get('emailConfirmations') === 'on' };
-		await db.update(users).set({ settings: sql`coalesce(${users.settings}, '{}'::jsonb) || ${JSON.stringify(preferences)}::jsonb`, updatedAt: new Date() }).where(eq(users.id, event.locals.user.id));
+		await saveAccountSettings(event.locals.user.id, preferences);
 		return { section: 'notifications', success: 'Email preferences saved.' };
 	},
 	changePassword: changePasswordAction,

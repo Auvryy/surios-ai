@@ -1,5 +1,6 @@
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
+import { prepareNativeApiRequest } from './native-api.mjs';
 
 // Media paths and build assets must resolve from this checkout, not the caller.
 const checkout = fileURLToPath(new URL('../', import.meta.url));
@@ -18,6 +19,7 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Use a 
 const server = http.createServer((request, response) => {
 	// Replace any client value. Only this loopback launcher establishes the protocol.
 	request.headers[protocolHeader] = 'http';
+	prepareNativeApiRequest(request);
 	handler(request, response);
 });
 server.listen(port, 'localhost', () => {

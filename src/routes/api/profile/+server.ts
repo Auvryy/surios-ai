@@ -6,8 +6,12 @@ import { isGovernment, type GovernmentProfile } from '$lib/types/community';
 import { governmentProfileSchema } from '$lib/server/government-updates';
 import { db, users } from '$lib/server/db';
 import { requireCommunityUser } from '$lib/server/community';
+import { requireApiUser } from '$lib/server/api-access';
+import { loadProfile } from '$lib/server/profiles';
 import { MEDIA_DIR, readUploadForm, validateMedia, removeMedia } from '$lib/server/community-media';
 import type { RequestHandler } from './$types';
+
+export const GET: RequestHandler = async (event) => json(await loadProfile(requireApiUser(event).id, event.locals.user!.id, event.url));
 
 export const POST: RequestHandler = async (event) => {
 	const user = requireCommunityUser(event);

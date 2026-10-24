@@ -8,10 +8,11 @@ import { db, communityPosts, communityComments, communityConfirmations, users, r
 import { alias } from 'drizzle-orm/pg-core';
 import { communityCommentLikes, communityReposts, quoteLikes } from './db/community-social-schema';
 import type { CommunityPost, CommunityRepost, CommunityFeedItem } from '$lib/types/community';
+import { requireMutationOrigin } from './api-access';
 
 export function requireCommunityUser(event: RequestEvent) {
 	if (!event.locals.user) error(401, 'Sign in to post or join the discussion.');
-	if (event.request.headers.get('origin') !== event.url.origin) error(403, 'Invalid request origin.');
+	requireMutationOrigin(event);
 	return event.locals.user;
 }
 

@@ -7,11 +7,14 @@ import { MEDIA_DIR, readUploadForm, validateMedia, removeMedia } from '$lib/serv
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { requireMutationOrigin } from '$lib/server/api-access';
 import type { RequestHandler } from './$types';
-export const POST: RequestHandler = async ({ request, locals, url }) => {
+export const POST: RequestHandler = async (event) => {
+	const { request, locals, url } = event;
 	let saved: Awaited<ReturnType<typeof validateMedia>> = [];
 	try {
-		if (request.headers.get('origin') !== url.origin) return json({ success: false, error: 'Invalid request origin.' }, { status: 403 });
+		if (locals.authMethod === 'bearer') requireMutationOrigin(event);
+		else if (request.headers.get('origin') !== url.origin) return json({ success: false, error: 'Invalid request origin.' }, { status: 403 });
 		const form = await readUploadForm(request);
 		const latitude = Number(form.get('latitude')), longitude = Number(form.get('longitude'));
 		if (!form.get('latitude') || !form.get('longitude') || !Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return json({ success: false, error: 'Provide valid latitude and longitude for the hazard pin.' }, { status: 400 });

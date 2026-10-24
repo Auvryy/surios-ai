@@ -3,9 +3,10 @@ import { error, json } from '@sveltejs/kit';
 import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, communityComments, communityPosts, reportObservations, reports } from '$lib/server/db';
-import { requireCommunityUser, updateConfirmation } from '$lib/server/community';
+import { loadCommunityPost, requireCommunityUser, updateConfirmation } from '$lib/server/community';
 import { removeMedia } from '$lib/server/community-media';
 import type { RequestHandler } from './$types';
+export const GET: RequestHandler = async ({ params, locals }) => json(await loadCommunityPost(params.id, locals.user?.id));
 export const POST: RequestHandler = async (event) => {
 	const user = requireCommunityUser(event);
 	if (!z.uuid().safeParse(event.params.id).success) error(400, 'Invalid post.');

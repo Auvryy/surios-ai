@@ -1,9 +1,9 @@
 import { changePasswordAction } from '$lib/server/password-security';
-import { fail, redirect } from '@sveltejs/kit';
+import { fail, isHttpError, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types.js';
-import { eq } from 'drizzle-orm';
-import { db, users } from '$lib/server/db';
 import { loadProfile } from '$lib/server/profiles';
+import { accountPatchSchema, updateAccount } from '$lib/server/accounts';
+import { requireMutationOrigin } from '$lib/server/api-access';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) redirect(303, '/login?redirectTo=/profile');
@@ -11,10 +11,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 };
 
 export const actions: Actions = {
-	updateProfile: async ({ request, locals }) => {
+	updateProfile: async (event) => {
+		const { request, locals } = event;
 		if (!locals.user) {
 			throw redirect(303, '/login');
 		}
+		requireMutationOrigin(event);
 
 		const formData = await request.formData();
 		const name = (formData.get('name') as string)?.trim();
@@ -22,48 +24,16 @@ export const actions: Actions = {
 		const department = (formData.get('department') as string)?.trim() || null;
 		const badgeNumber = (formData.get('badgeNumber') as string)?.trim() || null;
 
-		if (!name || name.length < 2) {
-			return fail(400, { error: 'Full name must be at least 2 characters.' });
-		}
-
-		if (!email || !email.includes('@')) {
-			return fail(400, { error: 'Please enter a valid email address.' });
-		}
+		const parsed = accountPatchSchema.safeParse({ name, email, department, badgeNumber });
+		if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
 
 		try {
-			// Check if email was changed and is already taken by someone else
-			if (email !== locals.user.email) {
-				const [existing] = await db
-					.select()
-					.from(users)
-					.where(eq(users.email, email))
-					.limit(1);
-
-				if (existing && existing.id !== locals.user.id) {
-					return fail(400, { error: 'This email address is already in use by another officer.' });
-				}
-			}
-
-			await db
-				.update(users)
-				.set({
-					name,
-					email,
-					department,
-					badgeNumber,
-					updatedAt: new Date()
-				})
-				.where(eq(users.id, locals.user.id));
-
-			// Update in-memory session user object
-			locals.user.name = name;
-			locals.user.email = email;
-			locals.user.department = department;
-			locals.user.badgeNumber = badgeNumber;
+			locals.user = await updateAccount(locals.user.id, parsed.data);
 
 			return { success: 'Official profile details updated successfully in the municipal database.' };
-		} catch (error) {
-			console.error('[Update Profile Error]', error);
+		} catch (cause) {
+			if (isHttpError(cause)) return fail(cause.status === 409 ? 400 : cause.status, { error: cause.body.message });
+			console.error('[Update Profile Error]', cause);
 			return fail(500, { error: 'Could not update profile. Please try again.' });
 		}
 	},

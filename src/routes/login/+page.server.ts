@@ -1,75 +1,28 @@
-import { fail, redirect } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types.js';
-import { z } from 'zod';
+import { fail, isHttpError, redirect } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
 import { workspaceRedirect } from '$lib/server/workspace';
-import { eq } from 'drizzle-orm';
-import { db } from '$lib/server/db/index.js';
-import { users } from '$lib/server/db/schema.js';
-import {
-	verifyPassword,
-	generateSessionToken,
-	createSession,
-	setSessionTokenCookie
-} from '$lib/server/auth.js';
+import { authenticateAccount, loginSchema } from '$lib/server/accounts';
+import { generateSessionToken, createSession, setSessionTokenCookie } from '$lib/server/auth';
 
-const loginSchema = z.object({
-	email: z.string().email('Please enter a valid email address'),
-	password: z.string().min(1, 'Password is required')
-});
-
-export const load: PageServerLoad = async ({ url }) => {
-	const redirectTo = url.searchParams.get('redirectTo') || '';
-	return { redirectTo };
-};
-
+export const load: PageServerLoad = ({ url }) => ({ redirectTo: url.searchParams.get('redirectTo') || '' });
 export const actions: Actions = {
 	default: async (event) => {
-		const formData = await event.request.formData();
-		const email = (formData.get('email') as string)?.trim()?.toLowerCase();
-		const password = formData.get('password') as string;
-		const requestedRedirect = (formData.get('redirectTo') as string)?.trim();
-
-		const validation = loginSchema.safeParse({ email, password });
-		if (!validation.success) {
-			const error = validation.error.issues[0]?.message || 'Invalid input';
-			return fail(400, { email, error });
-		}
-
-		let destination = '/community';
-
+		const form = await event.request.formData();
+		const email = String(form.get('email') || '').trim().toLowerCase();
+		const validation = loginSchema.safeParse({ email, password: form.get('password') });
+		if (!validation.success) return fail(400, { email, error: validation.error.issues[0]?.message || 'Invalid input' });
+		let destination: string;
 		try {
-			const [user] = await db
-				.select()
-				.from(users)
-				.where(eq(users.email, email))
-				.limit(1);
-
-			if (!user || !verifyPassword(password, user.passwordHash)) {
-				return fail(400, {
-					email,
-					error: 'Invalid email or password'
-				});
-			}
-
-			if (user.accountStatus === 'INACTIVE') return fail(403, { email, error: 'This account is inactive. Contact your administrator.' });
-
-			const sessionToken = generateSessionToken();
-			const session = await createSession(sessionToken, user.id, {
-				ipAddress: event.getClientAddress?.() || undefined,
-				userAgent: event.request.headers.get('user-agent') || undefined
-			});
-
-			setSessionTokenCookie(event, sessionToken, session.expiresAt);
-
-			destination = ['PENDING', 'REJECTED'].includes(user.accountStatus) ? '/account-status' : user.role === 'ADMIN' ? '/admin' : workspaceRedirect(requestedRedirect, user.role);
-		} catch (err) {
-			console.error('[Login Error]', err);
-			return fail(500, {
-				email,
-				error: 'Authentication failed due to server error. Please try again.'
-			});
+			const user = await authenticateAccount(validation.data.email, validation.data.password);
+			const token = generateSessionToken();
+			const session = await createSession(token, user.id, { ipAddress: event.getClientAddress(), userAgent: event.request.headers.get('user-agent') || undefined });
+			setSessionTokenCookie(event, token, session.expiresAt);
+			destination = ['PENDING', 'REJECTED'].includes(user.accountStatus) ? '/account-status' : user.role === 'ADMIN' ? '/admin' : workspaceRedirect(form.get('redirectTo'), user.role);
+		} catch (cause) {
+			if (isHttpError(cause)) return fail(cause.status === 401 ? 400 : cause.status, { email, error: cause.body.message });
+			console.error('[Login Error]', cause);
+			return fail(500, { email, error: 'Authentication failed due to server error. Please try again.' });
 		}
-
-		throw redirect(303, destination);
+		redirect(303, destination);
 	}
 };

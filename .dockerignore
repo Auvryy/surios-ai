@@ -7,3 +7,8 @@ build
 .env.*
 !.env.example
 *.log
+.worktrees
+.agent-coordination
+AGENTS.override.md
+test-results
+playwright-report
