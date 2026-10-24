@@ -36,6 +36,22 @@ This asks you to type `fresh`, then **permanently deletes the production databas
 
 The helper always uses `docker-compose.prod.yml` and resolves paths relative to itself, even when called from another directory. It does not pull or push Git changes or change the VM's Nginx/TLS setup. Pull your chosen branch before building. Port 3000 remains the app's container port.
 
+### Native mobile API deployment
+
+The [mobile API](./MOBILE_API.md) uses the existing web container, database and
+upload volumes. After merging/pulling the API revision, run `./surios.sh build`.
+This change requires no new migration, reset, reseed or database credentials in
+the mobile app. `GET /api` on the deployed HTTPS origin provides API discovery;
+native login is `POST /api/auth/login` and returns a bearer session credential.
+
+`API_ALLOWED_ORIGINS` is optional and only needed for a cross-origin browser
+preview, for example `http://localhost:8081`. Compose passes it to the web
+container; multiple exact origins are comma-separated. Physical native apps send
+no browser Origin header and need no allowlist entry. Keep the public HTTPS
+origin and existing upload/proxy size limits. Email recovery still requires the
+normal SMTP/`APP_ORIGIN` setup. The mobile client needs its own implementation
+against these endpoints after deployment.
+
 Migrations use `scripts/migrate.mjs` and `_surios_migrations`, with transactional application, a database lock, and stored migration hashes. A deployment previously initialized by the manual SQL instructions or `db:push` is adopted only through a structurally matching checked-in schema snapshot; new migrations then run normally. An unknown/partial schema fails rather than deleting data. On a fresh database, do not combine the old manual SQL loop with the helper; choose one initialization flow.
 
 ---

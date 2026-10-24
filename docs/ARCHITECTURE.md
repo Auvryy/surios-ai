@@ -2,6 +2,25 @@
 
 This document details the end-to-end system architecture, service interactions, authentication security, database schema, and cloud infrastructure design for **SuriOS**.
 
+## Native mobile access
+
+The React Native/Expo client can use the same SvelteKit API over HTTPS. Native
+login/registration returns a revocable bearer token; only its hashed identifier
+is saved in the existing `sessions` table. Browser cookie sessions remain
+separate client credentials for the same user accounts. Password reset,
+deactivation and approval checks apply across both clients.
+
+`src/hooks.server.ts` resolves bearer credentials only on API routes and retains
+same-origin protection for cookie mutations. Optional exact-origin CORS supports
+browser previews without enabling cross-origin cookies. Public and private JSON
+reads, existing reporting/social mutations, government updates and administrator
+decisions all reuse the website's data and permission rules. The API contract and
+complete route list are in [MOBILE_API.md](./MOBILE_API.md).
+
+The mobile app never connects directly to PostgreSQL, SMTP or Gemini. The backend
+owns those secrets and operations. This web revision exposes the server contract;
+the separate mobile repository must implement calls to it.
+
 ---
 
 ## 1. High-Level System Architecture Diagram
@@ -12,6 +31,7 @@ flowchart TD
         Citizen["📱 Citizen Mobile Web<br/>(/report Camera + HTML5 GPS)"]
         Inspector["🔍 Field Safety Officer<br/>(/ Map Feed + /verification Audit)"]
         Engineer["💻 Chief Municipal Engineer<br/>(/dashboard Dispatch + /settings ASTM)"]
+        Native["Native mobile client<br/>(HTTPS JSON APIs)"]
     end
 
     subgraph Edge["☁️ Edge & Reverse Proxy Layer"]
@@ -39,11 +59,11 @@ flowchart TD
         LocalDisk[("💾 Docker Storage Volume<br/>(Road Evidence in static/uploads)")]
     end
 
-    Citizen & Inspector & Engineer -->|"HTTPS Request"| CF
+    Citizen & Inspector & Engineer & Native -->|"HTTPS Request"| CF
     CF -->|"Proxied Traffic"| Nginx
     Nginx -->|"Proxy Pass (Port 3000)"| Hooks
 
-    Hooks -->|"Validate surios_session Cookie"| AuthEngine
+    Hooks -->|"Validate browser cookie or API bearer session"| AuthEngine
     AuthEngine <-->|"Query Session & User"| Drizzle
     Hooks -->|"Populate event.locals"| SSR & API & FormAction
 
@@ -63,7 +83,8 @@ flowchart TD
 ### A. 🔐 Authentication & Municipal RBAC Subsystem (`src/lib/server/auth.ts` & `src/hooks.server.ts`)
 * **Zero-Dependency Native Cryptography:** Uses Node.js built-in `node:crypto` (`scryptSync` with a 16-byte random salt and `timingSafeEqual` constant-time comparison) to eliminate native C++ addon compilation failures in Alpine Docker containers while guaranteeing NIST-grade password security.
 * **Sliding-Window Database Sessions:** 32-byte random hex tokens stored in the `sessions` table with a 30-day expiration window that automatically renews when less than 15 days remain.
-* **Automatic Demo Seeding (`ensureInitialSeedUsers`):** On server initialization (`ServerInit` hook), verifies if `users` is empty and seeds 3 ready-to-test municipal accounts (`engineer@surios.gov`, `inspector@surios.gov`, `citizen@surios.gov`).
+* **Development Demo Seeding (`ensureInitialSeedUsers`):** Development initialization seeds test accounts only when `users` is empty. Production does not seed on startup; the explicit presentation seed and administrator bootstrap are documented in the Docker runbook.
+* **Native API Sessions:** Login/signup can issue a random bearer credential whose SHA-256 identifier is stored with a `mobile:` prefix in the same sessions table. API requests resolve the same user/approval rules without setting browser cookies. Revocation and password changes cover both session types.
 * **Server-Side Route Guards:** `src/hooks.server.ts` intercepts unauthenticated requests to protected operational routes (`/dashboard`, `/profile`, `/settings`) and issues an HTTP `303` redirect to `/login?redirectTo=...`.
 
 ### B. 🧱 Authentic `shadcn-svelte` Sidebar Application Shell (`src/routes/+layout.svelte`)
@@ -108,7 +129,7 @@ erDiagram
         timestamptz updated_at
     }
     SESSIONS {
-        text id PK "32-byte hex token"
+        text id PK "Browser token or hashed mobile credential ID"
         uuid user_id FK
         timestamptz expires_at
         text ip_address
