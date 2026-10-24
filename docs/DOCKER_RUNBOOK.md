@@ -44,6 +44,13 @@ This change requires no new migration, reset, reseed or database credentials in
 the mobile app. `GET /api` on the deployed HTTPS origin provides API discovery;
 native login is `POST /api/auth/login` and returns a bearer session credential.
 
+The Docker image starts `scripts/serve.mjs`, which keeps the adapter's server and
+adds scoped native bearer-request handling before its production form checks.
+Manual Node deployments should use `npm start` after building. Starting bare
+`node build` bypasses that handling and blocks native multipart/bodyless mutation
+requests. Browser cookie forms retain origin protection; no global CSRF option
+is disabled. The local production preview uses the same handling.
+
 `API_ALLOWED_ORIGINS` is optional and only needed for a cross-origin browser
 preview, for example `http://localhost:8081`. Compose passes it to the web
 container; multiple exact origins are comma-separated. Physical native apps send

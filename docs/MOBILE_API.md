@@ -274,6 +274,17 @@ the normal build command. Set the mobile base URL only after the deployed API
 responds. HTTPS proxy/body-size configuration must continue supporting the
 existing 50 MiB reporting flow. SMTP is only needed for email features.
 
+The Docker entrypoint runs `scripts/serve.mjs`; for a manual production start use
+`npm start`, rather than bypassing it with `node build`. This retains the Node
+adapter's server and shutdown handling while preparing explicit bearer requests
+before SvelteKit's production form-origin gate. Their body content type is
+restored only after session validation in the hook. The actual Origin header is
+preserved, and cookie-only forms keep the normal CSRF check. This supports native
+multipart uploads and bodyless DELETE/logout without weakening browser forms.
+The loopback production-preview launcher uses the same preparation. See the
+[adapter documentation](https://svelte.dev/docs/kit/adapter-node) for server and
+shutdown integration.
+
 The older `/api/triage` single-photo save, `/api/route` dispatch routing, and
 `/api/route/snap` coordinate lookup remain available. Triage also accepts an
 active bearer session without an Origin header, but new mobile reporting should
@@ -298,11 +309,14 @@ loopback test transport; no paid AI calls are made.
 ```bash
 npm run check
 npx playwright test -c playwright.mobile.config.ts
+npx playwright test -c playwright.mobile-production.config.ts
 npm run test:community
 npm run build
 ```
 
 The tests read `DATABASE_URL` from their environment, as existing suites do. The
 focused server uses port 5183 and mock Gemini 5198; do not run it alongside the
-full suite using the same mock port. All mobile-client code and token storage
+full suite using the same mock port. The production suite builds the app and
+exercises the same cases on localhost:5184, including real form-origin behavior
+that development skips. All mobile-client code and token storage
 implementation remain work for the mobile repository.

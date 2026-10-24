@@ -17,6 +17,12 @@ reads, existing reporting/social mutations, government updates and administrator
 decisions all reuse the website's data and permission rules. The API contract and
 complete route list are in [MOBILE_API.md](./MOBILE_API.md).
 
+The production entrypoint installs scoped bearer-request middleware before
+SvelteKit's form-origin gate. An internal Symbol on the raw Node request carries
+the original body type, restored only after bearer validation; HTTP headers
+cannot forge that metadata. Origins and cookie-only forms are untouched. This
+allows native file uploads while retaining browser CSRF protection.
+
 The mobile app never connects directly to PostgreSQL, SMTP or Gemini. The backend
 owns those secrets and operations. This web revision exposes the server contract;
 the separate mobile repository must implement calls to it.

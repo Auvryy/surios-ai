@@ -1,7 +1,7 @@
 import { startEmailWorker } from '$lib/server/email';
 import { dev } from '$app/env';
 import { error, json, redirect } from '@sveltejs/kit';
-import { isAllowedApiOrigin } from '$lib/server/api-access';
+import { isAllowedApiOrigin, restoreNativeContentType } from '$lib/server/api-access';
 import { isGovernmentUser, isRetiredPage, workspaceRedirect } from '$lib/server/workspace';
 import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 import {
@@ -58,6 +58,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			event.locals.user = user;
 			event.locals.session = session;
 			event.locals.authMethod = authorization ? 'bearer' : 'cookie';
+			if (authorization) restoreNativeContentType(event);
 		} else {
 			if (authorization) return finish(json({ message: 'Mobile session expired or revoked. Sign in again.' }, { status: 401, headers: { 'WWW-Authenticate': 'Bearer' } }));
 			deleteSessionTokenCookie(event);

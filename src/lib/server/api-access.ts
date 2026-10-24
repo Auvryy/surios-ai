@@ -17,6 +17,16 @@ export function requireApiOrigin(event: RequestEvent) {
 	if (origin && !isAllowedApiOrigin(origin, event.url.origin)) error(403, 'Invalid request origin.');
 }
 
+/** Restore adapter metadata only after the caller's bearer session is verified. */
+export function restoreNativeContentType(event: RequestEvent) {
+	const request = event.platform?.req;
+	const key = Symbol.for('surios.native-api-content-type');
+	if (!request || !Object.hasOwn(request, key)) return;
+	const contentType: unknown = Reflect.get(request, key);
+	if (typeof contentType === 'string') event.request.headers.set('content-type', contentType);
+	else event.request.headers.delete('content-type');
+}
+
 /** A bearer credential authorizes native requests; cookies still require CSRF protection. */
 export function requireMutationOrigin(event: RequestEvent) {
 	if (event.locals.authMethod === 'bearer' && event.url.pathname.startsWith('/api/')) {

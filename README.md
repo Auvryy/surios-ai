@@ -66,6 +66,12 @@ cookie. Both use the existing database and server-side rules. Deploying these
 routes does not automatically connect a separate mobile app; its client code must
 call the deployed HTTPS endpoints.
 
+Production Docker startup includes the native API middleware. For a manual Node
+deployment, build then run `npm start`; use `npm run preview:production` for a
+loopback HTTP preview. Production API tests are available through
+`npx playwright test -c playwright.mobile-production.config.ts` against an
+isolated migrated test database.
+
 ### 3. Presentation Seed and Demo Accounts (`/login`)
 On a fresh local database, run `npm run db:seed:presentation` after `npm run db:push` to load the saved community demo snapshot, including reports, posts, road sections, comments, official updates, reactions, and their media. Production does not seed demo content on startup; for an Azure fresh database, follow the explicit migration and seed steps in the [Docker runbook](docs/DOCKER_RUNBOOK.md).
 

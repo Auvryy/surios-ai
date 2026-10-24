@@ -14,7 +14,9 @@ declare global {
 			user?: User | null;
 		}
 		// interface PageState {}
-		// interface Platform {}
+		interface Platform {
+			req?: import('node:http').IncomingMessage;
+		}
 	}
 }
 

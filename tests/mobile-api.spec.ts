@@ -134,7 +134,7 @@ test('native login validates bounded JSON and bad credentials return useful JSON
 		expect([400, 401]).toContain(response.status());
 		expect(typeof (await response.json()).message).toBe('string');
 	}
-	expect((await api.post('/api/auth/login', { form: { email: actors[0].email, password } })).status()).toBe(415);
+	expect((await api.post('/api/auth/login', { headers: { Origin: origin }, form: { email: actors[0].email, password } })).status()).toBe(415);
 	expect((await api.post('/api/auth/login', { headers: { 'Content-Type': 'application/json' }, data: '{broken' })).status()).toBe(400);
 	expect((await api.post('/api/auth/login', { data: { email: actors[0].email, password: 'x'.repeat(17000) } })).status()).toBe(413);
 	const chunked = await new Promise<{ status: number; body: string }>((resolve, reject) => {
@@ -173,6 +173,9 @@ test('browser cookie sessions keep same-origin checks while bearer mutations wor
 			expect(response.status()).toBe(403);
 		}
 		expect((await web.patch('/api/settings', { headers: { Origin: origin }, data: { emailComments: false } })).status()).toBe(200);
+		expect((await web.post('/settings?/saveNotifications', { headers: { Origin: 'https://untrusted.example', Accept: 'text/html' }, form: { emailComments: 'on' } })).status()).toBe(403);
+		expect((await web.post('/api/profile', { multipart: { name: 'Cookie upload without origin' } })).status()).toBe(403);
+		expect((await web.post('/api/profile', { headers: { Authorization: `Bearer surios_mobile_${'0'.repeat(64)}` }, multipart: { name: 'Cannot fall back to the browser cookie' } })).status()).toBe(401);
 		expect((await web.post('/api/auth/logout')).status()).toBe(403);
 		expect((await web.post('/api/auth/logout', { headers: { Origin: origin } })).status()).toBe(200);
 	} finally { await web.dispose(); }
@@ -206,6 +209,8 @@ test('native profile updates support photos, cover removal, public profiles and 
 	const publicProfile = await api.get(`/api/profiles/${actors[0].id}`);
 	expect((await publicProfile.json()).isOwner).toBe(false);
 	expect(await publicProfile.text()).not.toContain('PRIVATE-TEST-ID');
+	expect((await api.post('/api/profile', { headers: { ...headers(), Origin: previewOrigin }, multipart: { name: `${mark} browser preview` } })).status()).toBe(200);
+	expect((await api.post('/api/profile', { headers: { ...headers(), Origin: 'https://untrusted.example' }, multipart: { name: 'Untrusted form origin' } })).status()).toBe(403);
 	expect((await api.post('/api/profile', { headers: headers(), multipart: { name: 'Citizen office', governmentLevel: 'MUNICIPAL', jurisdiction: 'Test municipality' } })).status()).toBe(403);
 	expect((await api.post('/api/profile', { headers: headers(2), multipart: { name: `${mark} municipal office`, governmentLevel: 'MUNICIPAL', jurisdiction: 'Santa Cruz, Laguna', bio: 'Municipal infrastructure response.' } })).status()).toBe(200);
 	expect((await api.post('/api/profile', { headers: headers(), multipart: { name: `${mark} profile`, removeAvatar: 'true', removeCover: 'true' } })).status()).toBe(200);
@@ -215,7 +220,7 @@ test('native assessment, draft ownership, publication, map lookup and discard us
 	const headline = `${mark} public access concern`;
 	const caption = 'Visible surface deterioration beside the public entrance.';
 	const multipart = { headline, caption, media: { name: 'infrastructure.jpg', mimeType: 'image/jpeg', buffer: photo } };
-	expect((await api.post('/api/community/assess', { multipart })).status()).toBe(401);
+	expect((await api.post('/api/community/assess', { headers: { Origin: origin }, multipart })).status()).toBe(401);
 	const assessed = await api.post('/api/community/assess', { headers: { ...headers(), 'X-Assessment-Id': randomUUID() }, multipart });
 	expect(assessed.status(), await assessed.text()).toBe(200);
 	const draft = await assessed.json();
