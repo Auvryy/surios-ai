@@ -1,4 +1,5 @@
 import { queuePostEmail } from '$lib/server/email';
+import { notifyComment } from '$lib/server/notifications';
 import { error, json } from '@sveltejs/kit';
 import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
@@ -25,6 +26,7 @@ export const POST: RequestHandler = async (event) => {
 			parentUserId = parent.userId;
 		}
 		const [comment] = await tx.insert(communityComments).values({ postId: post.id, userId: user.id, body: parsed.data.body, parentId: parsed.data.parentId || null }).returning();
+		await notifyComment(tx, { ownerId: post.userId, parentUserId, actorId: user.id, postId: post.id, commentId: comment.id });
 		await queuePostEmail(tx, { recipients: [post.userId, ...(parentUserId ? [parentUserId] : [])], actorId: user.id, actorName: user.name, postId: post.id, postTitle: post.title, eventKey: `comment:${comment.id}`, topic: 'comments', reply: !!parentUserId });
 		return comment;
 	});

@@ -8,6 +8,7 @@ import { communityCommentLikes, communityReposts, governmentMedia } from './db/c
 import { isGovernment, type GovernmentUpdate } from '$lib/types/community';
 import { governmentUpdateSchema, prepareGovernmentAttachments, writeGovernmentAttachments, removeGovernmentAttachments } from './government-updates';
 import { MEDIA_DIR, readUploadForm, removeMedia, validateMedia } from './community-media';
+import { queueNotification } from './notifications';
 
 export async function saveRepost(request: Request, userId: string) {
 	const form = await readUploadForm(request);
@@ -54,6 +55,11 @@ export async function saveRepost(request: Request, userId: string) {
 				const resolvedImagePath = update.data.status === 'RESOLVED' ? attachments.find((media) => media.kind === 'photo')?.url || null : null;
 				await tx.update(reports).set({ status: update.data.status === 'RESOLVED' ? 'RESOLVED' : 'IN_REPAIR', resolvedImagePath, updatedAt: new Date() }).where(eq(reports.id, source.reportId));
 				await tx.insert(workOrderEvents).values({ reportId: source.reportId, actorId: userId, event: update.data.status, description: input.body, imagePath: attachments[0].url });
+				const authors = await tx.selectDistinct({ id: communityPosts.userId }).from(communityPosts)
+					.where(and(eq(communityPosts.reportId, source.reportId), isNull(communityPosts.deletedAt)));
+				await queueNotification(tx, { recipients: authors.map((author) => author.id), actorId: userId,
+					kind: update.data.status === 'RESOLVED' ? 'REPORT_RESOLVED' : 'REPORT_PROGRESS',
+					eventKey: `government:${saved.id}`, postId: saved.postId, repostId: saved.id });
 				return saved;
 			});
 			if (result) return result;
