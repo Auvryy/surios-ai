@@ -47,6 +47,28 @@ clients can send a single `Range: bytes=...` header (206 for a valid range, 416
 for an invalid one); PDFs are downloads. This media route is outside `/api` and
 does not require a bearer credential.
 
+## Saved notification inbox
+
+Active signed-in accounts can call `GET /api/notifications?filter=all&limit=20`.
+The response is `{ items, unreadCount, hasMore, nextCursor }`. Use `filter=unread`
+for unread entries; the count remains global. Limits accept integer 1–50, and
+`cursor` is an opaque next-page value. Items contain IDs, kind, current public
+actor/name and post title, source/update/comment references, `createdAt` and
+nullable `readAt`.
+
+`PATCH /api/notifications` accepts `{ action: "read", id: "<uuid>" }` or
+`{ action: "read-all" }`, returning `{ success: true, unreadCount, readAt }`.
+Reads are owned and idempotent. Never pass an account/recipient ID; unknown
+fields are rejected. Use `postId` plus optional `repostId` to open the actual
+discussion or government explanation, including one on another linked report.
+
+Official progress/resolution reaches distinct authors of active posts linked
+to the same hazard; comments/replies reach the appropriate authors without
+duplicate or self-notifications. In-app events are independent of email
+preferences and SMTP. New backend deployment requires additive migration
+`0014_notifications.sql`; existing content is retained. There is no historical
+backfill or phone push delivery. See [NOTIFICATIONS.md](NOTIFICATIONS.md).
+
 ## Authentication and account approval
 
 | Method | Path | Request / response |

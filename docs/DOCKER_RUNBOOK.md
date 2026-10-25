@@ -40,8 +40,12 @@ The helper always uses `docker-compose.prod.yml` and resolves paths relative to 
 
 The [mobile API](./MOBILE_API.md) uses the existing web container, database and
 upload volumes. After merging/pulling the API revision, run `./surios.sh build`.
-This change requires no new migration, reset, reseed or database credentials in
-the mobile app. `GET /api` on the deployed HTTPS origin provides API discovery;
+The original mobile API requires no reset, reseed or database credentials in
+the mobile app. The saved notification inbox adds migration `0014_notifications.sql`,
+applied by the same build/startup workflow without changing existing records.
+No new environment variables or SMTP configuration are required for in-app
+notifications. Deploy this backend before the matching mobile inbox; see
+[NOTIFICATIONS.md](./NOTIFICATIONS.md). `GET /api` on the deployed HTTPS origin provides API discovery;
 native login is `POST /api/auth/login` and returns a bearer session credential.
 
 The Docker image starts `scripts/serve.mjs`, which keeps the adapter's server and
