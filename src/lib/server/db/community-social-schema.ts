@@ -56,3 +56,22 @@ export const governmentMedia = pgTable('government_media', {
 	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
 	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 }, (table) => [index('government_media_expiry_idx').on(table.expiresAt)]);
+
+// Saved inbox events are independent of email delivery and hazard severity.
+export const notifications = pgTable('notifications', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+	kind: text('kind').notNull().$type<'REPORT_PROGRESS' | 'REPORT_RESOLVED' | 'COMMENT' | 'REPLY'>(),
+	eventKey: text('event_key').notNull().unique(),
+	postId: uuid('post_id').notNull().references(() => communityPosts.id, { onDelete: 'cascade' }),
+	repostId: uuid('repost_id').references(() => communityReposts.id, { onDelete: 'cascade' }),
+	commentId: uuid('comment_id').references(() => communityComments.id, { onDelete: 'cascade' }),
+	quoteCommentId: uuid('quote_comment_id').references(() => quoteComments.id, { onDelete: 'cascade' }),
+	readAt: timestamp('read_at', { withTimezone: true, precision: 3 }),
+	createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).default(sql`clock_timestamp()`).notNull()
+}, (table) => [
+	index('notifications_user_created_idx').on(table.userId, table.createdAt, table.id),
+	index('notifications_user_unread_idx').on(table.userId).where(sql`${table.readAt} is null`),
+	check('notifications_kind_check', sql`${table.kind} in ('REPORT_PROGRESS', 'REPORT_RESOLVED', 'COMMENT', 'REPLY')`)
+]);
