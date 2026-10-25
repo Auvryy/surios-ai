@@ -42,7 +42,7 @@ The [mobile API](./MOBILE_API.md) uses the existing web container, database and
 upload volumes. After merging/pulling the API revision, run `./surios.sh build`.
 The original mobile API requires no reset, reseed or database credentials in
 the mobile app. The saved notification inbox adds migration `0014_notifications.sql`,
-applied by the same build/startup workflow without changing existing records.
+applied by `./surios.sh build` before the web container starts, without changing existing records.
 No new environment variables or SMTP configuration are required for in-app
 notifications. Deploy this backend before the matching mobile inbox; see
 [NOTIFICATIONS.md](./NOTIFICATIONS.md). `GET /api` on the deployed HTTPS origin provides API discovery;

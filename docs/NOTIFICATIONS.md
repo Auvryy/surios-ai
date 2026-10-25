@@ -48,7 +48,7 @@ Merge the reviewed backend `feat/notifications` branch, pull it on the Azure VM 
 ./surios.sh build
 ```
 
-The production entrypoint applies pending migrations, including `0014_notifications.sql`, before serving the new API. No new environment variables, administrator creation, report resets or reseeding are required. SMTP remains optional. The mobile repository has its own `feat/notifications` branch; deploy the backend before expecting its inbox to work against Azure.
+The `build` helper runs the migration runner, including `0014_notifications.sql`, before starting the web container. No new environment variables, administrator creation, report resets or reseeding are required. SMTP remains optional. The mobile repository has its own `feat/notifications` branch; deploy the backend before expecting its inbox to work against Azure.
 
 ## Validation
 
