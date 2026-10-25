@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db, users } from './db';
 import { communityReposts, quoteLikes, quoteComments, quoteCommentLikes } from './db/community-social-schema';
 import type { CommunityRepost, CommunityComment } from '$lib/types/community';
+import { notifyComment } from './notifications';
 
 export async function hydrateQuotes(quotes: CommunityRepost[], viewerId?: string) {
 	if (!quotes.length) return quotes;
@@ -31,7 +32,7 @@ export async function hydrateQuotes(quotes: CommunityRepost[], viewerId?: string
 
 export async function interactWithQuote(id: string, userId: string, input: unknown) {
 	if (!z.uuid().safeParse(id).success) error(400, 'Invalid post.');
-	const [quote] = await db.select({ id: communityReposts.id }).from(communityReposts).where(eq(communityReposts.id, id));
+	const [quote] = await db.select({ id: communityReposts.id, userId: communityReposts.userId, postId: communityReposts.postId }).from(communityReposts).where(eq(communityReposts.id, id));
 	if (!quote) error(404, 'Post not found.');
 	const reaction = z.object({ action: z.literal('like'), liked: z.boolean() }).safeParse(input);
 	if (reaction.success) {
@@ -42,12 +43,17 @@ export async function interactWithQuote(id: string, userId: string, input: unkno
 	}
 	const parsed = z.object({ action: z.literal('comment'), body: z.string().trim().min(1).max(1000), parentId: z.uuid().nullable().optional() }).safeParse(input);
 	if (!parsed.success) error(400, 'Write a comment between 1 and 1,000 characters.');
-	if (parsed.data.parentId) {
-		const [parent] = await db.select().from(quoteComments).where(and(eq(quoteComments.id, parsed.data.parentId), eq(quoteComments.repostId, id)));
-		if (!parent) error(400, 'The reply must belong to this post.');
-	}
-	const [comment] = await db.insert(quoteComments).values({ repostId: id, userId, body: parsed.data.body, parentId: parsed.data.parentId || null }).returning();
-	return { id: comment.id };
+	return db.transaction(async (tx) => {
+		let parentUserId: string | undefined;
+		if (parsed.data.parentId) {
+			const [parent] = await tx.select().from(quoteComments).where(and(eq(quoteComments.id, parsed.data.parentId), eq(quoteComments.repostId, id)));
+			if (!parent) error(400, 'The reply must belong to this post.');
+			parentUserId = parent.userId;
+		}
+		const [comment] = await tx.insert(quoteComments).values({ repostId: id, userId, body: parsed.data.body, parentId: parsed.data.parentId || null }).returning();
+		await notifyComment(tx, { ownerId: quote.userId, parentUserId, actorId: userId, postId: quote.postId, repostId: id, quoteCommentId: comment.id });
+		return { id: comment.id };
+	});
 }
 
 export async function likeQuoteComment(repostId: string, commentId: string, userId: string, liked: boolean) {
