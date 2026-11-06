@@ -8,7 +8,6 @@
 	const reportStatuses = ['REPORTED', 'IN_REPAIR', 'RESOLVED'];
 	const reportStatusLabel = (value: string) => ['DISPATCHED', 'IN_REPAIR', 'AWAITING_REVIEW'].includes(value) ? 'In progress' : value === 'RESOLVED' ? 'Resolved' : 'Reported';
 	import type { DispatchRoute } from '$lib/types/routing';
-	import { SANTA_CRUZ_CORRIDORS } from '$lib/data/corridors';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
@@ -51,6 +50,7 @@
 	let routing = $state(false);
 	let route = $state<DispatchRoute | null>(null);
 	let handledQuery = '';
+	let routeVersion = 0;
 	const selected = $derived(data.hazards.find((hazard) => hazard.id === selectedId));
 	const types = $derived([...new Set(data.hazards.map((hazard) => hazard.distressType))].sort());
 	const filtered = $derived(data.hazards.filter((hazard) => (!status || (status === 'IN_REPAIR' ? ['IN_REPAIR', 'DISPATCHED', 'AWAITING_REVIEW'].includes(hazard.status) : hazard.status === status)) && (!distress || hazard.distressType === distress) && (!highRisk || hazard.severity >= 8) && (!riderRisk || ['HIGH', 'CRITICAL'].includes(hazard.vruLethality)) && `${hazard.title} ${hazard.location} ${hazard.distressType} ${hazard.id}`.toLowerCase().includes(search.trim().toLowerCase())).sort((a, b) => {
@@ -66,6 +66,7 @@
 	function openPanel(value: typeof panel) { panel = panel === value ? null : value; if (panel) { listOpen = false; selectedId = ''; } }
 	function toggleList() { listOpen = !listOpen; panel = null; selectedId = ''; }
 	function focus(hazard: MapHazard) {
+		routeVersion++; routing = false;
 		if (selectedId !== hazard.id) { route = null; routeLayer?.clearLayers(); }
 		selectedId = hazard.id; detailsExpanded = false; sourcesExpanded = false; listOpen = false; panel = null;
 		if (map) { map.setView([hazard.latitude, hazard.longitude], Math.max(16, map.getZoom()), { animate: false }); map.panBy(window.innerWidth < 768 ? [0, Math.min(120, map.getSize().y * .2)] : [Math.min(140, map.getSize().x * .2), 0], { animate: false }); }
@@ -122,7 +123,7 @@
 			map = instance;
 			untrack(fitReports);
 		}).catch(() => errorMessage = 'The map could not load. You can still browse the report list.');
-		return () => { disposed = true; observer?.disconnect(); instance?.remove(); map = null; };
+		return () => { disposed = true; routeVersion++; observer?.disconnect(); instance?.remove(); map = null; };
 	});
 	$effect(() => {
 		if (!map || !leaflet) return;
@@ -133,8 +134,30 @@
 	$effect(() => { if (map) renderMarkers(filtered); });
 	$effect(() => {
 		if (!map || !leaflet || !referenceRoads) return;
+		const instance = map;
 		referenceRoads.clearLayers();
-		if (roads) for (const road of SANTA_CRUZ_CORRIDORS) leaflet.polyline(road.coordinates, { color: '#78716c', weight: 3, opacity: .7, dashArray: '5 5' }).bindTooltip(road.name).addTo(referenceRoads);
+		if (!roads) return;
+		let pending: AbortController | undefined;
+		let timer: ReturnType<typeof setTimeout>;
+		async function loadRoads() {
+			pending?.abort(); pending = new AbortController(); const signal = pending.signal;
+			referenceRoads.clearLayers();
+			if (instance.getZoom() < 14) return;
+			const center = instance.getCenter();
+			try {
+				const response = await fetch(`/api/roads?lat=${center.lat}&lng=${center.lng}`, { signal });
+				const result = await response.json();
+				if (!response.ok || !Array.isArray(result.roads)) throw new Error('Street data unavailable.');
+				if (signal.aborted) return;
+				for (const road of result.roads) {
+					if (!Array.isArray(road.coordinates) || road.coordinates.length < 2 || !road.coordinates.every((point: unknown) => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite) && Math.abs(point[0]) <= 90 && Math.abs(point[1]) <= 180)) continue;
+					leaflet.polyline(road.coordinates, { color: '#78716c', weight: 3, opacity: .7, interactive: false }).addTo(referenceRoads);
+				}
+			} catch { if (!signal.aborted) errorMessage = 'Street geometry is unavailable. The base street map and reported locations remain available.'; }
+		}
+		const moved = () => { pending?.abort(); clearTimeout(timer); timer = setTimeout(() => void loadRoads(), 1200); };
+		instance.on('moveend', moved); void loadRoads();
+		return () => { pending?.abort(); clearTimeout(timer); instance.off('moveend', moved); referenceRoads.clearLayers(); };
 	});
 	$effect(() => {
 		const key = page.url.searchParams.get('report');
@@ -157,17 +180,24 @@
 	}
 	async function directions(hazard: MapHazard) {
 		if (routing || !map || !leaflet) return;
-		routing = true; detailsExpanded = true; errorMessage = '';
+		const version = ++routeVersion;
+		routing = true; detailsExpanded = true; errorMessage = ''; route = null; routeLayer.clearLayers();
 		try {
-			const response = await fetch(`/api/route?destLat=${hazard.latitude}&destLng=${hazard.longitude}&name=${encodeURIComponent(hazard.title)}`);
-			const result = await response.json(); if (!response.ok || !result.route) throw new Error('Routing unavailable.');
+			if (!navigator.geolocation) throw new Error('Location access is unavailable in this browser.');
+			const position = await new Promise<GeolocationPosition>((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, () => reject(new Error('Allow location access to get directions from your current location.')), { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }));
+			if (version !== routeVersion || selectedId !== hazard.id) return;
+			const params = new URLSearchParams({ destLat: String(hazard.latitude), destLng: String(hazard.longitude), name: hazard.title, originLat: String(position.coords.latitude), originLng: String(position.coords.longitude) });
+			const response = await fetch(`/api/route?${params}`, { signal: AbortSignal.timeout(30000) });
+			const result = await response.json();
+			if (version !== routeVersion || selectedId !== hazard.id) return;
+			if (!response.ok || !result.route || result.route.estimated || !Array.isArray(result.route.coordinates) || result.route.coordinates.length < 2) throw new Error(result.error || 'Road directions unavailable.');
 			route = result.route;
-			routeLayer.clearLayers();
-			const line = leaflet.polyline(route!.coordinates, { color: '#ea580c', weight: 4, dashArray: route!.estimated ? '6 6' : undefined }).addTo(routeLayer);
+			const line = leaflet.polyline(route!.coordinates, { color: '#ea580c', weight: 4 }).addTo(routeLayer);
 			map.fitBounds(line.getBounds(), { padding: [60, 100] });
-		} catch { errorMessage = 'Directions are unavailable. The hazard pin is still visible.'; }
-		finally { routing = false; }
+		} catch (cause) { if (version === routeVersion) errorMessage = cause instanceof Error ? cause.message : 'Directions are unavailable. The hazard pin is still visible.'; }
+		finally { if (version === routeVersion) routing = false; }
 	}
+
 </script>
 <svelte:head><title>Hazard map — SuriOS</title></svelte:head>
 <div class="relative isolate h-full w-full overflow-hidden bg-muted">
@@ -206,7 +236,7 @@
 			<details><summary class="cursor-pointer py-2 font-medium">Why this priority?</summary><p class="leading-5 text-muted-foreground">Severity comes from the highest assessed evidence, with consistent risk bands. Unique community support adds 0.25 priority points per additional supporter, up to 2 points; priority is capped at 10. Reposting does not add damage severity.</p></details>
 
 			<p class="leading-5 text-muted-foreground">AI estimates require on-site inspection. Repaired reports stay separate from new defects reported later.</p>
-			{#if route}<div class="rounded-lg bg-primary/5 p-3"><p class="font-medium">{route.estimated ? 'Approximate direct connection' : 'Directions from municipal depot'}</p><p class="mt-1 text-muted-foreground">{route.distanceFormatted}{route.estimated ? ' · Road routing unavailable' : ` · ${route.durationFormatted}`}</p><button class="mt-2 min-h-10 font-medium text-primary" onclick={() => { route = null; routeLayer?.clearLayers(); }}>Clear directions</button></div>{/if}{/if}
+			{#if route}<div class="rounded-lg bg-primary/5 p-3"><p class="font-medium">Directions from your current location</p><p class="mt-1 text-muted-foreground">{route.distanceFormatted} · {route.durationFormatted}</p><button class="mt-2 min-h-10 font-medium text-primary" onclick={() => { route = null; routeLayer?.clearLayers(); }}>Clear directions</button></div>{/if}{/if}
 		</div><div class="grid shrink-0 grid-cols-2 gap-2 border-t border-border p-3"><Button variant="outline" class="h-11 text-xs" disabled={routing} onclick={() => directions(selected!)}><RouteIcon class="size-3.5" />{routing ? 'Loading…' : 'Directions'}</Button><Button href="/community" class="h-11 text-xs">Share an update</Button></div></section>
 	{/if}
 	{#if !data.hazards.length}<div class="map-panel absolute left-1/2 top-1/2 z-10 w-64 -translate-x-1/2 -translate-y-1/2 p-5 text-center"><MapPinIcon class="mx-auto size-6 text-primary" /><h2 class="mt-2 text-sm font-semibold">No hazards reported yet</h2><p class="mt-2 text-xs leading-5 text-muted-foreground">Published road updates appear here at their pinned locations.</p><Button href="/community" size="sm" class="mt-3">Open the feed</Button></div>{/if}

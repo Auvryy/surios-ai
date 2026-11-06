@@ -122,7 +122,7 @@ export async function getDispatchRoute(
 	origin: { lat: number; lng: number; name?: string } = SANTA_CRUZ_DEPOT,
 	mode = 'drive'
 ): Promise<DispatchRoute> {
-	const cacheKey = `${origin.lat.toFixed(4)},${origin.lng.toFixed(4)}->${destination.lat.toFixed(4)},${destination.lng.toFixed(4)}_${mode}`;
+	const cacheKey = `${origin.lat.toFixed(6)},${origin.lng.toFixed(6)}->${destination.lat.toFixed(6)},${destination.lng.toFixed(6)}_${mode}`;
 	const cached = routeCache.get(cacheKey);
 	if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
 		return cached.data;
@@ -197,7 +197,7 @@ export async function getDispatchRoute(
 				distanceFormatted,
 				durationMinutes,
 				durationFormatted,
-				steps: steps.length > 0 ? steps : [{ instruction: 'Follow Santa Cruz provincial artery directly to defect pin.', distanceMeters, durationSeconds: timeSeconds }],
+				steps,
 				originName: origin.name || SANTA_CRUZ_DEPOT.name,
 				destinationName: destination.name || 'Road Defect Work Site'
 			};

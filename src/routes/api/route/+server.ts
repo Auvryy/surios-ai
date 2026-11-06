@@ -1,42 +1,29 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
-import { getDispatchRoute, snapToRoad, SANTA_CRUZ_DEPOT } from '$lib/server/geoapify.js';
+import { getDispatchRoute } from '$lib/server/geoapify.js';
 
 export const GET: RequestHandler = async ({ url }) => {
-	const destLat = Number(url.searchParams.get('destLat'));
-	const destLng = Number(url.searchParams.get('destLng'));
-	const destName = url.searchParams.get('name') || 'Road Defect Work Site';
-
-	if (isNaN(destLat) || isNaN(destLng)) {
-		return json(
-			{ success: false, error: 'Destination coordinates (destLat and destLng) are required.' },
-			{ status: 400 }
-		);
-	}
-
-	const originLat = url.searchParams.get('originLat')
-		? Number(url.searchParams.get('originLat'))
-		: SANTA_CRUZ_DEPOT.lat;
-	const originLng = url.searchParams.get('originLng')
-		? Number(url.searchParams.get('originLng'))
-		: SANTA_CRUZ_DEPOT.lng;
-	const originName = url.searchParams.get('originName') || SANTA_CRUZ_DEPOT.name;
-
-	try {
-		const route = await getDispatchRoute(
-			{ lat: destLat, lng: destLng, name: destName },
-			{ lat: originLat, lng: originLng, name: originName }
-		);
-
-		return json({
-			success: true,
-			route
-		});
-	} catch (err: any) {
-		console.error('[API Route Error]', err);
-		return json(
-			{ success: false, error: err?.message || 'Could not calculate road dispatch route.' },
-			{ status: 500 }
-		);
-	}
+ const coordinate = (key: string, limit: number) => {
+  const raw = url.searchParams.get(key);
+  if (!raw?.trim()) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) && Math.abs(value) <= limit ? value : null;
+ };
+ const destLat = coordinate('destLat', 90), destLng = coordinate('destLng', 180);
+ const originLat = coordinate('originLat', 90), originLng = coordinate('originLng', 180);
+ if (destLat === null || destLng === null || originLat === null || originLng === null) {
+  return json({ success: false, error: 'Valid origin and destination coordinates are required. Allow location access and try again.' }, { status: 400 });
+ }
+ try {
+  const route = await getDispatchRoute(
+   { lat: destLat, lng: destLng, name: (url.searchParams.get('name') || 'Selected hazard').slice(0, 160) },
+   { lat: originLat, lng: originLng, name: 'Your current location' }
+  );
+  if (route.estimated || route.coordinates.length < 2 || route.coordinates.some(([lat, lng]) => !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180)) {
+   return json({ success: false, error: 'Road directions are unavailable. Your location and hazard pin remain available; no direct line is shown as a road route.' }, { status: 503 });
+  }
+  return json({ success: true, route: { ...route, originName: 'Your current location' } }, { headers: { 'Cache-Control': 'no-store' } });
+ } catch {
+  return json({ success: false, error: 'Road directions are unavailable. Please try again.' }, { status: 503 });
+ }
 };
