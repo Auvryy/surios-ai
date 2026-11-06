@@ -218,3 +218,11 @@ The four presentation accounts do not include an admin. Create the local admin e
 ### Assessment context and draft cleanup
 
 Migration `0013_assessment-context.sql` adds nullable reporter context and discard timestamps to assessment drafts. On an existing Azure installation, run `./surios.sh build` to apply it before the updated web container starts. Keep existing database/upload volumes; this change needs no new environment variables, account reset, or reseed.
+
+## Current-location map directions
+
+The map requests a fresh browser GPS position when Directions is pressed, then sends that origin and the selected hazard coordinates to `/api/route`. The mobile map uses the same endpoint. Permission denial or an unavailable provider leaves the hazard visible and shows an error; the API never returns the municipal depot or a direct line as user navigation.
+
+For live road directions, set the server-only `GEOAPIFY_API_KEY` in the Azure VM's ignored `.env`. Production Compose forwards it to the web container. Recreate the web service after changing that value. Never put this key in mobile `EXPO_PUBLIC_` values or browser code. Without the key, directions report unavailable. Road geometry depends on the routing provider and OpenStreetMap coverage; reported locations remain evidence locations rather than proof of a surveyed asset position. The optional nearby-road layer loads real OSM way coordinates around the current map center (zoom 14 or closer), and saved report road sections retain their verified geometry.
+
+Routing contract checks: `npx playwright test --config playwright.routing.config.ts`.

@@ -15,6 +15,7 @@ services:
       BODY_SIZE_LIMIT: 52M
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-surios_secure_pw}@db:5432/surios
       GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEOAPIFY_API_KEY: ${GEOAPIFY_API_KEY:-}
       APP_ORIGIN: ${APP_ORIGIN:-}
       API_ALLOWED_ORIGINS: ${API_ALLOWED_ORIGINS:-}
       SMTP_HOST: ${SMTP_HOST:-}
