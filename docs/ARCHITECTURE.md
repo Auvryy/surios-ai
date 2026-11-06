@@ -4,10 +4,11 @@ This document details the end-to-end system architecture, service interactions, 
 
 ## Native mobile access
 
-The React Native/Expo client can use the same SvelteKit API over HTTPS. Native
-login/registration returns a revocable bearer token; only its hashed identifier
-is saved in the existing `sessions` table. Browser cookie sessions remain
-separate client credentials for the same user accounts. Password reset,
+The React Native/Expo client can use the same SvelteKit API over HTTPS. Login
+returns a revocable bearer token; only its hashed identifier is saved in the
+existing `sessions` table. New registrations first verify their email and receive
+a session only after signing in. Browser cookie sessions remain separate client
+credentials for the same user accounts. Password reset, email verification,
 deactivation and approval checks apply across both clients.
 
 `src/hooks.server.ts` resolves bearer credentials only on API routes and retains
@@ -90,7 +91,7 @@ flowchart TD
 * **Zero-Dependency Native Cryptography:** Uses Node.js built-in `node:crypto` (`scryptSync` with a 16-byte random salt and `timingSafeEqual` constant-time comparison) to eliminate native C++ addon compilation failures in Alpine Docker containers while guaranteeing NIST-grade password security.
 * **Sliding-Window Database Sessions:** 32-byte random hex tokens stored in the `sessions` table with a 30-day expiration window that automatically renews when less than 15 days remain.
 * **Development Demo Seeding (`ensureInitialSeedUsers`):** Development initialization seeds test accounts only when `users` is empty. Production does not seed on startup; the explicit presentation seed and administrator bootstrap are documented in the Docker runbook.
-* **Native API Sessions:** Login/signup can issue a random bearer credential whose SHA-256 identifier is stored with a `mobile:` prefix in the same sessions table. API requests resolve the same user/approval rules without setting browser cookies. Revocation and password changes cover both session types.
+* **Native API Sessions:** Login issues a random bearer credential whose SHA-256 identifier is stored with a `mobile:` prefix in the same sessions table. Registration sends an email confirmation link before a user can sign in. API requests resolve the same user/approval rules without setting browser cookies. Revocation and password changes cover both session types.
 * **Server-Side Route Guards:** `src/hooks.server.ts` intercepts unauthenticated requests to protected operational routes (`/dashboard`, `/profile`, `/settings`) and issues an HTTP `303` redirect to `/login?redirectTo=...`.
 
 ### B. 🧱 Authentic `shadcn-svelte` Sidebar Application Shell (`src/routes/+layout.svelte`)
@@ -99,7 +100,7 @@ flowchart TD
   2. **Municipal Modules:** Proof of Patch (`/verification`), Road Analytics (`/analytics`), Contractors & Crews (`/crews`), Community Hub (`/community`).
   3. **Standards & Policy:** Civil Standards (`/docs`).
   4. **Personnel & Account:** Profile (`/profile`), Settings (`/settings`).
-* **Zero-Flicker Theme Engine:** Pre-hydration inline script in `src/app.html` combined with OKLCH semantic tokens in `src/routes/layout.css` ensures 100% parity between Dark Mode (`#09090b`) and Light Mode (`#ffffff`).
+* **Fixed Light Appearance:** `src/app.html` declares a light color scheme and `src/routes/layout.css` supplies the light OKLCH semantic tokens. Saved dark preferences do not change the interface.
 
 ### C. 🧠 Multimodal Vision & Civil Triage Pipeline (`src/lib/server/gemini.ts`)
 * **Resilient Multi-Model Fallback Chain:** Sequentially attempts `gemini-flash-lite-latest` $\rightarrow$ `gemini-flash-latest` $\rightarrow$ `gemini-3.8-flash` via `@google/genai` with `responseMimeType: 'application/json'`.

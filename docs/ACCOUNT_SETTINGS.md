@@ -1,6 +1,6 @@
 # Account settings
 
-`/settings` requires sign-in and contains only **Email notifications** and **Password & security**. The old diagnostics, jurisdiction labels, map-layout controls, engineering thresholds, multipliers, forwarding switches, and reset-to-engineering-defaults UI have been removed. Appearance remains available in the app navigation.
+`/settings` requires sign-in and contains only **Email notifications** and **Password & security**. The old diagnostics, jurisdiction labels, map-layout controls, engineering thresholds, multipliers, forwarding switches, and reset-to-engineering-defaults UI have been removed. The app uses a fixed light appearance.
 
 ## Email notifications
 
@@ -9,7 +9,7 @@ Both categories are off until the user opts in:
 - **Comments and replies:** comments on the user's posts, and replies to the user's comments.
 - **Post confirmations:** another person confirms the user's post.
 
-Preferences are stored in the signed-in user's `users.settings` JSON. Saves merge only these two fields, preserving existing theme and legacy preferences. No target user can be supplied. The destination is the account's email address; public profiles do not expose it.
+Preferences are stored in the signed-in user's `users.settings` JSON. Saves merge only these two fields, preserving unrelated legacy preferences. The returned appearance is always light. No target user can be supplied. The destination is the account's email address; public profiles do not expose it.
 
 Post/comment mutations and outbox events commit together. Self-notifications are excluded, recipients are deduplicated, and toggling the same user's confirmation does not send repeated emails. Each message links to the exact saved community post and to Settings. The delivery worker rechecks preferences before sending, so queued messages can be skipped after opting out.
 
@@ -17,33 +17,41 @@ The Node server polls the persisted outbox every five seconds. Workers claim bat
 
 ## Mail setup
 
-Configure these server-only values in `.env` or deployment environment variables:
+SuriOS sends mail through its existing Nodemailer SMTP transport. For Resend, verify a sending domain in the Resend dashboard and publish the DNS records it provides. Create a sending API key, then store it server-side as `SMTP_PASS`; do not put it in this repository, the mobile app, or a chat message. Resend's SMTP settings are documented in its [SMTP guide](https://resend.com/docs/send-with-smtp).
+
+Configure these server-only values in the production environment or the VM's ignored `.env` file:
 
 ```dotenv
-APP_ORIGIN=https://your-app.example
-SMTP_HOST=your-mail-provider-host
-SMTP_PORT=587
-SMTP_FROM=your-verified-sender@example.com
-SMTP_USER=your-provider-user
-SMTP_PASS=your-provider-password
-SMTP_SECURE=false
+APP_ORIGIN=https://surios.site
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=465
+SMTP_FROM="SuriOS <no-reply@your-verified-domain>"
+SMTP_USER=resend
+SMTP_PASS=your-resend-sending-api-key
+SMTP_SECURE=true
 ```
 
-Use the sender and credentials supplied by your email provider. Port 465 uses implicit TLS; port 587 uses STARTTLS, which is required in production. The integration uses the documented [Nodemailer SMTP transport](https://nodemailer.com/smtp). Production links require an HTTPS `APP_ORIGIN`; localhost HTTP is supported in development. Links never use an untrusted request host. Docker Compose forwards these variables to the web container. Restart after changing the configuration.
+Replace the example sender with an address at the domain Resend verified for sending. Port 465 uses implicit TLS; port 587 uses STARTTLS. Production requires an HTTPS `APP_ORIGIN`; localhost HTTP is supported in development. Production Compose already forwards these variables to the web container. Recreate the web service after changing the configuration.
 
-No real mail service is configured by this change. Without mail configuration, preferences still save, the UI explains that delivery is unavailable, and password-recovery buttons are disabled. Notification events generated while mail is unconfigured are not backfilled later. Ordinary password changes remain available. No credentials are committed or printed.
+Without mail configuration, existing accounts can still sign in, but new registrations are paused because they cannot complete verification. Password recovery and optional notification email also need the sender configuration. Notification events generated while mail is unconfigured are not backfilled later. Ordinary password changes remain available. No credentials are committed or printed.
+
+## Email verification
+
+New citizen and government registrations receive a 6-digit email code that expires after 10 minutes. The `users` row is created only after the code is confirmed; government applicants then remain pending administrator approval. Codes allow five attempts and five sends per hour, with at least one minute between sends. Migration `0015_email-verification.sql` marks existing users verified so deployment does not lock out current accounts. `/verify-email` remains available for legacy verification links that were already sent.
 
 ## Password security
 
 **Change password** verifies the current password and requires matching new passwords of 8–128 characters. Passwords use the existing salted scrypt storage. Successful changes revoke other sessions, keep the current session, and invalidate outstanding reset links. The legacy profile password action delegates to the same implementation.
 
-**Email reset link** in Settings sends a reset link to the current account. **Forgot password?** on the sign-in page opens `/forgot-password`. Responses do not reveal whether an email address exists. Recovery requests are limited per IP (ten per fifteen minutes per Node process); successful reset-link issuance is limited per account (five per hour with at least a minute between requests). For multiple server instances, put the IP limit in a shared limiter; account limits already use database locks.
+**Email reset code** in Settings and **Forgot password?** on the sign-in page open a code-entry modal to choose a new password. Responses do not reveal whether an email address exists. Recovery requests are limited per IP (ten per fifteen minutes per Node process); successful code issuance is limited per account (five per hour with at least a minute between requests). For multiple server instances, put the IP limit in a shared limiter; account limits already use database locks.
 
-Reset tokens contain 32 random bytes. Only SHA-256 hashes are stored in `password_resets`; raw tokens are sent by SMTP without being persisted in the outbox. Tokens expire in 30 minutes and are single-use. New requests invalidate previous links. Reset links use a URL fragment so tokens are not sent in HTTP URLs; the reset page removes the fragment after reading it. Recovery pages disable caching and referrer forwarding. Successful resets revoke all sessions and require signing in again. Expired, missing, replayed, and malformed tokens are rejected. Failed email delivery invalidates the new token. The signed-in Settings action reports the delivery error. The public recovery form retains the same neutral response for existing and unknown accounts, including delivery failures, to avoid disclosing account existence.
+New password reset codes expire after 10 minutes, allow five attempts, and are stored only as salted hashes in `password_resets`. Each new request invalidates previous codes. Previously issued 30-minute reset links remain valid for backward compatibility. Recovery pages disable caching and referrer forwarding. Successful resets revoke all sessions and require signing in again. Failed email delivery invalidates the new code. The signed-in Settings action reports delivery errors. The public recovery form keeps the same neutral response for existing and unknown accounts, including delivery failures, to avoid disclosing account existence.
 
 ## Upgrade and verification
 
-Apply migration 0005 after 0004 before starting this version:
+The production build migration runner applies `0015_email-verification.sql` and `0016_email_otp.sql` after migration `0014`. The first marks existing users verified and adds legacy verification tokens. The second adds pending registrations and OTP reset fields; it preserves existing accounts, posts, sessions and uploads. Deployments that still apply SQL files manually must apply all earlier migrations in order before `0015`.
+
+For older deployments that have not yet applied the email outbox and password-recovery change, apply migration `0005` after `0004` before starting that version:
 
 ```bash
 docker compose exec -T surios-db psql -U postgres -d surios -v ON_ERROR_STOP=1 -1 < drizzle/0005_account-settings.sql
@@ -51,7 +59,7 @@ docker compose exec -T surios-db psql -U postgres -d surios -v ON_ERROR_STOP=1 -
 
 Use the normal migration runner instead if the database is managed by Drizzle's journal. The migration adds the email outbox and password-reset tables and changes new-account preference defaults; existing users/posts/comments are preserved.
 
-Run `npm run check`, `npm run build`, and `npm run test:community`. Browser tests use a loopback-only SMTP receiver and isolated accounts. They verify preference persistence and ownership, responsive settings, actual SMTP messages and links, opt-outs, self-alert suppression, confirmation deduplication, retrying failed sends, current-password verification, session revocation, single-use/expired reset links, and failure feedback. Test configuration overrides SMTP values to prevent sending real email. Fixtures and sessions are removed afterward.
+Run `npm run check`, `npm run build`, and `npm run test:community`. Browser tests use a loopback-only SMTP receiver and isolated accounts. They verify preference persistence and ownership, responsive settings, actual SMTP messages and OTPs, opt-outs, self-alert suppression, confirmation deduplication, retrying failed sends, current-password verification, session revocation, single-use reset flows, and failure feedback. Test configuration overrides SMTP values to prevent sending real email. Fixtures and sessions are removed afterward.
 
 
 ## Registration and government approval

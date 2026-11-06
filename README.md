@@ -15,7 +15,7 @@
 * **Location and issue grouping:** Nearby reports are grouped only when location and supporting evidence indicate the same issue. Community support increases priority separately from physical severity.
 * **Hazard map:** Browse geolocated reports on a street map. Reference road lines and road-section geometry apply only to road reports; other assets use their reported point location.
 * **Government Quote Updates:** Public In progress/Resolved quotes with photos or PDF evidence, itemized PHP budgets and municipal/barangay profiles. Resolving a shared hazard updates all linked posts and the map, with direct links to the government explanation.
-* **Zero AI-Slop Design System:** Authentic **`shadcn-svelte`** interface with flat matte surfaces, 1px micro-borders, soft **Inter** typography, zero gradients, and 100% Dark/Light Mode parity.
+* **Zero AI-Slop Design System:** Authentic **`shadcn-svelte`** interface with flat matte surfaces, 1px micro-borders, soft **Inter** typography, zero gradients, and a fixed light appearance.
 
 ---
 
@@ -94,4 +94,4 @@ All four accounts are created by the presentation seed on a fresh database. The 
 
 `build` builds, applies pending migrations, and starts the production app while keeping existing data. `admin` prompts for credentials to create your administrator. At `/admin`, review government applications and activate/deactivate accounts. Citizens can register immediately; government applicants provide their office, work location and ID number and wait for approval. Existing government accounts retain access.
 
-Use `./surios.sh seed` for the saved presentation snapshot on an empty database, or `./surios.sh fresh` for a confirmed destructive reset of the database and uploaded media. Run `./surios.sh help` for all commands. See the [Docker runbook](docs/DOCKER_RUNBOOK.md) and [account guide](docs/ACCOUNT_SETTINGS.md).
+Use `./surios.sh seed` to add only the citizen, municipality, and admin accounts without clearing existing data. `./surios.sh fresh` performs a confirmed destructive reset and creates those accounts without posts or presentation content. Use `./surios.sh seed-presentation` only when you explicitly want the full demo dataset. See the [Docker runbook](docs/DOCKER_RUNBOOK.md) and [account guide](docs/ACCOUNT_SETTINGS.md).
