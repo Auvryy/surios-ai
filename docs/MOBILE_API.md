@@ -75,7 +75,9 @@ backfill or phone push delivery. See [NOTIFICATIONS.md](NOTIFICATIONS.md).
 | --- | --- | --- |
 | GET | `/api` | Discovery: API version, features, authentication paths and report-media limits. |
 | POST | `/api/auth/login` | JSON `{ email, password }`; returns `{ accessToken, tokenType: "Bearer", expiresAt, user }`. |
-| POST | `/api/auth/register` | JSON described below; same session response, HTTP 201. |
+| POST | `/api/auth/register` | JSON described below; stores a pending registration, emails a 6-digit code, and returns `{ verificationRequired: true, email }`, HTTP 202. No `users` row is created yet. |
+| POST | `/api/auth/verification/confirm` | JSON `{ email, code }`; validates the 6-digit code, creates the account, and returns a bearer session in the same shape as login. |
+| POST | `/api/auth/verification/resend` | JSON `{ email }`; sends a fresh code for a pending registration (or a legacy verification link for an old unverified account) and returns `{ message }`. |
 | GET | `/api/auth/session` | Signed-in account and current expiry: `{ user, expiresAt }`. Pending/rejected applicants may also call this. |
 | POST | `/api/auth/logout` | Revokes this session only, returns `{ success: true }`. |
 | GET | `/api/account` | Private own-account details: `{ user }`; also available to pending/rejected applicants. |
@@ -88,10 +90,11 @@ signup uses `role: "OFFICER"` and additionally requires `department`,
 Public signup never grants `ADMIN` or `ENGINEER`. Unknown JSON fields, including
 forged approval state, are rejected. Existing email addresses return 409.
 
-Citizens are immediately `ACTIVE`. Government applicants are `PENDING` until
-approved through the existing admin workflow. Login may return a pending or
-rejected account so the app can display its status, but feature APIs return 403.
-Session/account reads and logout remain available. `INACTIVE` accounts cannot
+Citizen accounts have `ACTIVE` account status after the email code is confirmed.
+No user row exists before confirmation. Government applicants must verify their
+email and remain `PENDING` until approved through the existing admin workflow. Login may then return a
+pending or rejected account so the app can display its status, but feature APIs
+return 403. Session/account reads and logout remain available. `INACTIVE` accounts cannot
 sign in, and deactivation invalidates their existing sessions.
 
 API authentication is rate-limited in the server process: 100 login requests per
@@ -236,11 +239,11 @@ authoritative for every client.
 | GET | `/api/profiles/:id` | Public profile/feed/statistics; never exposes private email/ID details. Supports `page`/`sort`. |
 | POST | `/api/profile` | Multipart `name`, optional `avatar`/`cover`, `removeAvatar`/`removeCover` as `"true"`; returns `{ profile }`. |
 | GET | `/api/settings` | `{ preferences, email, mailAvailable }`. |
-| PATCH | `/api/settings` | JSON with any of `emailComments`, `emailConfirmations` (booleans), `theme` (`light`, `dark`, `system`); returns saved settings. |
+| PATCH | `/api/settings` | JSON with any of `emailComments`, `emailConfirmations` (booleans), `theme` (`light` only); returns saved settings. |
 | POST | `/api/auth/password` | JSON `{ currentPassword, newPassword, confirmPassword }`; retains the current session and revokes all other native/browser sessions. |
-| POST | `/api/auth/forgot-password` | Public JSON `{ email }`; neutral `{ message }` for known/unknown addresses. |
-| POST | `/api/auth/reset-password` | Public JSON `{ token, newPassword, confirmPassword }`; single-use reset and revocation of all sessions. |
-| POST | `/api/settings/reset-link` | Signed-in reset-link request; reports SMTP delivery failure explicitly. |
+| POST | `/api/auth/forgot-password` | Public JSON `{ email }`; emails a 6-digit reset code and returns a neutral `{ message }` for known/unknown addresses. |
+| POST | `/api/auth/reset-password` | Public JSON `{ email, code, newPassword, confirmPassword }`; single-use code reset and revocation of all sessions. Existing `{ token, newPassword, confirmPassword }` requests remain supported for previously sent links. |
+| POST | `/api/settings/reset-link` | Signed-in reset-code request; reports SMTP delivery failure explicitly. |
 
 Profile images must be JPEG/PNG/WebP, at most 4 MiB each. Government profiles can
 also submit multipart `governmentLevel`, `jurisdiction`, and `bio` (up to 500
@@ -249,10 +252,9 @@ count distinct hazards, attributed to their latest official update.
 
 Changed/reset passwords must match and be 8–128 characters. Recovery uses the
 existing `APP_ORIGIN`/SMTP configuration. Without mail configuration it returns
-503; it never claims an email was sent. Reset tokens expire in 30 minutes, live
-only as hashes in the database and are supplied in the request body, never a
-query string. Existing email links open `/reset-password#token=...` on the website;
-an app-specific deep-link experience still requires mobile-client setup.
+503; it never claims an email was sent. OTP codes expire in 10 minutes, allow at
+most five attempts, and are stored only as salted hashes. Previously sent reset
+links remain accepted while they are still valid.
 
 ## Government response and administrator functions
 

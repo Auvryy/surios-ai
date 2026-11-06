@@ -4,10 +4,10 @@ import type { MatchDecision } from '$lib/types/hazards';
 import type { GovernmentProfile, PostMedia } from '$lib/types/community';
 import type { TriageAnalysis } from '$lib/types/triage';
 import type { MaterialEstimate } from '$lib/types/work-orders';
-import { type AnyPgColumn, pgTable, text, integer, numeric, timestamp, jsonb, uuid, primaryKey, index } from 'drizzle-orm/pg-core';
+import { type AnyPgColumn, pgTable, text, integer, numeric, timestamp, jsonb, uuid, primaryKey, index, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export interface UserSettings {
-	theme?: 'dark' | 'light' | 'system';
+	theme?: 'light';
 	emailComments: boolean;
 	emailConfirmations: boolean;
 }
@@ -27,6 +27,7 @@ export const users = pgTable('users', {
 	passwordHash: text('password_hash').notNull(),
 	role: text('role').notNull().default('CITIZEN'), // 'CITIZEN' | 'OFFICER' | 'ENGINEER' | 'ADMIN'
 	accountStatus: text('account_status').notNull().default('ACTIVE'), // ACTIVE | PENDING | REJECTED | INACTIVE
+	emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }).defaultNow(),
 	reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
 	reviewedBy: uuid('reviewed_by'),
 	department: text('department'),
@@ -172,10 +173,42 @@ export const reportObservations = pgTable('report_observations', {
 export const passwordResets = pgTable('password_resets', {
 	tokenHash: text('token_hash').primaryKey(),
 	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	codeSalt: text('code_salt'),
+	attempts: integer('attempts').notNull().default(0),
 	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
 	usedAt: timestamp('used_at', { withTimezone: true }),
 	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 }, (table) => [index('password_resets_user_idx').on(table.userId)]);
+
+export const pendingRegistrations = pgTable('pending_registrations', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	email: text('email').notNull(),
+	name: text('name').notNull(),
+	passwordHash: text('password_hash').notNull(),
+	role: text('role').notNull(),
+	department: text('department'),
+	badgeNumber: text('badge_number'),
+	governmentProfile: jsonb('government_profile').$type<GovernmentProfile>(),
+	codeHash: text('code_hash').notNull(),
+	codeSalt: text('code_salt').notNull(),
+	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+	attempts: integer('attempts').notNull().default(0),
+	sentCount: integer('sent_count').notNull().default(1),
+	sentWindowStartedAt: timestamp('sent_window_started_at', { withTimezone: true }).defaultNow().notNull(),
+	lastSentAt: timestamp('last_sent_at', { withTimezone: true }).defaultNow().notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => [
+	uniqueIndex('pending_registrations_email_uidx').on(table.email),
+	index('pending_registrations_expires_idx').on(table.expiresAt)
+]);
+
+export const emailVerificationTokens = pgTable('email_verification_tokens', {
+	tokenHash: text('token_hash').primaryKey(),
+	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+	usedAt: timestamp('used_at', { withTimezone: true }),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => [index('email_verification_tokens_user_idx').on(table.userId, table.createdAt)]);
 
 export const emailOutbox = pgTable('email_outbox', {
 	id: uuid('id').defaultRandom().primaryKey(),

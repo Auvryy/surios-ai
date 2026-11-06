@@ -1,4 +1,5 @@
 <script lang="ts">
+	import OtpInput from '$lib/components/auth/otp-input.svelte';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import { untrack } from 'svelte';
@@ -6,6 +7,7 @@
 	import type { PageProps } from './$types';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
 	let { data, form }: PageProps = $props();
 	let role = $state(untrack(() => form?.role === 'OFFICER' ? 'OFFICER' : 'CITIZEN'));
 	let submitting = $state(false);
@@ -14,15 +16,20 @@
 	let showPassword = $state(false);
 	let showConfirmation = $state(false);
 	let confirmationTouched = $state(false);
+	let verificationOpen = $state(false);
+	let verificationCode = $state('');
 	const passwordMismatch = $derived(confirmationTouched && confirmPassword.length > 0 && password !== confirmPassword);
+	$effect(() => { if (form?.codePending) verificationOpen = true; });
 </script>
 <svelte:head><title>Create account — SuriOS</title></svelte:head>
 <div class="mx-auto w-full max-w-lg px-4 py-8 sm:py-12">
 	<div class="rounded-2xl border border-border bg-card p-5 sm:p-7">
 		<h1 class="text-xl font-semibold">Create account</h1>
 		<p class="mt-2 text-sm text-muted-foreground">Report public infrastructure concerns or apply to represent your government office.</p>
-		{#if form?.error}<p role="alert" class="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{form.error}</p>{/if}
-		<form method="POST" class="mt-6 space-y-4" use:enhance={() => { submitting = true; return async ({ update }) => { await update(); submitting = false; }; }}>
+		<p class="mt-2 text-sm text-muted-foreground">Enter the code sent to your email before your account is created.</p>
+		{#if !data.mailAvailable}<p role="alert" class="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">Email verification is not configured right now, so new accounts cannot be created. Please try again later.</p>{/if}
+		{#if form?.error && !form?.codePending}<p role="alert" class="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{form.error}</p>{/if}
+		<form method="POST" action="?/start" class="mt-6 space-y-4" use:enhance={() => { submitting = true; return async ({ update }) => { await update(); submitting = false; }; }}>
 			<input type="hidden" name="redirectTo" value={data.redirectTo} />
 			<fieldset><legend class="mb-2 text-sm font-medium">Account type</legend><div class="grid grid-cols-2 gap-3">{#each [['CITIZEN', 'Citizen'], ['OFFICER', 'Government']] as [value, label]}<label class="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm {role === value ? 'border-primary bg-primary/10 text-primary' : 'border-border'}"><input type="radio" name="role" {value} bind:group={role} class="accent-primary" />{label}</label>{/each}</div></fieldset>
 			<div class="space-y-1.5"><label for="name" class="text-sm font-medium">Full name</label><Input id="name" name="name" value={form?.name || ''} required minlength={2} maxlength={120} autocomplete="name" class="min-h-11" /></div>
@@ -38,8 +45,29 @@
 			{/if}
 			<div class="space-y-1.5"><label for="password" class="text-sm font-medium">Password</label><div class="relative"><Input id="password" name="password" type={showPassword ? 'text' : 'password'} bind:value={password} autocomplete="new-password" required minlength={8} maxlength={256} aria-describedby="password-help" class="min-h-11 pr-12" /><button type="button" class="absolute inset-y-0 right-0 flex min-h-11 w-11 items-center justify-center rounded-r-md text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} aria-controls="password" onclick={() => showPassword = !showPassword}>{#if showPassword}<EyeOffIcon aria-hidden="true" class="size-4" />{:else}<EyeIcon aria-hidden="true" class="size-4" />{/if}</button></div><p id="password-help" class="text-xs text-muted-foreground">At least 8 characters.</p></div>
 			<div class="space-y-1.5"><label for="confirmPassword" class="text-sm font-medium">Confirm password</label><div class="relative"><Input id="confirmPassword" name="confirmPassword" type={showConfirmation ? 'text' : 'password'} bind:value={confirmPassword} onblur={() => confirmationTouched = true} autocomplete="new-password" required maxlength={256} aria-invalid={passwordMismatch ? 'true' : undefined} aria-describedby={passwordMismatch ? 'confirmation-error' : undefined} class="min-h-11 pr-12" /><button type="button" class="absolute inset-y-0 right-0 flex min-h-11 w-11 items-center justify-center rounded-r-md text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary" aria-label={showConfirmation ? 'Hide confirm password' : 'Show confirm password'} aria-pressed={showConfirmation} aria-controls="confirmPassword" onclick={() => showConfirmation = !showConfirmation}>{#if showConfirmation}<EyeOffIcon aria-hidden="true" class="size-4" />{:else}<EyeIcon aria-hidden="true" class="size-4" />{/if}</button></div>{#if passwordMismatch}<p id="confirmation-error" role="status" class="text-sm text-destructive">Passwords do not match.</p>{/if}</div>
-			<Button type="submit" disabled={submitting} class="min-h-11 w-full">{submitting ? 'Creating account…' : role === 'OFFICER' ? 'Submit government application' : 'Create citizen account'}</Button>
+			<Button type="submit" disabled={submitting || !data.mailAvailable} class="min-h-11 w-full">{submitting ? 'Creating account…' : role === 'OFFICER' ? 'Submit government application' : 'Create citizen account'}</Button>
 		</form>
 		<p class="mt-6 text-center text-sm text-muted-foreground">Already registered? <a href="/login" class="font-medium text-primary underline underline-offset-4">Sign in</a></p>
 	</div>
 </div>
+
+<Dialog bind:open={verificationOpen}>
+	<DialogContent class="max-h-[90svh] overflow-y-auto sm:max-w-sm" showCloseButton={!submitting} onInteractOutside={(event) => { if (submitting) event.preventDefault(); }} onEscapeKeydown={(event) => { if (submitting) event.preventDefault(); }}>
+		<DialogHeader>
+			<DialogTitle>Verify your email</DialogTitle>
+			<DialogDescription>Enter the 6-digit code sent to {form?.email || 'your email address'}. Your account is created after the code is confirmed.</DialogDescription>
+		</DialogHeader>
+		{#if form?.error}<p role="alert" class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{form.error}</p>{/if}
+		<form method="POST" action="?/verify" class="space-y-3" use:enhance={() => { submitting = true; return async ({ update }) => { await update(); submitting = false; }; }}>
+			<input type="hidden" name="email" value={form?.email || ''} />
+			<input type="hidden" name="redirectTo" value={data.redirectTo} />
+			<div class="space-y-1.5"><label for="verification-code" class="text-sm font-medium">Email code</label><OtpInput id="verification-code" bind:value={verificationCode} /></div>
+			<Button type="submit" disabled={submitting} class="min-h-11 w-full">{submitting ? 'Verifying…' : 'Verify and create account'}</Button>
+		</form>
+		<form method="POST" action="?/resend" use:enhance={() => { submitting = true; return async ({ update }) => { await update(); submitting = false; }; }}>
+			<input type="hidden" name="email" value={form?.email || ''} />
+			<Button type="submit" variant="outline" disabled={submitting || !data.mailAvailable} class="min-h-11 w-full">{submitting ? 'Sending…' : 'Resend code'}</Button>
+		</form>
+		{#if form?.notice}<p role="status" class="text-sm text-muted-foreground">{form.notice}</p>{/if}
+	</DialogContent>
+</Dialog>

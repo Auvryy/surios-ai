@@ -21,7 +21,7 @@ SuriOS is structured around a **Two-Persona Swiss Minimalist Sidebar Shell** (`s
 | **`/dashboard`** | **Government updates** | Government (`OFFICER`, `ENGINEER`, `ADMIN`) | *Quote, document, budget, resolve, export.* | **Active** — Public official quotes, shared-report status, evidence and budget breakdowns. |
 | **`/verification`, `/analytics`** | **Retired demo pages** | All | *Consolidated into official quote updates.* | Redirect to `/dashboard` for government users and `/community` otherwise. |
 | **`/profile`, `/community?profile=[id]`** | **Community profile** | Own / Public | *Name, profile picture, cover photo and posts.* | **Active** — Owner editing, public author profiles, shared posts and replies. |
-| **`/settings`** | **Account settings** | Signed-in users | *Email notifications and password security.* | **Active** — Saved email preferences, password change, and email reset links. |
+| **`/settings`** | **Account settings** | Signed-in users | *Email notifications and password security.* | **Active** — Saved email preferences, password change, and email reset codes. |
 
 ### Current assessment scope
 

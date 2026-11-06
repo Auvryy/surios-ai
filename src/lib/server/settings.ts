@@ -6,11 +6,11 @@ import { emailPreferences, mailConfiguration } from './email';
 export const settingsPatchSchema = z.object({
 	emailComments: z.boolean().optional(),
 	emailConfirmations: z.boolean().optional(),
-	theme: z.enum(['light', 'dark', 'system']).optional()
+	theme: z.literal('light').optional()
 }).strict().refine((value) => Object.keys(value).length > 0, 'Choose a preference to update.');
 
 export function accountSettings(user: User) {
-	return { preferences: { ...emailPreferences(user.settings), theme: user.settings?.theme || 'light' }, email: user.email, mailAvailable: !!mailConfiguration() };
+	return { preferences: { ...emailPreferences(user.settings), theme: 'light' }, email: user.email, mailAvailable: !!mailConfiguration() };
 }
 
 export async function saveAccountSettings(userId: string, preferences: z.output<typeof settingsPatchSchema>) {

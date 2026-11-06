@@ -31,7 +31,29 @@ export async function sendEmail(to: string, subject: string, text: string, id?: 
 		connectionTimeout: 5000, greetingTimeout: 5000, socketTimeout: 10000,
 		disableFileAccess: true, disableUrlAccess: true
 	});
-	const result = await transport.sendMail({ from: config.from, to, subject, text, messageId: id ? `<${id}@${new URL(config.origin).hostname}>` : undefined });
+	let result;
+	try {
+		result = await transport.sendMail({ from: config.from, to, subject, text, messageId: id ? `<${id}@${new URL(config.origin).hostname}>` : undefined });
+	} catch (cause) {
+		// Log only fixed diagnostic categories, never SMTP responses or credentials.
+		const failure = cause as { code?: string; responseCode?: number; response?: string };
+		const category = failure?.code === 'EAUTH' ? 'SMTP authentication rejected: check SMTP_USER and SMTP_PASS'
+			: failure?.code === 'ETIMEDOUT' ? 'SMTP connection timed out'
+			: failure?.code === 'ECONNECTION' || failure?.code === 'ESOCKET' ? 'SMTP connection or TLS failed: check host, port and secure settings'
+			: failure?.code === 'EENVELOPE' ? 'SMTP sender or recipient rejected: check verified sender domain and API key permissions'
+			: 'SMTP delivery failed';
+		const response = failure?.response || '';
+		const reason = /domain.*verif|verif.*domain/i.test(response) ? 'Sender domain is not verified or does not match'
+			: /api.?key|authentication|credentials/i.test(response) ? 'Provider rejected API key or credentials'
+			: /from|sender/i.test(response) ? 'Provider rejected sender address'
+			: /quota|limit/i.test(response) ? 'Provider sending limit reached'
+			: /permission|access|restricted/i.test(response) ? 'Provider access restriction'
+			: 'Unclassified provider rejection';
+		console.error('[Email]', category, reason, { status: typeof failure?.responseCode === 'number' ? failure.responseCode : undefined });
+		throw new Error('Email delivery is unavailable.');
+	} finally {
+		transport.close();
+	}
 	if (!result.accepted?.length) throw new Error('Email delivery was not accepted.');
 }
 

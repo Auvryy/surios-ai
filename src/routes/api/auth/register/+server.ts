@@ -1,14 +1,14 @@
-import { json } from '@sveltejs/kit';
-import { accountJson, registerAccount, registrationSchema } from '$lib/server/accounts';
-import { createMobileSession } from '$lib/server/auth';
+import { error, json } from '@sveltejs/kit';
+import { registrationSchema } from '$lib/server/accounts';
+import { emailOtpAvailable, startRegistrationCode } from '$lib/server/registration-otp';
 import { limitApiRequests, readApiJson, requireApiOrigin } from '$lib/server/api-access';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async (event) => {
 	requireApiOrigin(event);
 	limitApiRequests(`register:${event.getClientAddress()}`, 20, 3600000);
+	if (!emailOtpAvailable()) error(503, 'Email verification is currently unavailable. Please try again later.');
 	const input = await readApiJson(event, registrationSchema);
-	const user = await registerAccount(input);
-	const { token, session } = await createMobileSession(user.id, { ipAddress: event.getClientAddress(), userAgent: event.request.headers.get('user-agent') || undefined });
-	return json({ accessToken: token, tokenType: 'Bearer', expiresAt: session.expiresAt.toISOString(), user: accountJson(user) }, { status: 201 });
+	const pending = await startRegistrationCode(input);
+	return json({ verificationRequired: true, email: pending.email }, { status: 202 });
 };
