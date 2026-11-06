@@ -33,7 +33,6 @@
 	let referenceRoads: LayerGroup;
 	let routeLayer: LayerGroup;
 	let tiles: TileLayer | undefined;
-	let dark = $state(false);
 	let roads = $state(false);
 	let panel = $state<'filters' | 'layers' | 'legend' | null>(null);
 	let listOpen = $state(false);
@@ -126,12 +125,6 @@
 		return () => { disposed = true; observer?.disconnect(); instance?.remove(); map = null; };
 	});
 	$effect(() => {
-		dark = document.documentElement.classList.contains('dark');
-		const observer = new MutationObserver(() => dark = document.documentElement.classList.contains('dark'));
-		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-		return () => observer.disconnect();
-	});
-	$effect(() => {
 		if (!map || !leaflet) return;
 		tiles?.remove();
 		const url = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -141,7 +134,7 @@
 	$effect(() => {
 		if (!map || !leaflet || !referenceRoads) return;
 		referenceRoads.clearLayers();
-		if (roads) for (const road of SANTA_CRUZ_CORRIDORS) leaflet.polyline(road.coordinates, { color: dark ? '#a8a29e' : '#78716c', weight: 3, opacity: .7, dashArray: '5 5' }).bindTooltip(road.name).addTo(referenceRoads);
+		if (roads) for (const road of SANTA_CRUZ_CORRIDORS) leaflet.polyline(road.coordinates, { color: '#78716c', weight: 3, opacity: .7, dashArray: '5 5' }).bindTooltip(road.name).addTo(referenceRoads);
 	});
 	$effect(() => {
 		const key = page.url.searchParams.get('report');
@@ -177,7 +170,7 @@
 	}
 </script>
 <svelte:head><title>Hazard map — SuriOS</title></svelte:head>
-<div class="relative isolate h-full w-full overflow-hidden bg-muted" class:dark-streets={dark}>
+<div class="relative isolate h-full w-full overflow-hidden bg-muted">
 	<div bind:this={container} class="absolute inset-0 z-0" aria-label="Hazard map"></div>
 	<h1 class="sr-only">Hazard map</h1>
 	<!-- Compact controls float over the full map. -->
@@ -230,7 +223,6 @@
 	:global(.hazard-pin-root) { background: transparent; border: none; }
 	:global(.hazard-pin) { position: relative; display: flex; width: 30px; height: 30px; align-items: center; justify-content: center; border: 2px solid white; border-radius: 9px 9px 9px 2px; background: var(--pin-color); color: white; font: 600 12px system-ui; box-shadow: 0 2px 5px #0003; }
 	:global(.hazard-pin-count) { position: absolute; top: -7px; right: -7px; display: flex; min-width: 17px; height: 17px; align-items: center; justify-content: center; padding: 0 3px; border-radius: 9999px; border: 1px solid var(--card); background: var(--foreground); color: var(--background); font-size: 9px; }
-	.dark-streets :global(.road-tiles) { filter: invert(.92) hue-rotate(180deg) brightness(.8) saturate(.6); }
 	:global(.leaflet-control-zoom) { border: 1px solid var(--border) !important; overflow: hidden; border-radius: 10px !important; box-shadow: 0 2px 5px #0001 !important; }
 	:global(.leaflet-control-zoom a) { background: var(--card) !important; color: var(--foreground) !important; border-color: var(--border) !important; }
 	:global(.leaflet-container) { font-family: inherit; }
