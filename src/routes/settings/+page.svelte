@@ -1,4 +1,5 @@
 <script lang="ts">
+	import OtpInput from '$lib/components/auth/otp-input.svelte';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { enhance } from '$app/forms';
 	import type { PageProps } from './$types';
@@ -59,7 +60,7 @@
 		<DialogHeader><DialogTitle>Reset password</DialogTitle><DialogDescription>Enter the code sent to {data.email}, then choose a new password.</DialogDescription></DialogHeader>
 		{#if form?.section === 'recovery' && form.error}<p role="alert" class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{form.error}</p>{/if}
 		<form method="POST" action="?/verifyResetCode" class="space-y-3" use:enhance={() => { sending = true; return async ({ update }) => { try { await update(); } finally { sending = false; } }; }}>
-			<div class="space-y-1.5"><label for="settings-reset-code" class="text-sm font-medium">Email code</label><Input id="settings-reset-code" name="code" bind:value={resetCode} type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength={6} required class="min-h-11 tracking-[0.35em]" /></div>
+			<div class="space-y-1.5"><label for="settings-reset-code" class="text-sm font-medium">Email code</label><OtpInput id="settings-reset-code" bind:value={resetCode} /></div>
 			<div class="space-y-1.5"><label for="settings-new-password" class="text-sm font-medium">New password</label><Input id="settings-new-password" name="newPassword" type="password" autocomplete="new-password" minlength={8} maxlength={128} required class="min-h-11" /></div>
 			<div class="space-y-1.5"><label for="settings-confirm-password" class="text-sm font-medium">Confirm new password</label><Input id="settings-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength={8} maxlength={128} required class="min-h-11" /></div>
 			<Button type="submit" class="min-h-11 w-full" disabled={sending}>{sending ? 'Resetting…' : 'Reset password'}</Button>

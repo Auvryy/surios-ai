@@ -1,3 +1,4 @@
+import { normalizeOtpCode } from '$lib/otp-code';
 import crypto from 'node:crypto';
 import { error, fail, isHttpError, type RequestEvent } from '@sveltejs/kit';
 import { and, eq, gt, isNotNull, isNull, ne, sql } from 'drizzle-orm';
@@ -113,16 +114,17 @@ export async function resetAccountPassword(input: { token: string; newPassword: 
 
 export async function resetAccountPasswordWithCode(input: { email: string; code: string; newPassword: string; confirmPassword: string }) {
 	const email = input.email.trim().toLowerCase();
+	const code = normalizeOtpCode(input.code);
 	const { newPassword: password, confirmPassword: confirmation } = input;
 	const invalid = passwordError(password, confirmation);
 	if (invalid) error(400, invalid);
-	if (!/^\d{6}$/.test(input.code)) error(400, 'Enter the 6-digit code sent to your email.');
+	if (!/^\d{6}$/.test(code)) error(400, 'Enter the 6-digit code sent to your email.');
 	const result = await db.transaction(async (tx) => {
 		const [user] = await tx.select({ id: users.id }).from(users).where(eq(users.email, email)).for('update');
 		if (!user) return { error: 'invalid' as const };
 		const [reset] = await tx.select().from(passwordResets).where(and(eq(passwordResets.userId, user.id), isNotNull(passwordResets.codeSalt), isNull(passwordResets.usedAt))).orderBy(sql`${passwordResets.createdAt} desc`).limit(1).for('update');
 		if (!reset || reset.expiresAt.getTime() <= Date.now() || reset.attempts >= EMAIL_CODE_MAX_ATTEMPTS) return { error: 'invalid' as const };
-		if (!matchesEmailCode(input.code, reset.codeSalt || '', reset.tokenHash)) {
+		if (!matchesEmailCode(code, reset.codeSalt || '', reset.tokenHash)) {
 			await tx.update(passwordResets).set({ attempts: reset.attempts + 1 }).where(eq(passwordResets.tokenHash, reset.tokenHash));
 			return { error: reset.attempts + 1 >= EMAIL_CODE_MAX_ATTEMPTS ? 'attempts' as const : 'invalid' as const };
 		}
