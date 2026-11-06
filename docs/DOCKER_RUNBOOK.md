@@ -16,7 +16,8 @@ From the repository checkout on the Azure VM, use the executable helper:
 `build` builds the production image, starts/waits for PostgreSQL, applies pending migrations, and starts the web container. Existing data and uploads remain. `admin` prompts for an email and a password of at least 12 characters, creates an active administrator, and keeps existing administrator passwords unchanged. Sign in normally and open **Account approvals** (`/admin`). There is no public admin signup or default production admin password. For automation, supply `ADMIN_EMAIL` and `ADMIN_PASSWORD` through the process environment; do not put real passwords into command history or commit them.
 
 ```bash
-./surios.sh seed      # Build, migrate, import the presentation snapshot, start
+./surios.sh seed      # Build, migrate, create citizen, municipality, and admin accounts only
+./surios.sh seed-presentation # Build, migrate, import the full presentation snapshot, start
 ./surios.sh migrate   # Apply pending schema changes without seeding
 ./surios.sh status
 ./surios.sh logs
@@ -24,7 +25,9 @@ From the repository checkout on the Azure VM, use the executable helper:
 ./surios.sh stop      # Stop services while retaining data
 ```
 
-`seed` requires an empty database or the same complete snapshot; it refuses different existing community content. It includes the bundled photos, road sections, comments, government updates and interactions. It does not automatically create an administrator; use `./surios.sh admin`.
+`seed` creates or keeps only these demo identities and does not delete existing database content: `citizen@surios.gov` (CITIZEN), `municipality@surios.gov` (ENGINEER), and the administrator email you enter (default `admin@surios.gov`). The two demo accounts use `Password123!` unless `DEMO_ACCOUNT_PASSWORD` is exported in the VM shell. The admin password is entered interactively, must be at least 12 characters, and is not printed or stored by the helper.
+
+`seed-presentation` requires an empty database or the same complete snapshot; it refuses different existing community content. It includes the bundled photos, road sections, comments, government updates and interactions. Run it only when you explicitly want the presentation dataset.
 
 For an intentional complete demo reset:
 
@@ -32,7 +35,7 @@ For an intentional complete demo reset:
 ./surios.sh fresh
 ```
 
-This asks you to type `fresh`, then **permanently deletes the production database and uploaded media**, builds, migrates, seeds and starts the app. Existing admin accounts are removed too; recreate one with `./surios.sh admin`. Unattended resets require the explicit `./surios.sh fresh --yes` form. Normal `build`, `migrate`, `admin` and `seed` commands never delete the database volume.
+This asks you to type `fresh`, prompts for the admin email and password, builds the image, then **permanently deletes the production database and uploaded media**, migrates, creates the citizen, municipality, and admin accounts, and starts the app. No posts, reports, updates, interactions, or presentation files are seeded. Admin email defaults to `admin@surios.gov`; the password must be at least 12 characters and is entered twice. The citizen and municipality demo password is `Password123!` by default. Unattended resets require the explicit `./surios.sh fresh --yes` form and still require admin credentials. Normal `build`, `migrate`, `admin`, `seed`, and `seed-presentation` commands never delete the database volume.
 
 The helper always uses `docker-compose.prod.yml` and resolves paths relative to itself, even when called from another directory. It does not pull or push Git changes or change the VM's Nginx/TLS setup. Pull your chosen branch before building. Port 3000 remains the app's container port.
 
@@ -122,9 +125,9 @@ To deploy this account-approval branch directly before merging it, use `feat/acc
 docker compose -f docker-compose.prod.yml up -d db
 ```
 
-### Fresh Azure database: apply schema and load the presentation snapshot
+### Optional presentation dataset: apply schema and load demo content
 
-Use this section only when creating a new, empty production database. It creates the same demo reports, feed posts, road sections, comments, official updates, reactions, and referenced media as the checked-in snapshot. It does not run automatically at app startup.
+This separate path adds the demo reports, feed posts, road sections, comments, official updates, reactions, and referenced media from the checked-in snapshot. It is not part of `./surios.sh fresh`; use it only when you explicitly want presentation content. For an account-only production reset, use `./surios.sh fresh` above.
 
 Apply each checked-in migration in order from the repository checkout:
 

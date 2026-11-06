@@ -32,6 +32,7 @@ COPY --from=builder /app/static ./static
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/scripts/migrate.mjs ./scripts/migrate.mjs
 COPY --from=builder /app/scripts/create-admin.mjs ./scripts/create-admin.mjs
+COPY --from=builder /app/scripts/seed-accounts.mjs ./scripts/seed-accounts.mjs
 COPY --from=builder /app/scripts/seed-presentation.mjs ./scripts/seed-presentation.mjs
 COPY --from=builder /app/scripts/fixtures/presentation-snapshot.json ./scripts/fixtures/presentation-snapshot.json
 COPY --from=builder /app/scripts/native-api.mjs ./scripts/native-api.mjs
