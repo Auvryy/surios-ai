@@ -31,20 +31,8 @@ export async function authenticateAccount(email: string, password: string) {
 	const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 	const valid = verifyPassword(password, user?.passwordHash || dummyHash);
 	if (!user || !valid) error(401, 'Invalid email or password');
+	if (!user.emailVerifiedAt) error(403, 'Confirm your email before signing in.');
 	if (user.accountStatus === 'INACTIVE') error(403, 'This account is inactive. Contact your administrator.');
-	return user;
-}
-
-export async function registerAccount(value: z.output<typeof registrationSchema>) {
-	const government = value.role === 'OFFICER';
-	const [user] = await db.insert(users).values({
-		name: value.name, email: value.email, passwordHash: hashPassword(value.password), role: value.role,
-		accountStatus: government ? 'PENDING' : 'ACTIVE',
-		department: government ? value.department : null,
-		badgeNumber: government ? value.badgeNumber : null,
-		governmentProfile: government ? { level: value.level, jurisdiction: value.jurisdiction, bio: '' } : null
-	}).onConflictDoNothing({ target: users.email }).returning();
-	if (!user) error(409, 'An account with this email address already exists.');
 	return user;
 }
 

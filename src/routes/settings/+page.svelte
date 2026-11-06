@@ -4,13 +4,17 @@
 	import type { PageProps } from './$types';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
 	let { data, form }: PageProps = $props();
 	let emailComments = $state(false);
 	let emailConfirmations = $state(false);
 	let saving = $state(false);
 	let changing = $state(false);
 	let sending = $state(false);
+	let resetOpen = $state(false);
+	let resetCode = $state('');
 	$effect(() => { emailComments = data.preferences.emailComments; emailConfirmations = data.preferences.emailConfirmations; });
+	$effect(() => { if (form?.codePending) resetOpen = true; });
 </script>
 <svelte:head><title>Settings — SuriOS</title></svelte:head>
 <div class="min-h-full bg-muted/35 px-3 py-5 sm:px-5 sm:py-6">
@@ -42,10 +46,27 @@
 					<Button type="submit" class="h-11" disabled={changing}>{changing ? 'Updating…' : 'Update password'}</Button>
 				</form>
 			</details>
-			<div class="mt-2 border-t border-border pt-4"><p class="text-sm font-medium">Reset password by email</p><p class="mt-1 text-xs leading-5 text-muted-foreground">Forgot your current password? Request a secure reset link.</p>
-				<form method="POST" action="?/sendResetLink" class="mt-3" use:enhance={() => { sending = true; return async ({ update }) => { try { await update(); } finally { sending = false; } }; }}><Button type="submit" variant="outline" class="h-11" disabled={sending || !data.mailAvailable}>{sending ? 'Sending…' : 'Email reset link'}</Button></form>
-				{#if form?.section === 'recovery'}{#if form.error}<p role="alert" class="mt-3 text-sm text-destructive">{form.error}</p>{:else if form.success}<p role="status" class="mt-3 text-sm text-primary">{form.success}</p>{/if}{/if}
+			<div class="mt-2 border-t border-border pt-4"><p class="text-sm font-medium">Reset password by email</p><p class="mt-1 text-xs leading-5 text-muted-foreground">Forgot your current password? Request a 6-digit reset code.</p>
+				<form method="POST" action="?/sendResetCode" class="mt-3" use:enhance={() => { sending = true; return async ({ update }) => { try { await update(); } finally { sending = false; } }; }}><Button type="submit" variant="outline" class="h-11" disabled={sending || !data.mailAvailable}>{sending ? 'Sending…' : 'Email reset code'}</Button></form>
+				{#if form?.section === 'recovery' && !form?.codePending}{#if form.error}<p role="alert" class="mt-3 text-sm text-destructive">{form.error}</p>{:else if form.success}<p role="status" class="mt-3 text-sm text-primary">{form.success}</p>{/if}{/if}
 			</div>
 		</section>
 	</div>
 </div>
+
+<Dialog bind:open={resetOpen}>
+	<DialogContent class="max-h-[90svh] overflow-y-auto sm:max-w-sm" showCloseButton={!sending} onInteractOutside={(event) => { if (sending) event.preventDefault(); }} onEscapeKeydown={(event) => { if (sending) event.preventDefault(); }}>
+		<DialogHeader><DialogTitle>Reset password</DialogTitle><DialogDescription>Enter the code sent to {data.email}, then choose a new password.</DialogDescription></DialogHeader>
+		{#if form?.section === 'recovery' && form.error}<p role="alert" class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{form.error}</p>{/if}
+		<form method="POST" action="?/verifyResetCode" class="space-y-3" use:enhance={() => { sending = true; return async ({ update }) => { try { await update(); } finally { sending = false; } }; }}>
+			<div class="space-y-1.5"><label for="settings-reset-code" class="text-sm font-medium">Email code</label><Input id="settings-reset-code" name="code" bind:value={resetCode} type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength={6} required class="min-h-11 tracking-[0.35em]" /></div>
+			<div class="space-y-1.5"><label for="settings-new-password" class="text-sm font-medium">New password</label><Input id="settings-new-password" name="newPassword" type="password" autocomplete="new-password" minlength={8} maxlength={128} required class="min-h-11" /></div>
+			<div class="space-y-1.5"><label for="settings-confirm-password" class="text-sm font-medium">Confirm new password</label><Input id="settings-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength={8} maxlength={128} required class="min-h-11" /></div>
+			<Button type="submit" class="min-h-11 w-full" disabled={sending}>{sending ? 'Resetting…' : 'Reset password'}</Button>
+		</form>
+		<form method="POST" action="?/sendResetCode" use:enhance={() => { sending = true; return async ({ update }) => { try { await update(); } finally { sending = false; } }; }}>
+			<Button type="submit" variant="outline" class="min-h-11 w-full" disabled={sending || !data.mailAvailable}>{sending ? 'Sending…' : 'Resend code'}</Button>
+		</form>
+		{#if form?.notice}<p role="status" class="text-sm text-muted-foreground">{form.notice}</p>{/if}
+	</DialogContent>
+</Dialog>

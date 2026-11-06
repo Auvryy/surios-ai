@@ -155,47 +155,34 @@ export function deleteSessionTokenCookie(event: RequestEvent): void {
 	});
 }
 
-/**
- * Seeds initial municipal accounts if the database has zero registered users.
- * Provides instant test credentials for Engineers, Field Inspectors, and Citizens.
- */
+/** Seeds only the local community and municipality accounts for an empty dev database. */
 export async function ensureInitialSeedUsers(): Promise<void> {
 	try {
 		const existingUsers = await db.select().from(users).limit(1);
 		if (existingUsers.length > 0) return;
 
-		console.log('[SuriOS Auth] Initializing municipal test accounts...');
+		console.log('[SuriOS Auth] Initializing local community and municipality accounts...');
 		const defaultPassword = 'Password123!';
 		const sharedPasswordHash = hashPassword(defaultPassword);
 
 		await db.insert(users).values([
 			{
-				email: 'engineer@surios.gov',
-				name: 'Engr. Maria Santos',
+				email: 'municipality@surios.gov',
+				name: 'Demo · Santa Cruz Municipal Office',
 				passwordHash: sharedPasswordHash,
 				role: 'ENGINEER',
-				department: 'Santa Cruz Municipal Engineering Office',
-				badgeNumber: 'SC-MEO-041'
-			},
-			{
-				email: 'inspector@surios.gov',
-				name: 'Insp. Juan Reyes',
-				passwordHash: sharedPasswordHash,
-				role: 'OFFICER',
-				department: 'Laguna Traffic Management & VRU Safety Unit',
-				badgeNumber: 'LTMO-VRU-108'
+				department: 'Municipality of Santa Cruz',
+				governmentProfile: { level: 'MUNICIPAL', jurisdiction: 'Santa Cruz, Laguna', bio: '' }
 			},
 			{
 				email: 'citizen@surios.gov',
-				name: 'Alex Cruz',
+				name: 'SuriOS Community Member',
 				passwordHash: sharedPasswordHash,
-				role: 'CITIZEN',
-				department: 'Barangay Poblacion I Resident',
-				badgeNumber: null
+				role: 'CITIZEN'
 			}
 		]);
 
-		console.log('[SuriOS Auth] Seeded 3 municipal accounts (Password: Password123!).');
+		console.log('[SuriOS Auth] Seeded 2 local demo accounts (Password: Password123!).');
 	} catch (error) {
 		console.error('[SuriOS Auth] Error checking/seeding initial users:', error);
 	}
