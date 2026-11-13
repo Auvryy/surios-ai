@@ -95,3 +95,26 @@ All four accounts are created by the presentation seed on a fresh database. The 
 `build` builds, applies pending migrations, and starts the production app while keeping existing data. `admin` prompts for credentials to create your administrator. At `/admin`, review government applications and activate/deactivate accounts. Citizens can register immediately; government applicants provide their office, work location and ID number and wait for approval. Existing government accounts retain access.
 
 Use `./surios.sh seed` to add only the citizen, municipality, and admin accounts without clearing existing data. `./surios.sh fresh` performs a confirmed destructive reset and creates those accounts without posts or presentation content. Use `./surios.sh seed-presentation` only when you explicitly want the full demo dataset. See the [Docker runbook](docs/DOCKER_RUNBOOK.md) and [account guide](docs/ACCOUNT_SETTINGS.md).
+
+---
+
+## 4. CI/CD Pipeline & Container Registry (GHCR)
+
+The repository includes an automated GitHub Actions workflow at [`.github/workflows/ci-cd.yml`](./.github/workflows/ci-cd.yml):
+
+1. **Code Quality and Testing (`ci` job):** Runs on pushes to `main` / `v*` tags, pull requests targeting `main`, and manual dispatches (`workflow_dispatch`). It installs dependencies, runs `npm run lint`, runs `npm test` (`node --test tests/unit/*.test.mjs`), builds the SvelteKit app (`npm run build`), and verifies the `DEMO_API_KEY` Actions secret.
+2. **Docker Build and Publish (`docker` job):** Runs only after `ci` succeeds and skips pull requests (`github.event_name != 'pull_request'`). It authenticates to GitHub Container Registry using `GITHUB_TOKEN`, builds the multi-stage [`Dockerfile`](./Dockerfile), and pushes the image to `ghcr.io/auvryy/surios-ai`.
+
+### Local CI & Docker verification
+```bash
+npm run lint
+npm test
+npm run build
+docker build -t surios-ai:latest .
+```
+
+### Pull and run the published GHCR image
+```bash
+docker pull ghcr.io/auvryy/surios-ai:main
+docker run -d --name surios-published -p 3000:3000 -e DATABASE_URL=postgres://postgres:postgres@host.docker.internal:5433/surios ghcr.io/auvryy/surios-ai:main
+```
