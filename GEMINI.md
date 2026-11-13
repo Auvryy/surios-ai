@@ -115,10 +115,9 @@ All agents and contributors must strictly adhere to these operational boundaries
      - ❌ `WIP stuff`
      - ❌ `update code`
 
-5. **Pushing Policy (STRICT):**
-   - **DO NOT PUSH AUTOMATICALLY.** The agent must NEVER run `git push`.
-   - The user will review and push manually.
-   - When finishing a task or commit, the agent must provide a single-line, copy-pastable terminal command with **NO `cd` prefix**, strictly in this format:
+5. **Pushing Policy:**
+   - Never push directly to `main` or push secrets, `.env` files, or local coordination files.
+   - Agents may push dedicated feature branches or tags (`git push -u origin <branch-name>`) when requested by the user after verifying local checks pass; when the user prefers manual review, provide a single-line, copy-pastable terminal command with **NO `cd` prefix**:
      ```bash
      git push -u origin <branch-name>
      ```

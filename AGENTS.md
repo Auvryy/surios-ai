@@ -32,9 +32,9 @@ Welcome to **SuriOS**. Before performing any coding or modifications in this pro
    - Keep commits small, atomic, and focused.
    - Use concise, human commit messages (`feat: ...`, `fix: ...`, `chore: ...`).
 
-6. **DO NOT PUSH AUTOMATICALLY:**
-   - The user pushes code manually.
-   - Always output a single-line copy-pastable push command (no `cd` command) at the end of your response:
+6. **Branch & Tag Pushing Policy:**
+   - Never push directly to `main` or push `.env`/credentials/local coordination files.
+   - Agents may push dedicated feature branches (`git push -u origin <branch-name>`) or tags when requested by the user and after checks pass; otherwise provide the single-line copy-pastable push command (no `cd` prefix):
      ```bash
      git push -u origin <branch-name>
      ```
