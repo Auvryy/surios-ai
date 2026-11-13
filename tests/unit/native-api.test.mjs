@@ -18,7 +18,7 @@ test('rewrites multipart form content-type for authenticated native API mutation
 	prepareNativeApiRequest(req);
 
 	assert.equal(req[ORIGINAL_CONTENT_TYPE], 'multipart/form-data; boundary=----surios');
-	assert.equal(req.headers['content-type'], 'application/vnd.surios.native-body');
+	assert.equal(req.headers['content-type'], 'application/vnd.surios.broken-expectation');
 });
 
 test('leaves non-API routes and GET requests untouched', () => {
